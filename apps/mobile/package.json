@@ -9,7 +9,7 @@
     "web": "expo start --web",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "lint": "echo 'no lint configured for mobile package'",
+    "lint": "node scripts/check-boundaries.mjs",
     "test": "echo 'no tests for mobile package'"
   },
   "dependencies": {
