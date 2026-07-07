@@ -700,6 +700,7 @@ export interface components {
         };
         AuthResponse: {
             data: components["schemas"]["User"];
+            token?: string;
         };
         Sport: {
             id: string;
@@ -743,7 +744,7 @@ export interface components {
             jerseyNumber?: number | null;
             heightInches?: number | null;
             status: components["schemas"]["PlayerStatus"];
-            athleteProfile?: components["schemas"]["AthleteProfile"];
+            athleteProfile: components["schemas"]["AthleteProfile"];
             currentTeam?: components["schemas"]["RosterTeamSummary"] | null;
         };
         PaginatedPlayers: {
@@ -779,7 +780,7 @@ export interface components {
             seasonId: string;
             jerseyNumber?: number | null;
             isActive: boolean;
-            player?: components["schemas"]["Player"];
+            player: components["schemas"]["Player"];
         };
         AddRosterMemberInput: {
             playerId: string;
@@ -799,7 +800,7 @@ export interface components {
             startedAt?: string | null;
             /** Format: date-time */
             finalizedAt?: string | null;
-            gameTeams?: components["schemas"]["GameTeamSummary"][];
+            gameTeams: components["schemas"]["GameTeamSummary"][];
         };
         CreateGameInput: {
             sportSlug: string;
@@ -857,19 +858,19 @@ export interface components {
             playerId: string;
             teamId: string;
             points: number;
-            offRebounds?: number;
-            defRebounds?: number;
-            assists?: number;
-            steals?: number;
-            blocks?: number;
-            turnovers?: number;
-            fouls?: number;
-            fgMade?: number;
-            fgAttempted?: number;
-            threeMade?: number;
-            threeAttempted?: number;
-            ftMade?: number;
-            ftAttempted?: number;
+            offRebounds: number;
+            defRebounds: number;
+            assists: number;
+            steals: number;
+            blocks: number;
+            turnovers: number;
+            fouls: number;
+            fgMade: number;
+            fgAttempted: number;
+            threeMade: number;
+            threeAttempted: number;
+            ftMade: number;
+            ftAttempted: number;
             sourceStatus: components["schemas"]["SourceStatus"];
             disputeNote?: string | null;
         };
@@ -878,20 +879,20 @@ export interface components {
             playerId: string;
             seasonId: string;
             gamesPlayed: number;
-            points?: number;
-            offRebounds?: number;
-            defRebounds?: number;
-            assists?: number;
-            steals?: number;
-            blocks?: number;
-            turnovers?: number;
-            fouls?: number;
-            fgMade?: number;
-            fgAttempted?: number;
-            threeMade?: number;
-            threeAttempted?: number;
-            ftMade?: number;
-            ftAttempted?: number;
+            points: number;
+            offRebounds: number;
+            defRebounds: number;
+            assists: number;
+            steals: number;
+            blocks: number;
+            turnovers: number;
+            fouls: number;
+            fgMade: number;
+            fgAttempted: number;
+            threeMade: number;
+            threeAttempted: number;
+            ftMade: number;
+            ftAttempted: number;
         };
         MediaAsset: {
             id: string;

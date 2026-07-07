@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens — sourced from
+ * statman_project_docs/statman_docs_bundle/19_DESIGN_TOKEN_SHEET.json
+ * Do not hand-tune values here without updating that sheet too.
+ */
+@layer base {
+  :root {
+    --color-canvas: 250 250 248;
+    --color-surface: 255 255 255;
+    --color-text: 17 17 17;
+    --color-muted-text: 107 114 128;
+    --color-border: 229 231 235;
+
+    --color-brand: 29 78 216;
+    --color-live: 239 68 68;
+    --color-verified: 22 163 74;
+    --color-dispute: 245 158 11;
+    --color-imported: 99 102 241;
+  }
+
+  .dark {
+    --color-canvas: 11 11 12;
+    --color-surface: 23 24 26;
+    --color-text: 245 245 244;
+    --color-muted-text: 156 163 175;
+    --color-border: 42 42 46;
+
+    --color-brand: 59 130 246;
+    --color-live: 248 113 113;
+    --color-verified: 34 197 94;
+    --color-dispute: 251 191 36;
+    --color-imported: 129 140 248;
+  }
+}

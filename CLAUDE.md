@@ -6,7 +6,9 @@ scope: one league, two teams, twenty players. See
 doc bundle (PRD, site map, API docs, data schema, live game capture spec,
 OpenAPI generator architecture, etc.) — read `01_PRD.md`,
 `05_SITE_ARCHITECTURE_MAP.md`, and `12_API_DOCUMENTATION.md` first if picking
-this up cold.
+this up cold. For the frontend specifically, read `docs/frontend-architecture.md`
+before touching `apps/mobile` — it's the IA/composition decision record, not
+just a folder listing.
 
 ## Stack
 
@@ -15,16 +17,18 @@ this up cold.
 - Database: `packages/db` — Prisma + **MySQL/MariaDB** (`statman_dev` for dev, `statman_test` for tests — see Deviations)
 - API contract: `packages/api-spec` — **split OpenAPI 3.1 source** bundled to one generated file (see Deviations)
 - SDK: `packages/sdk` — `openapi-fetch` + React Query hooks, portable to any React app (web or Expo)
-- Testing: Vitest (server, spec-driven, real DB), no Playwright yet (no frontend)
-- Frontend: **not started** — planned as React Native (Expo), mobile-first, per user direction
+- Mobile client: `apps/mobile` — **Expo + Expo Router + NativeWind v4** (React Native, mobile-first per user direction)
+- Testing: Vitest (server, spec-driven, real DB). No Playwright/E2E yet — mobile has no automated test runner configured (`test` script is a placeholder).
 
 ## Phase Completed
 
-Backend Phases 1–2 equivalent (Foundation + full domain API), done in 5 iterations, all tested and passing. Frontend (Expo) has not been started — explicitly deferred per user instruction ("backend should go in first").
+Backend Phases 1–2 equivalent (Foundation + full domain API): done, 5 iterations, all tested and passing (tag `backend-mvp-v0`). Frontend Phase 3 equivalent (IA + component composition + route skeleton for all 13 product surfaces): done this session. Screens are wired to real SDK data where straightforward (Home, Explore, Player/Team/Game profiles, Live Capture, Spectator View) — see `docs/frontend-architecture.md` "Known simplifications" for what's stubbed vs. fully wired.
 
-## Modules Built (backend)
+## Modules Built
 
-- [x] Auth (session cookie + Bearer fallback for native) — register/login/logout/me
+### Backend
+
+- [x] Auth (session cookie + Bearer fallback for native) — register/login/logout/me. Register/login also return the raw token in the JSON body (not just Set-Cookie) — added specifically so native clients without a cookie jar can store it (see Deviation 9).
 - [x] User + Profile (account identity) — separate from AthleteProfile (public sports identity)
 - [x] Sports / Leagues / Schools / Seasons (reference data)
 - [x] Teams + Roster (RosterMembership, season-scoped)
@@ -37,9 +41,23 @@ Backend Phases 1–2 equivalent (Foundation + full domain API), done in 5 iterat
 - [x] Follow / Reaction (polymorphic, one reaction per user per target — upsert/toggle semantics)
 - [x] Feed (cursor-paginated, populated by `finalizeGame` and `attachYouTubeMedia` side effects)
 - [x] Sources (`SourceReference`), Disputes (public list + admin resolve), Claims (request/review, admin-only), `verifyPlayer` (admin sets `sourceStatus`)
-- [ ] Admin panel (no dedicated UI/routes beyond `adminAuth`-gated endpoints above — no admin frontend, obviously, since there's no frontend yet)
+- [ ] Admin panel (no dedicated admin UI beyond the two screens in the mobile app — claims queue only)
 - [ ] Imports (source-tracking model exists; no import pipeline)
 - [ ] WebSocket realtime rooms (see Deviations — deferred, REST snapshot polling used instead)
+
+### Frontend (`apps/mobile`)
+
+- [x] Expo Router + NativeWind v4 scaffold, design tokens sourced from `19_DESIGN_TOKEN_SHEET.json`, light/dark via CSS variables
+- [x] `components/ui` — Text, Button, Card, Avatar, Badge, Input, Textarea, Skeleton, Spinner, EmptyState, Sheet (`@gorhom/bottom-sheet`), StatChip
+- [x] `components/entity` — EntityHero, IdentityOverlay, StatChipRail, EntityTabs, SourceBadge, DisputeFootnote, RelatedEntities, EntityProfileShell (the shared Player/Team profile layout)
+- [x] `components/domain` — PlayerCard, TeamCard, GameScoreboard, GameStatusBadge, RosterList, FeedItemCard, FollowButton, ReactionBar, LiveEventPad, BoxScoreTable, MediaAttachForm
+- [x] SDK wiring — `lib/sdk.ts` (SecureStore-backed token, native `getToken` override), `lib/queryClient.ts`, `AuthGuard`
+- [x] All 13 product surfaces routed (see `docs/frontend-architecture.md` route map) — auth (login/register), Home/feed, Explore/search, Player Profile, Team Profile, Game Page, Live Capture, Spectator View, Enter, Disputes submission, Claims (request + admin queue), Me/Dashboard, Media attach (embedded component)
+- [ ] Offline event queueing for Live Capture (spec calls for it; not implemented — events submit directly over the network)
+- [ ] Public/anonymous browsing (whole `(tabs)` group currently requires auth)
+- [ ] Team/Game Sources & Disputes tabs (only stubbed on Player profile)
+- [ ] Rankings/leaderboards on Explore (no backend ranking endpoint yet)
+- [ ] No automated tests on the mobile app yet (no Playwright/Detox equivalent configured)
 
 ## Deviations from Defaults
 
@@ -115,43 +133,79 @@ Backend Phases 1–2 equivalent (Foundation + full domain API), done in 5 iterat
    time. Cheap fix, applied everywhere from iteration 2 onward — keep doing
    it for every new operation.
 
+9. **Auth responses include the raw token in the body, not just Set-Cookie.**
+   Discovered while wiring the Expo app: React Native has no reliable cookie
+   jar for the SDK's default httpOnly-cookie flow, and the SDK's native
+   `getToken` override needs *something* to read from storage. `register`/
+   `login` now return `{ data: user, token }` — web clients ignore `token`
+   (they rely on the cookie as before), native clients store it via
+   SecureStore. See `AuthResponse` in `components/schemas/auth.yaml`.
+
+10. **OpenAPI schema `required` arrays must list every field the service
+    layer always populates**, not just the "conceptually required" ones.
+    Discovered while typechecking the mobile app: fields left out of
+    `required` (even ones that are always present, like `GameStatLine.points`
+    or `Player.athleteProfile`) generate as `T | undefined` in
+    `packages/sdk/src/generated/types.ts`, forcing defensive `?.`/`!`
+    scattered through frontend code for values that can never actually be
+    missing. Fix at the schema, not in consuming code — see `games.yaml`'s
+    `GameStatLine`/`PlayerSeasonStat`/`Game` for the corrected pattern.
+
 ## Known Gaps / Parking Lot (explicitly deferred, not forgotten)
 
-- Admin frontend / any frontend at all (Expo next, per user).
 - WebSocket live-game rooms (REST polling stands in for now — see Deviation 3).
+- Offline event queueing on the Live Capture screen (spec calls for it, not built).
 - `/games/{gameId}/disputes` convenience route (docs mention it; generic
   `GET /disputes?targetType=&targetId=` covers the same data today).
 - School/Season dedicated detail pages/routes (`/schools/:slug`, `/seasons/:slug`)
   — models exist and are seeded, but no routes yet; not needed for the 2-team demo.
 - Imports pipeline (source-tracking model exists; no scraping/import job).
 - `pnpm lint` is a placeholder (`echo`) in every package — no ESLint config
-  was set up yet; not blocking for backend correctness but should happen
-  before this grows much further.
+  was set up yet; not blocking for correctness but should happen before this
+  grows much further.
 - Cursor pagination on `/teams`, `/leagues`, `/games` list endpoints — currently
   plain lists, fine at demo scale (2 teams, 1 league), will need it once real
   data volume shows up.
+- Public/anonymous browsing on mobile (whole tab group requires auth today).
+- Rankings/leaderboards on Explore (no backend ranking endpoint).
+- Mobile app has no automated tests (no Detox/Maestro/RNTL setup).
 
 ## Verified Working (as of last session)
 
 - `pnpm bootstrap` — clean run end to end
 - `pnpm spec:bundle && pnpm spec:lint` — 0 errors, 0 warnings
 - `pnpm sdk:generate && pnpm sdk:check` — no drift
-- `pnpm typecheck` — clean across all packages
-- `pnpm test` — **85/85 passing**, 15 test files, one per OpenAPI tag
+- `pnpm typecheck` — clean across **all** packages, including `apps/mobile`
+- `pnpm --filter server test` — **85/85 passing**, 15 test files, one per OpenAPI tag
 - `pnpm db:seed` — 1 admin user, basketball sport, 1 league, 2 teams, 20 players, all with roster memberships
-- Manual smoke test: register → login → me → logout; full game lifecycle
-  (create game → join as reporter ×2 → submit events → corroboration →
-  finalize → box score + season stats + team score) via curl
+- Manual smoke test (backend): register → login → me → logout; full game
+  lifecycle (create game → join as reporter ×2 → submit events →
+  corroboration → finalize → box score + season stats + team score) via curl
+- Mobile app: `npx expo-doctor` 17/18 (one harmless patch-version note),
+  `npx expo start --web` bundles clean (3351 modules, no Metro errors).
+  **Not** visually verified in a browser/simulator — this sandbox has no
+  headless browser or device/simulator available. Next session should open
+  it in an actual browser or Expo Go and click through the golden path
+  (login → Home → Explore → Player Profile → Live Capture) before trusting
+  the UI beyond "it compiles."
 
 ## Last Session Summary
 
-Built the entire backend from scratch across 8 tracked tasks: monorepo
-scaffold, full Prisma schema, then 5 feature iterations (Auth; Sports/Leagues/
-Teams/Players/Roster; Games/live capture/stat derivation; Media/Follow/
-Reaction/Feed; Sources/Verification/Disputes/Claims), finishing with
-bootstrap verification and this doc. Provisioned local MySQL databases
-(`statman_dev`, `statman_test`) since none existed. No frontend work done —
-next session should start Phase 3 (Expo app scaffold) per the user's explicit
-"backend first" instruction, installing `@statman/sdk` into a new
-`apps/mobile` Expo project and building auth + player list/profile screens
-first as the golden path.
+Backend session tagged `backend-mvp-v0`, then this session built the entire
+frontend IA/composition layer: Expo Router + NativeWind scaffold, design
+tokens from the docs bundle's token sheet, the full `ui`/`entity`/`domain`
+component libraries, SDK wiring for native (including a real backend fix —
+auth responses now carry the token in-body for SecureStore), and routed
+stubs for all 13 product surfaces with real data wired in wherever the
+screen is a straightforward read (Home, Explore, Player/Team/Game profiles,
+Live Capture, Spectator View). Two schema-level bugs were found and fixed
+by trying to actually typecheck against generated SDK types (Deviations 9
+and 10) rather than by inspection — that's the reason to always run
+`pnpm typecheck` after frontend changes, not just after backend ones.
+
+Next priorities, in rough order: (1) actually open the app in a browser/Expo
+Go and fix whatever the compile-only check couldn't catch, (2) wire the
+Team/Game Sources & Disputes tabs the same way Player's is stubbed, (3)
+decide whether to keep the whole tab group behind auth or build a public
+stack, (4) offline event queueing on Live Capture if the live-demo scenario
+needs to survive a dropped connection.

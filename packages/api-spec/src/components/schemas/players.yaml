@@ -30,7 +30,7 @@ RosterTeamSummary:
 
 Player:
   type: object
-  required: [id, athleteProfileId, sportId, status]
+  required: [id, athleteProfileId, sportId, status, athleteProfile]
   properties:
     id: { type: string }
     athleteProfileId: { type: string }
@@ -81,7 +81,7 @@ UpdatePlayerInput:
 
 RosterMembership:
   type: object
-  required: [id, playerId, teamId, seasonId, isActive]
+  required: [id, playerId, teamId, seasonId, isActive, player]
   properties:
     id: { type: string }
     playerId: { type: string }

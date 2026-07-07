@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Statman",
+    "slug": "statman",
+    "scheme": "statman",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "backgroundColor": "#FAFAF8",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "dev.statman.app"
+    },
+    "android": {
+      "package": "dev.statman.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

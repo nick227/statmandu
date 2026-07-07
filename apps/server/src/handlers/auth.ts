@@ -16,13 +16,16 @@ const COOKIE = {
 export async function register(request: any, reply: any) {
   const { user, token } = await authService.register(request.body)
   reply.setCookie('token', token, COOKIE)
-  return reply.status(201).send({ data: user })
+  // Cookie is for web; native clients have no cookie jar, so the raw token
+  // also goes in the body for them to store (e.g. SecureStore) and replay
+  // as a Bearer header — see packages/sdk/src/client.ts's getToken override.
+  return reply.status(201).send({ data: user, token })
 }
 
 export async function login(request: any, reply: any) {
   const { user, token } = await authService.login(request.body)
   reply.setCookie('token', token, COOKIE)
-  return reply.send({ data: user })
+  return reply.send({ data: user, token })
 }
 
 export async function logout(request: any, reply: any) {

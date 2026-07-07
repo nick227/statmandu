@@ -24,6 +24,8 @@ describe('register', () => {
     await validateResponse('register', 201, res.json())
     expect(res.json().data.email).toBe('newuser@example.com')
     expect(res.headers['set-cookie']).toBeDefined()
+    // Native clients have no cookie jar — the raw token must also be in the body.
+    expect(typeof res.json().token).toBe('string')
   })
 
   it('rejects a duplicate email', async () => {
@@ -56,6 +58,7 @@ describe('login', () => {
     expect(res.statusCode).toBe(200)
     await validateResponse('login', 200, res.json())
     expect(res.json().data.id).toBe(testUserId)
+    expect(typeof res.json().token).toBe('string')
   })
 
   it('rejects invalid credentials', async () => {

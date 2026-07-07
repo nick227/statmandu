@@ -40,3 +40,7 @@ AuthResponse:
   required: [data]
   properties:
     data: { $ref: '#/User' }
+    # Present on register/login only. Web clients ignore it (they rely on the
+    # httpOnly Set-Cookie header); native clients have no cookie jar, so they
+    # read this, store it (e.g. SecureStore), and inject it as a Bearer header.
+    token: { type: string }

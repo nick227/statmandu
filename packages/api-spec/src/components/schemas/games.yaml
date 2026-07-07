@@ -13,7 +13,7 @@ GameTeamSummary:
 
 Game:
   type: object
-  required: [id, sportId, scheduledAt, status]
+  required: [id, sportId, scheduledAt, status, gameTeams]
   properties:
     id: { type: string }
     sportId: { type: string }
@@ -128,7 +128,26 @@ GameSnapshot:
 
 GameStatLine:
   type: object
-  required: [id, gameId, playerId, teamId, points, sourceStatus]
+  required:
+    - id
+    - gameId
+    - playerId
+    - teamId
+    - points
+    - offRebounds
+    - defRebounds
+    - assists
+    - steals
+    - blocks
+    - turnovers
+    - fouls
+    - fgMade
+    - fgAttempted
+    - threeMade
+    - threeAttempted
+    - ftMade
+    - ftAttempted
+    - sourceStatus
   properties:
     id: { type: string }
     gameId: { type: string }
@@ -153,7 +172,25 @@ GameStatLine:
 
 PlayerSeasonStat:
   type: object
-  required: [id, playerId, seasonId, gamesPlayed]
+  required:
+    - id
+    - playerId
+    - seasonId
+    - gamesPlayed
+    - points
+    - offRebounds
+    - defRebounds
+    - assists
+    - steals
+    - blocks
+    - turnovers
+    - fouls
+    - fgMade
+    - fgAttempted
+    - threeMade
+    - threeAttempted
+    - ftMade
+    - ftAttempted
   properties:
     id: { type: string }
     playerId: { type: string }
