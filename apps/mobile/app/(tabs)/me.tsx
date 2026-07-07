@@ -1,5 +1,4 @@
 import { View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Link, useRouter } from 'expo-router'
 import { useCurrentUser, useLogout } from '@statman/sdk'
 import { Text } from '@/components/ui/Text'
@@ -7,12 +6,12 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
+import { Screen } from '@/components/layout'
 import { clearStoredToken } from '@/lib/sdk'
 
 // Me/Dashboard — surface 12: my profile, pending actions (disputes/claims
 // queue for admins), and account controls.
 export default function MeScreen() {
-  const insets = useSafeAreaInsets()
   const router = useRouter()
   const { data, isLoading } = useCurrentUser()
   const logout = useLogout()
@@ -29,7 +28,7 @@ export default function MeScreen() {
   const isAdmin = user?.role === 'ADMIN'
 
   return (
-    <View className="flex-1 bg-canvas gap-md p-lg" style={{ paddingTop: insets.top + 16 }}>
+    <Screen contentClassName="gap-md p-lg">
       <View className="flex-row items-center gap-md">
         <Avatar uri={user?.profile?.avatarUrl} fallback={user?.profile?.displayName ?? user?.email ?? '?'} size="lg" />
         <View>
@@ -69,6 +68,6 @@ export default function MeScreen() {
       >
         Log out
       </Button>
-    </View>
+    </Screen>
   )
 }

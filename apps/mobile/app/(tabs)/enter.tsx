@@ -1,11 +1,11 @@
 import { FlatList, Pressable, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Link } from 'expo-router'
 import { Radio } from 'lucide-react-native'
 import { useGames } from '@statman/sdk'
 import { Text } from '@/components/ui/Text'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Screen } from '@/components/layout'
 import { GameStatusBadge } from '@/components/domain'
 
 // Enter — surface 8. Fast entry point into live scoring for games a
@@ -14,15 +14,13 @@ import { GameStatusBadge } from '@/components/domain'
 // the same live-capture flow) rather than a separate form, per docs:
 // "Enter: fast stat and media input: live scoring, post-game stats..."
 export default function EnterScreen() {
-  const insets = useSafeAreaInsets()
   const { data, isLoading } = useGames({ status: 'SCHEDULED' })
   const liveGames = useGames({ status: 'LIVE' })
 
   const games = [...(liveGames.data?.data ?? []), ...(data?.data ?? [])]
 
   return (
-    <View className="flex-1 bg-canvas" style={{ paddingTop: insets.top }}>
-      <Text variant="entityName" className="px-lg pt-md pb-sm">Enter</Text>
+    <Screen title="Enter">
       {isLoading ? (
         <View className="gap-sm px-lg">
           {[0, 1].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
@@ -50,6 +48,6 @@ export default function EnterScreen() {
           }
         />
       )}
-    </View>
+    </Screen>
   )
 }

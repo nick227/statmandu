@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { View } from 'react-native'
+import { Stack } from 'expo-router'
 import { useOpenDispute } from '@statman/sdk'
 import { Text } from '@/components/ui/Text'
 import { Input } from '@/components/ui/Input'
@@ -23,6 +24,7 @@ export default function DisputesScreen() {
   if (submitted) {
     return (
       <View className="flex-1 bg-canvas items-center justify-center p-lg gap-sm">
+        <Stack.Screen options={{ headerShown: true, title: 'Disputes & Corrections' }} />
         <Text className="font-semibold text-center">Dispute submitted</Text>
         <Text variant="caption" className="text-center">A manager or admin will review it.</Text>
       </View>
@@ -31,7 +33,7 @@ export default function DisputesScreen() {
 
   return (
     <View className="flex-1 bg-canvas p-lg gap-md">
-      <Text variant="entityName" className="text-2xl">Submit a Correction</Text>
+      <Stack.Screen options={{ headerShown: true, title: 'Disputes & Corrections' }} />
       <View className="flex-row gap-sm">
         {TARGET_TYPES.map((t) => (
           <Button

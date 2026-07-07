@@ -1,11 +1,20 @@
 import { useState } from 'react'
 import { View } from 'react-native'
 import { Link, useRouter } from 'expo-router'
-import { useRegister } from '@statman/sdk'
+import { useRegister, ApiError } from '@statman/sdk'
 import { Text } from '@/components/ui/Text'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { setStoredToken } from '@/lib/sdk'
+
+function describeError(err: unknown): string {
+  if (err instanceof ApiError) return err.message || `Server error (${err.status})`
+  if (err instanceof TypeError && err.message === 'Network request failed') {
+    return 'Cannot reach the server — check EXPO_PUBLIC_API_URL and that the API is running'
+  }
+  if (err instanceof Error) return err.message
+  return 'Unknown error'
+}
 
 export default function RegisterScreen() {
   const router = useRouter()
@@ -22,8 +31,8 @@ export default function RegisterScreen() {
       const result = await register.mutateAsync({ email, username, displayName, password })
       if (result.token) await setStoredToken(result.token)
       router.replace('/(tabs)')
-    } catch {
-      setError('Could not create account — check your details and try again')
+    } catch (err) {
+      setError(describeError(err))
     }
   }
 

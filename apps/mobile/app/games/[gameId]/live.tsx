@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, Stack } from 'expo-router'
 import {
   useGame, useTeamRoster, useJoinGameAsReporter, useStartLiveGame,
   useSubmitGameEvent, useUndoGameEvent, useGameSnapshot, useFinalizeGame,
@@ -39,6 +39,7 @@ export default function LiveCaptureScreen() {
   if (isLoading || !gameRes) {
     return (
       <View className="flex-1 items-center justify-center bg-canvas">
+        <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
         <Spinner />
       </View>
     )
@@ -49,6 +50,7 @@ export default function LiveCaptureScreen() {
   if (!joinedRole) {
     return (
       <View className="flex-1 bg-canvas p-lg gap-md">
+        <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
         <Text variant="entityName" className="text-2xl">Join as...</Text>
         {ROLES.map((role) => (
           <Button
@@ -71,6 +73,7 @@ export default function LiveCaptureScreen() {
 
   return (
     <ScrollView className="flex-1 bg-canvas" contentContainerClassName="pb-xxl">
+      <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
       <GameScoreboard game={game} liveScoreByTeamId={score} />
 
       {game.status === 'SCHEDULED' ? (

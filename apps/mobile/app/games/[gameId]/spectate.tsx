@@ -1,5 +1,5 @@
 import { ScrollView, View } from 'react-native'
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, Stack } from 'expo-router'
 import { useGame, useGameSnapshot } from '@statman/sdk'
 import { Text } from '@/components/ui/Text'
 import { Spinner } from '@/components/ui/Spinner'
@@ -16,6 +16,7 @@ export default function SpectateScreen() {
   if (isLoading || !gameRes) {
     return (
       <View className="flex-1 items-center justify-center bg-canvas">
+        <Stack.Screen options={{ headerShown: true, title: 'Watch Live' }} />
         <Spinner />
       </View>
     )
@@ -25,6 +26,7 @@ export default function SpectateScreen() {
 
   return (
     <ScrollView className="flex-1 bg-canvas">
+      <Stack.Screen options={{ headerShown: true, title: 'Watch Live' }} />
       <GameScoreboard game={gameRes.data} liveScoreByTeamId={score} />
       <View className="px-lg py-md">
         <ReactionBar targetType="GAME" targetId={gameId} />

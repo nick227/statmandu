@@ -1,4 +1,5 @@
 import { FlatList, View } from 'react-native'
+import { Stack } from 'expo-router'
 import { UserCheck } from 'lucide-react-native'
 import { useClaims, useReviewClaim } from '@statman/sdk'
 import { Text } from '@/components/ui/Text'
@@ -13,7 +14,7 @@ export default function ClaimsQueueScreen() {
 
   return (
     <View className="flex-1 bg-canvas p-lg">
-      <Text variant="entityName" className="text-2xl pb-md">Pending Claims</Text>
+      <Stack.Screen options={{ headerShown: true, title: 'Pending Claims' }} />
       {isLoading ? null : (
         <FlatList
           data={data?.data ?? []}

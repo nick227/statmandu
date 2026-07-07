@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { View } from 'react-native'
-import { useLocalSearchParams, Link } from 'expo-router'
+import { useLocalSearchParams, Link, Stack } from 'expo-router'
 import { useGame, useGameStats } from '@statman/sdk'
 import { Text } from '@/components/ui/Text'
 import { Spinner } from '@/components/ui/Spinner'
@@ -30,15 +30,19 @@ export default function GamePageScreen() {
   if (isLoading || !gameRes) {
     return (
       <View className="flex-1 items-center justify-center bg-canvas">
+        <Stack.Screen options={{ headerShown: true, title: 'Game' }} />
         <Spinner />
       </View>
     )
   }
 
   const game = gameRes.data
+  const home = game.gameTeams.find((gt) => gt.isHome)?.team?.name
+  const away = game.gameTeams.find((gt) => !gt.isHome)?.team?.name
 
   return (
     <View className="flex-1 bg-canvas">
+      <Stack.Screen options={{ headerShown: true, title: home && away ? `${home} vs ${away}` : 'Game' }} />
       <GameScoreboard game={game} />
 
       <View className="flex-row gap-sm px-lg pb-sm">

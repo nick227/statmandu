@@ -18,9 +18,16 @@ const spec = load(readFileSync(specPath, 'utf-8')) as object
 async function main() {
   // CORS — must be first so preflight OPTIONS requests are handled before routing
   // credentials: true required for httpOnly cookie auth across origins
-  // In production set CORS_ORIGIN to the deployed frontend URL
+  // In production set CORS_ORIGIN to the deployed frontend URL.
+  // In dev, allow any localhost/127.0.0.1 origin regardless of port — Vite,
+  // Expo web, and Metro's own dev server all pick different default ports
+  // (5173, 8081, ...), and hardcoding one is a recurring source of CORS
+  // failures that look like a broken network request client-side.
+  const isProduction = process.env.NODE_ENV === 'production'
   await server.register(cors, {
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+    origin: isProduction
+      ? (process.env.CORS_ORIGIN ?? false)
+      : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/],
     credentials: true,
   })
 
