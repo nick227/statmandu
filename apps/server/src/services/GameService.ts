@@ -77,9 +77,10 @@ export class GameService {
   }
 
   async startLive(gameId: string, userId: string) {
-    const reporter = await this._requirePrivilegedReporter(gameId, userId)
-    const game = await db.game.findUnique({ where: { id: reporter.gameId } })
-    if (!game) throw { statusCode: 404, message: 'Game not found' }
+    // _requirePrivilegedReporter already looks up the reporter row (which has
+    // a gameId FK), so re-fetching the game here would just confirm what the
+    // update below already guarantees — the update throws P2025 if it's gone.
+    await this._requirePrivilegedReporter(gameId, userId)
 
     return db.game.update({
       where: { id: gameId },
@@ -180,10 +181,14 @@ export class GameService {
     const game = await db.game.findUnique({ where: { id: gameId }, include: GAME_INCLUDE })
     if (!game) throw { statusCode: 404, message: 'Game not found' }
 
-    const events = await db.gameEvent.findMany({
-      where: { gameId, status: { in: ['ACCEPTED', 'PENDING'] } },
-      orderBy: { clientTimestamp: 'desc' },
-    })
+    // Independent of each other and of `game` beyond the id — fetch in parallel.
+    const [events, reporterCount] = await Promise.all([
+      db.gameEvent.findMany({
+        where: { gameId, status: { in: ['ACCEPTED', 'PENDING'] } },
+        orderBy: { clientTimestamp: 'desc' },
+      }),
+      db.gameReporter.count({ where: { gameId } }),
+    ])
 
     const score = new Map<string, number>()
     for (const gt of game.gameTeams) score.set(gt.teamId, 0)
@@ -192,8 +197,6 @@ export class GameService {
       const points = POINTS_BY_EVENT_TYPE[e.type] ?? 0
       if (points) score.set(e.teamId, (score.get(e.teamId) ?? 0) + points)
     }
-
-    const reporterCount = await db.gameReporter.count({ where: { gameId } })
 
     return {
       gameId,
@@ -229,6 +232,9 @@ export class GameService {
     const conflictingGroups = await db.gameConsensusGroup.findMany({ where: { gameId, status: 'CONFLICTING' } })
 
     const lines = new Map<string, any>()
+    const teamScores = new Map<string, number>()
+    for (const gt of game.gameTeams) teamScores.set(gt.teamId, 0)
+
     const ensureLine = (playerId: string, teamId: string) => {
       if (!lines.has(playerId)) {
         lines.set(playerId, {
@@ -243,12 +249,16 @@ export class GameService {
     for (const e of events) {
       if (!e.playerId || !e.teamId) continue
       const line = ensureLine(e.playerId, e.teamId)
+      const addPoints = (n: number) => {
+        line.points += n
+        teamScores.set(e.teamId!, (teamScores.get(e.teamId!) ?? 0) + n)
+      }
       switch (e.type) {
-        case 'FT_MADE': line.points += 1; line.ftMade += 1; line.ftAttempted += 1; break
+        case 'FT_MADE': addPoints(1); line.ftMade += 1; line.ftAttempted += 1; break
         case 'FT_MISS': line.ftAttempted += 1; break
-        case 'FG2_MADE': line.points += 2; line.fgMade += 1; line.fgAttempted += 1; break
+        case 'FG2_MADE': addPoints(2); line.fgMade += 1; line.fgAttempted += 1; break
         case 'FG2_MISS': line.fgAttempted += 1; break
-        case 'FG3_MADE': line.points += 3; line.fgMade += 1; line.fgAttempted += 1; line.threeMade += 1; line.threeAttempted += 1; break
+        case 'FG3_MADE': addPoints(3); line.fgMade += 1; line.fgAttempted += 1; line.threeMade += 1; line.threeAttempted += 1; break
         case 'FG3_MISS': line.fgAttempted += 1; line.threeAttempted += 1; break
         case 'REBOUND_OFF': line.offRebounds += 1; break
         case 'REBOUND_DEF': line.defRebounds += 1; break
@@ -261,8 +271,10 @@ export class GameService {
     }
 
     const disputedPlayerIds = new Set<string>()
-    for (const group of conflictingGroups) {
-      const groupEvents = await db.gameEvent.findMany({ where: { consensusGroupId: group.id } })
+    if (conflictingGroups.length > 0) {
+      const groupEvents = await db.gameEvent.findMany({
+        where: { consensusGroupId: { in: conflictingGroups.map((g) => g.id) } },
+      })
       for (const e of groupEvents) if (e.playerId) disputedPlayerIds.add(e.playerId)
     }
 
@@ -291,8 +303,9 @@ export class GameService {
           })
         }
 
-        const player = await tx.player.findUnique({ where: { id: playerId } })
-        if (player && game.seasonId) {
+        // playerId came from GameEvent.playerId, an enforced FK to Player —
+        // no need to re-verify it exists before using it.
+        if (game.seasonId) {
           await tx.playerSeasonStat.upsert({
             where: { playerId_seasonId: { playerId, seasonId: game.seasonId } },
             update: {
@@ -336,10 +349,7 @@ export class GameService {
       }
 
       for (const gt of game.gameTeams) {
-        const teamScore = [...lines.values()]
-          .filter((l) => l.teamId === gt.teamId)
-          .reduce((sum, l) => sum + l.points, 0)
-        await tx.gameTeam.update({ where: { id: gt.id }, data: { finalScore: teamScore } })
+        await tx.gameTeam.update({ where: { id: gt.id }, data: { finalScore: teamScores.get(gt.teamId) ?? 0 } })
       }
     })
 

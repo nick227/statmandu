@@ -30,13 +30,14 @@ export class TeamService {
   }
 
   async addRosterMember(teamId: string, data: { playerId: string; seasonId: string; jerseyNumber?: number }) {
-    const team = await db.team.findUnique({ where: { id: teamId } })
+    // None of these three lookups depend on each other — run them concurrently.
+    const [team, player, season] = await Promise.all([
+      db.team.findUnique({ where: { id: teamId } }),
+      db.player.findUnique({ where: { id: data.playerId } }),
+      db.season.findUnique({ where: { id: data.seasonId } }),
+    ])
     if (!team) throw { statusCode: 404, message: 'Team not found' }
-
-    const player = await db.player.findUnique({ where: { id: data.playerId } })
     if (!player) throw { statusCode: 404, message: 'Player not found' }
-
-    const season = await db.season.findUnique({ where: { id: data.seasonId } })
     if (!season) throw { statusCode: 404, message: 'Season not found' }
 
     return db.rosterMembership.create({
