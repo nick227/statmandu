@@ -1,0 +1,41 @@
+PaginatedMeta:
+  type: object
+  required: [hasMore, nextCursor]
+  properties:
+    hasMore: { type: boolean }
+    nextCursor:
+      type: ['string', 'null']
+
+ErrorResponse:
+  type: object
+  required: [error]
+  properties:
+    error: { type: string }
+    code: { type: string }
+
+SourceStatus:
+  type: string
+  enum:
+    - SELF_REPORTED
+    - TEAM_ENTERED
+    - MANAGER_APPROVED
+    - IMPORTED_SOURCE
+    - SCRAPED_PUBLIC
+    - VERIFIED
+    - IN_DISPUTE
+
+EntityType:
+  type: string
+  description: Shared polymorphic target vocabulary (mirrors the Prisma EntityType enum).
+  enum:
+    - PLAYER
+    - TEAM
+    - GAME
+    - FEED_ITEM
+    - ATHLETE_PROFILE
+    - GAME_STAT_LINE
+    - GAME_EVENT
+    - PROFILE_FIELD
+    - SOURCE_REFERENCE
+    - PLAYER_SEASON_STAT
+    - TEAM_SEASON_STAT

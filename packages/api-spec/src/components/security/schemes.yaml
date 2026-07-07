@@ -1,0 +1,11 @@
+bearerAuth:
+  type: http
+  scheme: bearer
+  description: >
+    httpOnly session cookie on web (Set-Cookie: token=...); Bearer header
+    fallback for native app contexts without cookie storage.
+
+adminAuth:
+  type: http
+  scheme: bearer
+  description: Extends bearerAuth with an ADMIN role check.

@@ -1,0 +1,55 @@
+{
+  "color": {
+    "canvas": "#FAFAF8",
+    "surface": "#FFFFFF",
+    "text": "#111111",
+    "mutedText": "#6B7280",
+    "border": "#E5E7EB",
+    "brand": "#1D4ED8",
+    "live": "#EF4444",
+    "verified": "#16A34A",
+    "dispute": "#F59E0B",
+    "imported": "#6366F1"
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "xxl": 48
+  },
+  "radius": {
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "pill": 999
+  },
+  "typography": {
+    "entityName": {
+      "fontSize": 36,
+      "fontWeight": "700",
+      "lineHeight": 40
+    },
+    "statValue": {
+      "fontSize": 32,
+      "fontWeight": "700",
+      "lineHeight": 36
+    },
+    "statLabel": {
+      "fontSize": 11,
+      "fontWeight": "600",
+      "letterSpacing": 0.6
+    },
+    "body": {
+      "fontSize": 16,
+      "lineHeight": 24
+    }
+  },
+  "motion": {
+    "sheetSnapMs": 260,
+    "cardPressMs": 120,
+    "pageTransitionMs": 220,
+    "liveEventFeedbackMs": 160
+  }
+}

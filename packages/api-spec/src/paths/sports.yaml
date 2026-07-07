@@ -1,0 +1,23 @@
+list:
+  get:
+    operationId: listSports
+    summary: List all sports
+    security: []
+    tags: [sports]
+    responses:
+      '200':
+        description: All configured sports
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/sports.yaml#/Sport' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }

@@ -1,0 +1,11 @@
+{
+  "name": "@statman/api-spec",
+  "version": "0.0.1",
+  "main": "./openapi.yaml",
+  "scripts": {
+    "bundle": "redocly bundle src/root.yaml -o openapi.yaml --ext yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.25.0"
+  }
+}

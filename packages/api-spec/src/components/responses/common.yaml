@@ -1,0 +1,11 @@
+Unauthorized:
+  description: Not authenticated
+  content:
+    application/json:
+      schema: { $ref: '../schemas/common.yaml#/ErrorResponse' }
+
+NotFound:
+  description: Resource not found
+  content:
+    application/json:
+      schema: { $ref: '../schemas/common.yaml#/ErrorResponse' }

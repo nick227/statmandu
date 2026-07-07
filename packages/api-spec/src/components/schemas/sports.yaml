@@ -1,0 +1,30 @@
+Sport:
+  type: object
+  required: [id, slug, name]
+  properties:
+    id: { type: string }
+    slug: { type: string }
+    name: { type: string }
+
+League:
+  type: object
+  required: [id, slug, name, sportId]
+  properties:
+    id: { type: string }
+    slug: { type: string }
+    name: { type: string }
+    sportId: { type: string }
+    sport: { $ref: '#/Sport' }
+
+Team:
+  type: object
+  required: [id, slug, name, sportId, leagueId]
+  properties:
+    id: { type: string }
+    slug: { type: string }
+    name: { type: string }
+    city: { type: ['string', 'null'] }
+    logoUrl: { type: ['string', 'null'] }
+    sportId: { type: string }
+    leagueId: { type: string }
+    league: { $ref: '#/League' }

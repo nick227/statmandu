@@ -1,0 +1,676 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Auth / account identity
+// User = login/identity. Profile = public app identity (username, avatar).
+// AthleteProfile (below) is a separate, claimable, sport-agnostic public
+// entity — a User does not get one automatically at registration.
+// ─────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         UserRole  @default(USER)
+  suspendedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  profile          Profile?
+  sessions         Session[]
+  claimedProfile   AthleteProfile?  @relation("ClaimedProfile")
+  gameReporters    GameReporter[]
+  follows          Follow[]
+  reactions        Reaction[]
+  disputesFiled    Dispute[]        @relation("DisputeSubmitter")
+  disputesResolved Dispute[]        @relation("DisputeResolver")
+  claimsRequested  Claim[]          @relation("ClaimRequester")
+  claimsReviewed   Claim[]          @relation("ClaimReviewer")
+  mediaAssets      MediaAsset[]
+
+  @@index([createdAt])
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  username    String   @unique
+  displayName String
+  bio         String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([token])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Shared vocabulary
+// ─────────────────────────────────────────────────────────────────────────
+
+// Provenance ladder for any stat, profile field, or record. Drives the
+// verification badge shown on public entity pages.
+enum SourceStatus {
+  SELF_REPORTED
+  TEAM_ENTERED
+  MANAGER_APPROVED
+  IMPORTED_SOURCE
+  SCRAPED_PUBLIC
+  VERIFIED
+  IN_DISPUTE
+}
+
+// One polymorphic target vocabulary reused by MediaAsset, Follow, Reaction,
+// Dispute, FeedItem, and SourceReference — keeps target-type semantics
+// consistent instead of re-declaring a near-identical enum per model.
+enum EntityType {
+  PLAYER
+  TEAM
+  GAME
+  FEED_ITEM
+  ATHLETE_PROFILE
+  GAME_STAT_LINE
+  GAME_EVENT
+  PROFILE_FIELD
+  SOURCE_REFERENCE
+  PLAYER_SEASON_STAT
+  TEAM_SEASON_STAT
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Sport / organizational hierarchy
+// ─────────────────────────────────────────────────────────────────────────
+
+model Sport {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leagues League[]
+  teams   Team[]
+  players Player[]
+  games   Game[]
+}
+
+model League {
+  id        String   @id @default(cuid())
+  sportId   String
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sport   Sport    @relation(fields: [sportId], references: [id])
+  teams   Team[]
+  seasons Season[]
+  games   Game[]
+
+  @@index([sportId])
+}
+
+model School {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  city      String?
+  state     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teams Team[]
+}
+
+model Season {
+  id        String    @id @default(cuid())
+  leagueId  String
+  slug      String    @unique
+  name      String
+  startDate DateTime?
+  endDate   DateTime?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  league            League              @relation(fields: [leagueId], references: [id])
+  games             Game[]
+  rosterMemberships RosterMembership[]
+  playerSeasonStats PlayerSeasonStat[]
+  teamSeasonStats   TeamSeasonStat[]
+
+  @@index([leagueId])
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  sportId   String
+  leagueId  String
+  schoolId  String?
+  slug      String   @unique
+  name      String
+  city      String?
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sport             Sport               @relation(fields: [sportId], references: [id])
+  league            League              @relation(fields: [leagueId], references: [id])
+  school            School?             @relation(fields: [schoolId], references: [id])
+  rosterMemberships RosterMembership[]
+  gameTeams         GameTeam[]
+  seasonStats       TeamSeasonStat[]
+  gameReporters     GameReporter[]
+
+  @@index([sportId])
+  @@index([leagueId])
+  @@index([schoolId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Athlete identity — public, claimable, sport-agnostic.
+// A Player row is the sport-specific attachment of an AthleteProfile
+// (position, class year, jersey). One profile can have a Player row per
+// sport in the future; MVP only ever creates one (basketball).
+// ─────────────────────────────────────────────────────────────────────────
+
+model AthleteProfile {
+  id             String       @id @default(cuid())
+  slug           String       @unique
+  firstName      String
+  lastName       String
+  bio            String?
+  hometown       String?
+  avatarUrl      String?
+  sourceStatus   SourceStatus @default(SELF_REPORTED)
+  claimedByUserId String?     @unique
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  claimedByUser User?    @relation("ClaimedProfile", fields: [claimedByUserId], references: [id])
+  players       Player[]
+  claims        Claim[]
+
+  @@index([createdAt])
+}
+
+enum PlayerPosition {
+  PG
+  SG
+  SF
+  PF
+  C
+}
+
+enum PlayerStatus {
+  ACTIVE
+  INACTIVE
+  GRADUATED
+}
+
+model Player {
+  id               String         @id @default(cuid())
+  athleteProfileId String
+  sportId          String
+  position         PlayerPosition?
+  classYear        String?
+  jerseyNumber     Int?
+  heightInches     Int?
+  status           PlayerStatus   @default(ACTIVE)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  athleteProfile    AthleteProfile      @relation(fields: [athleteProfileId], references: [id])
+  sport             Sport               @relation(fields: [sportId], references: [id])
+  rosterMemberships RosterMembership[]
+  seasonStats       PlayerSeasonStat[]
+  gameStatLines     GameStatLine[]
+  gameEvents        GameEvent[]
+
+  @@unique([athleteProfileId, sportId])
+  @@index([sportId])
+}
+
+model RosterMembership {
+  id           String    @id @default(cuid())
+  playerId     String
+  teamId       String
+  seasonId     String
+  jerseyNumber Int?
+  isActive     Boolean   @default(true)
+  joinedAt     DateTime  @default(now())
+  leftAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id])
+  team   Team   @relation(fields: [teamId], references: [id])
+  season Season @relation(fields: [seasonId], references: [id])
+
+  @@unique([playerId, teamId, seasonId])
+  @@index([teamId, seasonId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Games and live event capture
+// Raw event log is never collapsed directly into final totals — see
+// GameEvent → GameConsensusGroup → GameStatLine separation below.
+// ─────────────────────────────────────────────────────────────────────────
+
+enum GameStatus {
+  SCHEDULED
+  LIVE
+  FINAL
+  DISPUTED
+}
+
+model Game {
+  id          String     @id @default(cuid())
+  sportId     String
+  leagueId    String?
+  seasonId    String?
+  scheduledAt DateTime
+  venue       String?
+  status      GameStatus @default(SCHEDULED)
+  startedAt   DateTime?
+  finalizedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  sport            Sport             @relation(fields: [sportId], references: [id])
+  league           League?           @relation(fields: [leagueId], references: [id])
+  season           Season?           @relation(fields: [seasonId], references: [id])
+  gameTeams        GameTeam[]
+  reporters        GameReporter[]
+  events           GameEvent[]
+  consensusGroups  GameConsensusGroup[]
+  statLines        GameStatLine[]
+
+  @@index([sportId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model GameTeam {
+  id         String @id @default(cuid())
+  gameId     String
+  teamId     String
+  isHome     Boolean
+  finalScore Int?
+
+  game Game @relation(fields: [gameId], references: [id])
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@unique([gameId, teamId])
+  @@index([teamId])
+}
+
+enum GameReporterRole {
+  ADMIN_OWNER
+  OFFICIAL_SCORER
+  TEAM_SCORER
+  BROADCASTER
+  CONTRIBUTOR
+  SPECTATOR_REPORTER
+  VIEWER
+}
+
+model GameReporter {
+  id        String           @id @default(cuid())
+  gameId    String
+  userId    String
+  teamId    String?
+  role      GameReporterRole
+  joinedAt  DateTime         @default(now())
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  game       Game        @relation(fields: [gameId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
+  team       Team?       @relation(fields: [teamId], references: [id])
+  gameEvents GameEvent[]
+
+  @@unique([gameId, userId])
+  @@index([gameId, role])
+}
+
+enum GameEventType {
+  FT_MADE
+  FT_MISS
+  FG2_MADE
+  FG2_MISS
+  FG3_MADE
+  FG3_MISS
+  REBOUND_OFF
+  REBOUND_DEF
+  ASSIST
+  STEAL
+  BLOCK
+  TURNOVER
+  FOUL
+  SUBSTITUTION_IN
+  SUBSTITUTION_OUT
+}
+
+enum GameEventStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CONFLICTING
+  CORRECTED
+  DISPUTED
+  FINALIZED
+}
+
+model GameEvent {
+  id               String          @id @default(cuid())
+  gameId           String
+  reporterId       String
+  playerId         String?
+  teamId           String?
+  type             GameEventType
+  payload          Json?
+  clientTimestamp  DateTime
+  deviceId         String?
+  status           GameEventStatus @default(PENDING)
+  consensusGroupId String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  game           Game                @relation(fields: [gameId], references: [id])
+  reporter       GameReporter        @relation(fields: [reporterId], references: [id])
+  player         Player?             @relation(fields: [playerId], references: [id])
+  consensusGroup GameConsensusGroup? @relation(fields: [consensusGroupId], references: [id])
+
+  @@index([gameId, status])
+  @@index([gameId, playerId])
+  @@index([consensusGroupId])
+}
+
+enum ConsensusStatus {
+  PENDING
+  CONFIRMED
+  CONFLICTING
+  RESOLVED
+}
+
+model GameConsensusGroup {
+  id              String          @id @default(cuid())
+  gameId          String
+  groupKey        String
+  status          ConsensusStatus @default(PENDING)
+  resolvedEventId String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  game   Game        @relation(fields: [gameId], references: [id])
+  events GameEvent[]
+
+  @@index([gameId, status])
+}
+
+// Resolved, display-ready box score line — produced by end-game
+// reconciliation. Never written directly; only derived from GameEvents.
+model GameStatLine {
+  id             String       @id @default(cuid())
+  gameId         String
+  playerId       String
+  teamId         String
+  points         Int          @default(0)
+  offRebounds    Int          @default(0)
+  defRebounds    Int          @default(0)
+  assists        Int          @default(0)
+  steals         Int          @default(0)
+  blocks         Int          @default(0)
+  turnovers      Int          @default(0)
+  fouls          Int          @default(0)
+  fgMade         Int          @default(0)
+  fgAttempted    Int          @default(0)
+  threeMade      Int          @default(0)
+  threeAttempted Int          @default(0)
+  ftMade         Int          @default(0)
+  ftAttempted    Int          @default(0)
+  sourceStatus   SourceStatus @default(TEAM_ENTERED)
+  disputeNote    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  game   Game   @relation(fields: [gameId], references: [id])
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@unique([gameId, playerId])
+  @@index([teamId])
+}
+
+model PlayerSeasonStat {
+  id             String   @id @default(cuid())
+  playerId       String
+  seasonId       String
+  gamesPlayed    Int      @default(0)
+  points         Int      @default(0)
+  offRebounds    Int      @default(0)
+  defRebounds    Int      @default(0)
+  assists        Int      @default(0)
+  steals         Int      @default(0)
+  blocks         Int      @default(0)
+  turnovers      Int      @default(0)
+  fouls          Int      @default(0)
+  fgMade         Int      @default(0)
+  fgAttempted    Int      @default(0)
+  threeMade      Int      @default(0)
+  threeAttempted Int      @default(0)
+  ftMade         Int      @default(0)
+  ftAttempted    Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id])
+  season Season @relation(fields: [seasonId], references: [id])
+
+  @@unique([playerId, seasonId])
+}
+
+model TeamSeasonStat {
+  id            String   @id @default(cuid())
+  teamId        String
+  seasonId      String
+  wins          Int      @default(0)
+  losses        Int      @default(0)
+  pointsFor     Int      @default(0)
+  pointsAgainst Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  team   Team   @relation(fields: [teamId], references: [id])
+  season Season @relation(fields: [seasonId], references: [id])
+
+  @@unique([teamId, seasonId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Media (YouTube-only for MVP)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum MediaAssetType {
+  YOUTUBE
+}
+
+model MediaAsset {
+  id              String         @id @default(cuid())
+  type            MediaAssetType @default(YOUTUBE)
+  youtubeVideoId  String
+  title           String?
+  targetType      EntityType
+  targetId        String
+  uploadedByUserId String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  uploadedByUser User? @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([targetType, targetId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Source tracking, verification, disputes, claims
+// ─────────────────────────────────────────────────────────────────────────
+
+enum ReferenceSourceType {
+  IMPORTED_SOURCE
+  SCRAPED_PUBLIC
+  MANUAL
+}
+
+model SourceReference {
+  id         String              @id @default(cuid())
+  targetType EntityType
+  targetId   String
+  sourceType ReferenceSourceType
+  url        String?
+  label      String?
+  importedAt DateTime?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@index([targetType, targetId])
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+model Dispute {
+  id                String        @id @default(cuid())
+  targetType        EntityType
+  targetId          String
+  fieldName         String?
+  submittedByUserId String
+  description       String        @db.Text
+  proposedValue     String?
+  status            DisputeStatus @default(OPEN)
+  resolutionNote    String?
+  resolvedByUserId  String?
+  resolvedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  submittedByUser User  @relation("DisputeSubmitter", fields: [submittedByUserId], references: [id])
+  resolvedByUser  User? @relation("DisputeResolver", fields: [resolvedByUserId], references: [id])
+
+  @@index([targetType, targetId])
+  @@index([status])
+}
+
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Claim {
+  id                String      @id @default(cuid())
+  athleteProfileId  String
+  requestedByUserId String
+  verificationNote  String?
+  status            ClaimStatus @default(PENDING)
+  reviewedByUserId  String?
+  reviewedAt        DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  athleteProfile  AthleteProfile @relation(fields: [athleteProfileId], references: [id])
+  requestedByUser User           @relation("ClaimRequester", fields: [requestedByUserId], references: [id])
+  reviewedByUser  User?          @relation("ClaimReviewer", fields: [reviewedByUserId], references: [id])
+
+  @@index([athleteProfileId, status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Social layer — follow, react, feed
+// ─────────────────────────────────────────────────────────────────────────
+
+model Follow {
+  id         String     @id @default(cuid())
+  followerId String
+  targetType EntityType
+  targetId   String
+  createdAt  DateTime   @default(now())
+
+  follower User @relation(fields: [followerId], references: [id])
+
+  @@unique([followerId, targetType, targetId])
+  @@index([targetType, targetId])
+}
+
+enum ReactionType {
+  LIKE
+  FIRE
+  CLAP
+}
+
+model Reaction {
+  id         String       @id @default(cuid())
+  userId     String
+  targetType EntityType
+  targetId   String
+  type       ReactionType @default(LIKE)
+  createdAt  DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+}
+
+enum FeedItemType {
+  GAME_FINAL
+  STAT_MILESTONE
+  MEDIA_ADDED
+  PLAYER_JOINED_TEAM
+  PROFILE_CLAIMED
+  DISPUTE_RESOLVED
+}
+
+model FeedItem {
+  id         String       @id @default(cuid())
+  type       FeedItemType
+  targetType EntityType
+  targetId   String
+  summary    String
+  occurredAt DateTime
+  createdAt  DateTime     @default(now())
+
+  @@index([occurredAt])
+  @@index([targetType, targetId])
+}

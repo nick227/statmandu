@@ -1,0 +1,182 @@
+reporters:
+  post:
+    operationId: joinGameAsReporter
+    summary: Join a game as a scorekeeper/broadcaster/spectator reporter
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/games.yaml#/JoinReporterInput' }
+    responses:
+      '201':
+        description: Reporter registered
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/GameReporter' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+startLive:
+  post:
+    operationId: startLiveGame
+    summary: Transition a game to LIVE (official scorer or admin reporter only)
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Game now live
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/Game' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not a registered reporter with permission to start the game
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+events:
+  post:
+    operationId: submitGameEvent
+    summary: Submit a raw live-game event (offline-queueable by the client)
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/games.yaml#/SubmitGameEventInput' }
+    responses:
+      '201':
+        description: Event recorded (status reflects consensus so far)
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/GameEvent' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not a registered reporter for this game
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+event:
+  delete:
+    operationId: undoGameEvent
+    summary: Undo an event submitted by the calling reporter
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: eventId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Event marked rejected (kept in the raw log, not deleted)
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/GameEvent' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not the reporter who submitted this event
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+snapshot:
+  get:
+    operationId: getGameSnapshot
+    summary: Live score, recent events, and reporter presence (poll for realtime-lite updates)
+    security: []
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Snapshot
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/GameSnapshot' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+finalize:
+  post:
+    operationId: finalizeGame
+    summary: Run end-of-game reconciliation and publish the final box score
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Game finalized
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/Game' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not a registered reporter with permission to finalize
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'

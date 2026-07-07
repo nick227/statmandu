@@ -1,0 +1,178 @@
+collection:
+  get:
+    operationId: listPlayers
+    summary: List and search players
+    security: []
+    tags: [players]
+    parameters:
+      - $ref: '../components/parameters/common.yaml#/Cursor'
+      - $ref: '../components/parameters/common.yaml#/Limit'
+      - $ref: '../components/parameters/common.yaml#/SearchQuery'
+      - in: query
+        name: sportSlug
+        schema: { type: string }
+      - in: query
+        name: teamSlug
+        schema: { type: string }
+      - in: query
+        name: position
+        schema: { $ref: '../components/schemas/players.yaml#/PlayerPosition' }
+      - in: query
+        name: classYear
+        schema: { type: string }
+    responses:
+      '200':
+        description: Paginated players
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/players.yaml#/PaginatedPlayers' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+  post:
+    operationId: createPlayer
+    summary: Create a new athlete profile and player (self-onboarding)
+    tags: [players]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/players.yaml#/CreatePlayerInput' }
+    responses:
+      '201':
+        description: Player created
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/players.yaml#/Player' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+item:
+  get:
+    operationId: getPlayer
+    summary: Get a player by id
+    security: []
+    tags: [players]
+    parameters:
+      - in: path
+        name: playerId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Player
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/players.yaml#/Player' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+  patch:
+    operationId: updatePlayer
+    summary: Update a player (owner of the claimed profile, or admin)
+    tags: [players]
+    parameters:
+      - in: path
+        name: playerId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/players.yaml#/UpdatePlayerInput' }
+    responses:
+      '200':
+        description: Updated player
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/players.yaml#/Player' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not the claimed owner or an admin
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+claim:
+  post:
+    operationId: claimPlayer
+    summary: Request to claim an unclaimed athlete profile
+    tags: [claims]
+    parameters:
+      - in: path
+        name: playerId
+        required: true
+        schema: { type: string }
+    requestBody:
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/verification.yaml#/ClaimPlayerInput' }
+    responses:
+      '201':
+        description: Claim submitted for review
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/verification.yaml#/Claim' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+verify:
+  post:
+    operationId: verifyPlayer
+    summary: Set a player's source/verification status (admin only)
+    security: [{ adminAuth: [] }]
+    tags: [players]
+    parameters:
+      - in: path
+        name: playerId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/verification.yaml#/VerifyPlayerInput' }
+    responses:
+      '200':
+        description: Player verification status updated
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/players.yaml#/Player' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Admin only
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'

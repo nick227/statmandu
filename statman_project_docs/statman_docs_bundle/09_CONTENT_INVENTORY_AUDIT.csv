@@ -1,0 +1,11 @@
+Content/Asset,Type,Surface,Owner,Status,Notes
+Homepage hero copy,Copy,Home,Product,Needed,"Position around top athletes, big games, freshest content"
+Player profile sample photos,Media,Entity profiles,Design,Needed,Use demo basketball athletes or generated placeholders
+YouTube highlight links,Media,Player profiles,Content,Needed,MVP uses YouTube only
+Basketball stat labels,Data/content,Stats/live game,Product,Draft,"PPG, REB, AST, STL, BLK, TO, FG%, 3P%"
+Verification badge labels,Copy/UI,Profiles,Product,Draft,"Self-reported, Team entered, Imported, Verified, In dispute"
+Dispute footnote copy,Copy/UI,Game/player stats,Product,Draft,Compact explanation for unresolved stats
+Demo league logo,Asset,League profile,Design,Needed,Optional
+Demo team logos,Asset,Team profiles,Design,Needed,Two teams
+Admin empty states,Copy,Admin,Product,Needed,"Claims, disputes, imports"
+Share card templates,Design/content,Social sharing,Design,Needed,Big game and milestone cards

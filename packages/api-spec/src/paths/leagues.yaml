@@ -1,0 +1,51 @@
+list:
+  get:
+    operationId: listLeagues
+    summary: List leagues
+    security: []
+    tags: [leagues]
+    parameters:
+      - in: query
+        name: sportSlug
+        schema: { type: string }
+    responses:
+      '200':
+        description: Leagues
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/sports.yaml#/League' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+get:
+  get:
+    operationId: getLeague
+    summary: Get a league by slug
+    security: []
+    tags: [leagues]
+    parameters:
+      - in: path
+        name: leagueSlug
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: League
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/sports.yaml#/League' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.test
+**/.env
+**/.env.test
+*.log
+.DS_Store
+packages/sdk/src/generated/types.ts.tmp
+packages/api-spec/openapi.yaml
+.turbo/
+coverage/

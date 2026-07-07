@@ -1,0 +1,88 @@
+MediaAsset:
+  type: object
+  required: [id, type, youtubeVideoId, targetType, targetId]
+  properties:
+    id: { type: string }
+    type: { type: string, enum: [YOUTUBE] }
+    youtubeVideoId: { type: string }
+    title: { type: ['string', 'null'] }
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+
+AttachYouTubeInput:
+  type: object
+  required: [targetType, targetId, youtubeUrl]
+  properties:
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+    youtubeUrl: { type: string, format: uri }
+    title: { type: string, maxLength: 200 }
+
+Follow:
+  type: object
+  required: [id, followerId, targetType, targetId]
+  properties:
+    id: { type: string }
+    followerId: { type: string }
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+
+CreateFollowInput:
+  type: object
+  required: [targetType, targetId]
+  properties:
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+
+ReactionType:
+  type: string
+  enum: [LIKE, FIRE, CLAP]
+
+Reaction:
+  type: object
+  required: [id, userId, targetType, targetId, type]
+  properties:
+    id: { type: string }
+    userId: { type: string }
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+    type: { $ref: '#/ReactionType' }
+
+CreateReactionInput:
+  type: object
+  required: [targetType, targetId, type]
+  properties:
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+    type: { $ref: '#/ReactionType' }
+
+ReactionCounts:
+  type: object
+  required: [total, byType]
+  properties:
+    total: { type: integer }
+    byType:
+      type: object
+      additionalProperties: { type: integer }
+
+FeedItem:
+  type: object
+  required: [id, type, targetType, targetId, summary, occurredAt]
+  properties:
+    id: { type: string }
+    type:
+      type: string
+      enum: [GAME_FINAL, STAT_MILESTONE, MEDIA_ADDED, PLAYER_JOINED_TEAM, PROFILE_CLAIMED, DISPUTE_RESOLVED]
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+    summary: { type: string }
+    occurredAt: { type: string, format: date-time }
+
+PaginatedFeed:
+  type: object
+  required: [data, meta]
+  properties:
+    data:
+      type: array
+      items: { $ref: '#/FeedItem' }
+    meta: { $ref: './common.yaml#/PaginatedMeta' }

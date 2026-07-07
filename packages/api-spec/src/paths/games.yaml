@@ -1,0 +1,76 @@
+collection:
+  get:
+    operationId: listGames
+    summary: List games
+    security: []
+    tags: [games]
+    parameters:
+      - in: query
+        name: status
+        schema: { $ref: '../components/schemas/games.yaml#/GameStatus' }
+      - in: query
+        name: teamSlug
+        schema: { type: string }
+    responses:
+      '200':
+        description: Games
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/games.yaml#/Game' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+  post:
+    operationId: createGame
+    summary: Schedule a new game between two teams
+    tags: [games]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/games.yaml#/CreateGameInput' }
+    responses:
+      '201':
+        description: Game created
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/Game' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+item:
+  get:
+    operationId: getGame
+    summary: Get a game by id
+    security: []
+    tags: [games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Game
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/Game' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'

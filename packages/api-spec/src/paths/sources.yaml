@@ -1,0 +1,54 @@
+collection:
+  get:
+    operationId: listSources
+    summary: List source references for a target
+    security: []
+    tags: [sources]
+    parameters:
+      - in: query
+        name: targetType
+        required: true
+        schema: { $ref: '../components/schemas/common.yaml#/EntityType' }
+      - in: query
+        name: targetId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Source references
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/verification.yaml#/SourceReference' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+  post:
+    operationId: createSourceReference
+    summary: Attach a source reference to a target
+    tags: [sources]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/verification.yaml#/CreateSourceReferenceInput' }
+    responses:
+      '201':
+        description: Source reference created
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/verification.yaml#/SourceReference' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'

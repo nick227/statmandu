@@ -1,0 +1,107 @@
+list:
+  get:
+    operationId: listTeams
+    summary: List teams
+    security: []
+    tags: [teams]
+    parameters:
+      - in: query
+        name: leagueSlug
+        schema: { type: string }
+    responses:
+      '200':
+        description: Teams
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/sports.yaml#/Team' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+get:
+  get:
+    operationId: getTeam
+    summary: Get a team by slug
+    security: []
+    tags: [teams]
+    parameters:
+      - in: path
+        name: teamSlug
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Team
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/sports.yaml#/Team' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+roster:
+  get:
+    operationId: getTeamRoster
+    summary: Get a team's active roster for its current season
+    security: []
+    tags: [teams]
+    parameters:
+      - in: path
+        name: teamSlug
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Roster memberships
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/players.yaml#/RosterMembership' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+addRosterMember:
+  post:
+    operationId: addTeamRosterMember
+    summary: Add a player to a team's roster for a season
+    tags: [teams]
+    parameters:
+      - in: path
+        name: teamId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/players.yaml#/AddRosterMemberInput' }
+    responses:
+      '201':
+        description: Roster membership created
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/players.yaml#/RosterMembership' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'

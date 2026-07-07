@@ -1,0 +1,81 @@
+collection:
+  get:
+    operationId: getReactionCounts
+    summary: Get reaction counts for a target
+    security: []
+    tags: [reactions]
+    parameters:
+      - in: query
+        name: targetType
+        required: true
+        schema: { $ref: '../components/schemas/common.yaml#/EntityType' }
+      - in: query
+        name: targetId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Reaction counts
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/social.yaml#/ReactionCounts' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+  post:
+    operationId: createReaction
+    summary: React to a player, team, or game (one reaction per user per target)
+    tags: [reactions]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/social.yaml#/CreateReactionInput' }
+    responses:
+      '201':
+        description: Reaction recorded
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/social.yaml#/Reaction' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+item:
+  delete:
+    operationId: deleteReaction
+    summary: Remove the calling user's reaction
+    tags: [reactions]
+    parameters:
+      - in: path
+        name: reactionId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Reaction removed
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data: { type: 'null' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not the owner of this reaction
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'

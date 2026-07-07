@@ -1,0 +1,79 @@
+register:
+  post:
+    operationId: register
+    summary: Register a new user account
+    security: []
+    tags: [auth]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/auth.yaml#/RegisterInput' }
+    responses:
+      '201':
+        description: Registered — session token delivered via Set-Cookie (httpOnly)
+        headers:
+          Set-Cookie:
+            schema: { type: string }
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/auth.yaml#/AuthResponse' }
+      '409':
+        description: Email or username already in use
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+login:
+  post:
+    operationId: login
+    summary: Log in with email and password
+    security: []
+    tags: [auth]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/auth.yaml#/LoginInput' }
+    responses:
+      '200':
+        description: Authenticated — session token delivered via Set-Cookie (httpOnly)
+        headers:
+          Set-Cookie:
+            schema: { type: string }
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/auth.yaml#/AuthResponse' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+logout:
+  post:
+    operationId: logout
+    summary: Log out and clear the session cookie
+    tags: [auth]
+    responses:
+      '200':
+        description: Logged out — clears session cookie
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data: { type: 'null' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+me:
+  get:
+    operationId: getCurrentUser
+    summary: Get the current authenticated user
+    tags: [auth]
+    responses:
+      '200':
+        description: Current user
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/auth.yaml#/AuthResponse' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'

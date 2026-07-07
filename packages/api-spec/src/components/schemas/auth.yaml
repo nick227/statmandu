@@ -1,0 +1,42 @@
+User:
+  type: object
+  required: [id, email, role, createdAt]
+  properties:
+    id: { type: string }
+    email: { type: string }
+    role: { type: string, enum: [USER, ADMIN] }
+    createdAt: { type: string, format: date-time }
+    profile: { $ref: '#/Profile' }
+
+Profile:
+  type: object
+  required: [id, userId, username, displayName]
+  properties:
+    id: { type: string }
+    userId: { type: string }
+    username: { type: string }
+    displayName: { type: string }
+    bio: { type: ['string', 'null'] }
+    avatarUrl: { type: ['string', 'null'] }
+
+RegisterInput:
+  type: object
+  required: [email, password, username, displayName]
+  properties:
+    email: { type: string, format: email }
+    password: { type: string, minLength: 8 }
+    username: { type: string, minLength: 3, maxLength: 30 }
+    displayName: { type: string, minLength: 1, maxLength: 50 }
+
+LoginInput:
+  type: object
+  required: [email, password]
+  properties:
+    email: { type: string, format: email }
+    password: { type: string }
+
+AuthResponse:
+  type: object
+  required: [data]
+  properties:
+    data: { $ref: '#/User' }

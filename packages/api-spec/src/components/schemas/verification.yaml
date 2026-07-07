@@ -1,0 +1,93 @@
+ReferenceSourceType:
+  type: string
+  enum: [IMPORTED_SOURCE, SCRAPED_PUBLIC, MANUAL]
+
+SourceReference:
+  type: object
+  required: [id, targetType, targetId, sourceType]
+  properties:
+    id: { type: string }
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+    sourceType: { $ref: '#/ReferenceSourceType' }
+    url: { type: ['string', 'null'] }
+    label: { type: ['string', 'null'] }
+
+CreateSourceReferenceInput:
+  type: object
+  required: [targetType, targetId, sourceType]
+  properties:
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+    sourceType: { $ref: '#/ReferenceSourceType' }
+    url: { type: string, format: uri }
+    label: { type: string, maxLength: 200 }
+
+DisputeStatus:
+  type: string
+  enum: [OPEN, UNDER_REVIEW, RESOLVED, REJECTED]
+
+Dispute:
+  type: object
+  required: [id, targetType, targetId, description, status, submittedByUserId]
+  properties:
+    id: { type: string }
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+    fieldName: { type: ['string', 'null'] }
+    submittedByUserId: { type: string }
+    description: { type: string }
+    proposedValue: { type: ['string', 'null'] }
+    status: { $ref: '#/DisputeStatus' }
+    resolutionNote: { type: ['string', 'null'] }
+    resolvedByUserId: { type: ['string', 'null'] }
+
+OpenDisputeInput:
+  type: object
+  required: [targetType, targetId, description]
+  properties:
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+    fieldName: { type: string, maxLength: 100 }
+    description: { type: string, minLength: 1, maxLength: 2000 }
+    proposedValue: { type: string, maxLength: 500 }
+
+ResolveDisputeInput:
+  type: object
+  required: [status]
+  properties:
+    status: { $ref: '#/DisputeStatus' }
+    resolutionNote: { type: string, maxLength: 2000 }
+
+ClaimStatus:
+  type: string
+  enum: [PENDING, APPROVED, REJECTED]
+
+Claim:
+  type: object
+  required: [id, athleteProfileId, requestedByUserId, status]
+  properties:
+    id: { type: string }
+    athleteProfileId: { type: string }
+    requestedByUserId: { type: string }
+    verificationNote: { type: ['string', 'null'] }
+    status: { $ref: '#/ClaimStatus' }
+    reviewedByUserId: { type: ['string', 'null'] }
+
+ClaimPlayerInput:
+  type: object
+  properties:
+    verificationNote: { type: string, maxLength: 1000 }
+
+ReviewClaimInput:
+  type: object
+  required: [status]
+  properties:
+    status: { $ref: '#/ClaimStatus' }
+    verificationNote: { type: string, maxLength: 1000 }
+
+VerifyPlayerInput:
+  type: object
+  required: [sourceStatus]
+  properties:
+    sourceStatus: { $ref: './common.yaml#/SourceStatus' }

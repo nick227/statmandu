@@ -1,0 +1,100 @@
+PlayerPosition:
+  type: string
+  enum: [PG, SG, SF, PF, C]
+
+PlayerStatus:
+  type: string
+  enum: [ACTIVE, INACTIVE, GRADUATED]
+
+AthleteProfile:
+  type: object
+  required: [id, slug, firstName, lastName, sourceStatus]
+  properties:
+    id: { type: string }
+    slug: { type: string }
+    firstName: { type: string }
+    lastName: { type: string }
+    bio: { type: ['string', 'null'] }
+    hometown: { type: ['string', 'null'] }
+    avatarUrl: { type: ['string', 'null'] }
+    sourceStatus: { $ref: './common.yaml#/SourceStatus' }
+    claimedByUserId: { type: ['string', 'null'] }
+
+RosterTeamSummary:
+  type: object
+  required: [id, slug, name]
+  properties:
+    id: { type: string }
+    slug: { type: string }
+    name: { type: string }
+
+Player:
+  type: object
+  required: [id, athleteProfileId, sportId, status]
+  properties:
+    id: { type: string }
+    athleteProfileId: { type: string }
+    sportId: { type: string }
+    position: { oneOf: [{ $ref: '#/PlayerPosition' }, { type: 'null' }] }
+    classYear: { type: ['string', 'null'] }
+    jerseyNumber: { type: ['integer', 'null'] }
+    heightInches: { type: ['integer', 'null'] }
+    status: { $ref: '#/PlayerStatus' }
+    athleteProfile: { $ref: '#/AthleteProfile' }
+    currentTeam: { oneOf: [{ $ref: '#/RosterTeamSummary' }, { type: 'null' }] }
+
+PaginatedPlayers:
+  type: object
+  required: [data, meta]
+  properties:
+    data:
+      type: array
+      items: { $ref: '#/Player' }
+    meta: { $ref: './common.yaml#/PaginatedMeta' }
+
+CreatePlayerInput:
+  type: object
+  required: [firstName, lastName, sportSlug]
+  properties:
+    firstName: { type: string, minLength: 1, maxLength: 50 }
+    lastName: { type: string, minLength: 1, maxLength: 50 }
+    sportSlug: { type: string }
+    bio: { type: string, maxLength: 2000 }
+    hometown: { type: string, maxLength: 100 }
+    avatarUrl: { type: string }
+    position: { $ref: '#/PlayerPosition' }
+    classYear: { type: string, maxLength: 20 }
+    jerseyNumber: { type: integer, minimum: 0, maximum: 99 }
+    heightInches: { type: integer, minimum: 40, maximum: 100 }
+
+UpdatePlayerInput:
+  type: object
+  properties:
+    bio: { type: string, maxLength: 2000 }
+    hometown: { type: string, maxLength: 100 }
+    avatarUrl: { type: string }
+    position: { $ref: '#/PlayerPosition' }
+    classYear: { type: string, maxLength: 20 }
+    jerseyNumber: { type: integer, minimum: 0, maximum: 99 }
+    heightInches: { type: integer, minimum: 40, maximum: 100 }
+    status: { $ref: '#/PlayerStatus' }
+
+RosterMembership:
+  type: object
+  required: [id, playerId, teamId, seasonId, isActive]
+  properties:
+    id: { type: string }
+    playerId: { type: string }
+    teamId: { type: string }
+    seasonId: { type: string }
+    jerseyNumber: { type: ['integer', 'null'] }
+    isActive: { type: boolean }
+    player: { $ref: '#/Player' }
+
+AddRosterMemberInput:
+  type: object
+  required: [playerId, seasonId]
+  properties:
+    playerId: { type: string }
+    seasonId: { type: string }
+    jerseyNumber: { type: integer, minimum: 0, maximum: 99 }

@@ -1,0 +1,65 @@
+collection:
+  get:
+    operationId: listClaims
+    summary: List profile claims (admin moderation queue)
+    security: [{ adminAuth: [] }]
+    tags: [claims]
+    parameters:
+      - in: query
+        name: status
+        schema: { $ref: '../components/schemas/verification.yaml#/ClaimStatus' }
+    responses:
+      '200':
+        description: Claims
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/verification.yaml#/Claim' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Admin only
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+item:
+  patch:
+    operationId: reviewClaim
+    summary: Approve or reject a profile claim (admin only)
+    security: [{ adminAuth: [] }]
+    tags: [claims]
+    parameters:
+      - in: path
+        name: claimId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/verification.yaml#/ReviewClaimInput' }
+    responses:
+      '200':
+        description: Claim updated
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/verification.yaml#/Claim' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Admin only
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'

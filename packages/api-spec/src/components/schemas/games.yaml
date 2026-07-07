@@ -1,0 +1,175 @@
+GameStatus:
+  type: string
+  enum: [SCHEDULED, LIVE, FINAL, DISPUTED]
+
+GameTeamSummary:
+  type: object
+  required: [teamId, isHome]
+  properties:
+    teamId: { type: string }
+    isHome: { type: boolean }
+    finalScore: { type: ['integer', 'null'] }
+    team: { $ref: './sports.yaml#/Team' }
+
+Game:
+  type: object
+  required: [id, sportId, scheduledAt, status]
+  properties:
+    id: { type: string }
+    sportId: { type: string }
+    leagueId: { type: ['string', 'null'] }
+    seasonId: { type: ['string', 'null'] }
+    scheduledAt: { type: string, format: date-time }
+    venue: { type: ['string', 'null'] }
+    status: { $ref: '#/GameStatus' }
+    startedAt: { type: ['string', 'null'], format: date-time }
+    finalizedAt: { type: ['string', 'null'], format: date-time }
+    gameTeams:
+      type: array
+      items: { $ref: '#/GameTeamSummary' }
+
+CreateGameInput:
+  type: object
+  required: [sportSlug, scheduledAt, homeTeamId, awayTeamId]
+  properties:
+    sportSlug: { type: string }
+    seasonId: { type: string }
+    scheduledAt: { type: string, format: date-time }
+    venue: { type: string }
+    homeTeamId: { type: string }
+    awayTeamId: { type: string }
+
+GameReporterRole:
+  type: string
+  enum: [ADMIN_OWNER, OFFICIAL_SCORER, TEAM_SCORER, BROADCASTER, CONTRIBUTOR, SPECTATOR_REPORTER, VIEWER]
+
+JoinReporterInput:
+  type: object
+  required: [role]
+  properties:
+    role: { $ref: '#/GameReporterRole' }
+    teamId: { type: string }
+
+GameReporter:
+  type: object
+  required: [id, gameId, userId, role]
+  properties:
+    id: { type: string }
+    gameId: { type: string }
+    userId: { type: string }
+    teamId: { type: ['string', 'null'] }
+    role: { $ref: '#/GameReporterRole' }
+
+GameEventType:
+  type: string
+  enum:
+    - FT_MADE
+    - FT_MISS
+    - FG2_MADE
+    - FG2_MISS
+    - FG3_MADE
+    - FG3_MISS
+    - REBOUND_OFF
+    - REBOUND_DEF
+    - ASSIST
+    - STEAL
+    - BLOCK
+    - TURNOVER
+    - FOUL
+    - SUBSTITUTION_IN
+    - SUBSTITUTION_OUT
+
+GameEventStatus:
+  type: string
+  enum: [PENDING, ACCEPTED, REJECTED, CONFLICTING, CORRECTED, DISPUTED, FINALIZED]
+
+SubmitGameEventInput:
+  type: object
+  required: [type, clientTimestamp]
+  properties:
+    type: { $ref: '#/GameEventType' }
+    playerId: { type: string }
+    teamId: { type: string }
+    clientTimestamp: { type: string, format: date-time }
+    deviceId: { type: string }
+
+GameEvent:
+  type: object
+  required: [id, gameId, reporterId, type, status, clientTimestamp]
+  properties:
+    id: { type: string }
+    gameId: { type: string }
+    reporterId: { type: string }
+    playerId: { type: ['string', 'null'] }
+    teamId: { type: ['string', 'null'] }
+    type: { $ref: '#/GameEventType' }
+    status: { $ref: '#/GameEventStatus' }
+    clientTimestamp: { type: string, format: date-time }
+    consensusGroupId: { type: ['string', 'null'] }
+
+GameSnapshot:
+  type: object
+  required: [gameId, status, score, recentEvents, reporterCount]
+  properties:
+    gameId: { type: string }
+    status: { $ref: '#/GameStatus' }
+    score:
+      type: array
+      items:
+        type: object
+        required: [teamId, points]
+        properties:
+          teamId: { type: string }
+          points: { type: integer }
+    recentEvents:
+      type: array
+      items: { $ref: '#/GameEvent' }
+    reporterCount: { type: integer }
+
+GameStatLine:
+  type: object
+  required: [id, gameId, playerId, teamId, points, sourceStatus]
+  properties:
+    id: { type: string }
+    gameId: { type: string }
+    playerId: { type: string }
+    teamId: { type: string }
+    points: { type: integer }
+    offRebounds: { type: integer }
+    defRebounds: { type: integer }
+    assists: { type: integer }
+    steals: { type: integer }
+    blocks: { type: integer }
+    turnovers: { type: integer }
+    fouls: { type: integer }
+    fgMade: { type: integer }
+    fgAttempted: { type: integer }
+    threeMade: { type: integer }
+    threeAttempted: { type: integer }
+    ftMade: { type: integer }
+    ftAttempted: { type: integer }
+    sourceStatus: { $ref: './common.yaml#/SourceStatus' }
+    disputeNote: { type: ['string', 'null'] }
+
+PlayerSeasonStat:
+  type: object
+  required: [id, playerId, seasonId, gamesPlayed]
+  properties:
+    id: { type: string }
+    playerId: { type: string }
+    seasonId: { type: string }
+    gamesPlayed: { type: integer }
+    points: { type: integer }
+    offRebounds: { type: integer }
+    defRebounds: { type: integer }
+    assists: { type: integer }
+    steals: { type: integer }
+    blocks: { type: integer }
+    turnovers: { type: integer }
+    fouls: { type: integer }
+    fgMade: { type: integer }
+    fgAttempted: { type: integer }
+    threeMade: { type: integer }
+    threeAttempted: { type: integer }
+    ftMade: { type: integer }
+    ftAttempted: { type: integer }

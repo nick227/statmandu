@@ -1,0 +1,77 @@
+gameStats:
+  get:
+    operationId: getGameStats
+    summary: Get the final box score for a game
+    security: []
+    tags: [stats]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Box score
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/games.yaml#/GameStatLine' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+playerGames:
+  get:
+    operationId: listPlayerGames
+    summary: List a player's recent games with their stat line
+    security: []
+    tags: [stats]
+    parameters:
+      - in: path
+        name: playerId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Recent games
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/games.yaml#/GameStatLine' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+playerSeasonStats:
+  get:
+    operationId: getPlayerSeasonStats
+    summary: List a player's season stat aggregates
+    security: []
+    tags: [stats]
+    parameters:
+      - in: path
+        name: playerId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Season stats
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/games.yaml#/PlayerSeasonStat' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'

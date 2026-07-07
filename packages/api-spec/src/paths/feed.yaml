@@ -1,0 +1,20 @@
+get:
+  get:
+    operationId: getFeed
+    summary: Paginated activity feed (fresh athlete/game/media content)
+    security: []
+    tags: [feed]
+    parameters:
+      - $ref: '../components/parameters/common.yaml#/Cursor'
+      - $ref: '../components/parameters/common.yaml#/Limit'
+    responses:
+      '200':
+        description: Paginated feed
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/social.yaml#/PaginatedFeed' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
