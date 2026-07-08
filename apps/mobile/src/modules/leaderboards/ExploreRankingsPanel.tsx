@@ -8,6 +8,7 @@ import { Text } from '@/shared/ui/Text'
 import { PlatformAuthorityBand } from '@/modules/feed/HomeSections'
 import { EXPLORE_COPY, exploreAuthorityBand } from '@/modules/leaderboards/exploreContent'
 import { RankingsSkeleton } from '@/modules/leaderboards/RankingsSkeleton'
+import { ChampionRibbon, PodiumStrip, ShowcaseMosaic } from '@/modules/leaderboards/RankingsShowcase'
 import { AthleteSpotlightCardLink, TeamSpotlightCardLink } from '@/modules/leaderboards/SpotlightCardLinks'
 import type { useExploreRankings } from '@/modules/leaderboards/useExploreRankings'
 
@@ -67,27 +68,20 @@ export function ExploreRankingsPanel({ rankings }: { rankings: RankingsState }) 
       ) : (
         <View className="gap-lg">
           {rankings.featuredPlayer ? (
-            <AthleteSpotlightCardLink
-              entry={rankings.featuredPlayer}
-              sportSlug={rankings.sportSlug}
-              size="large"
-              eyebrow={copy.sections.featuredPlayer.eyebrow}
-            />
+            <ContentSection title={copy.sections.champion.title} subtitle={copy.sections.champion.subtitle}>
+              <AthleteSpotlightCardLink
+                entry={rankings.featuredPlayer}
+                sportSlug={rankings.sportSlug}
+                size="large"
+                eyebrow={copy.sections.featuredPlayer.eyebrow}
+              />
+              <ChampionRibbon sportSlug={rankings.sportSlug} stat={rankings.playerStat} entry={rankings.featuredPlayer} />
+            </ContentSection>
           ) : null}
 
-          <ContentSection title={copy.sections.topPlayers.title} subtitle={copy.sections.topPlayers.subtitle}>
-            {rankings.risingPlayers.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-md">
-                {rankings.risingPlayers.map((entry) => (
-                  <AthleteSpotlightCardLink
-                    key={entry.player.id}
-                    entry={entry}
-                    sportSlug={rankings.sportSlug}
-                    size="small"
-                    className="w-44"
-                  />
-                ))}
-              </ScrollView>
+          <ContentSection title={copy.sections.podium.title} subtitle={copy.sections.podium.subtitle}>
+            {rankings.hasPlayerResults ? (
+              <PodiumStrip entries={rankings.playerEntries.slice(0, 3)} sportSlug={rankings.sportSlug} />
             ) : rankings.featuredPlayer ? (
               <Text variant="caption">{copy.empty.playersGrowing.description}</Text>
             ) : (
@@ -99,6 +93,32 @@ export function ExploreRankingsPanel({ rankings }: { rankings: RankingsState }) 
               />
             )}
           </ContentSection>
+
+          {rankings.showcaseLists.length > 0 ? (
+            <ContentSection title={copy.sections.showcases.title} subtitle={copy.sections.showcases.subtitle}>
+              <View className="gap-md">
+                {rankings.showcaseLists.map((list, index) => (
+                  <ShowcaseMosaic key={list.key} index={index} list={list} sportSlug={rankings.sportSlug} />
+                ))}
+              </View>
+            </ContentSection>
+          ) : null}
+
+          {rankings.risingPlayers.length > 0 ? (
+            <ContentSection title={copy.sections.topPlayers.title} subtitle={copy.sections.topPlayers.subtitle}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-md">
+                {rankings.risingPlayers.map((entry) => (
+                  <AthleteSpotlightCardLink
+                    key={entry.player.id}
+                    entry={entry}
+                    sportSlug={rankings.sportSlug}
+                    size="small"
+                    className="w-44"
+                  />
+                ))}
+              </ScrollView>
+            </ContentSection>
+          ) : null}
 
           <ContentSection title={copy.sections.topTeams.title} subtitle={copy.sections.topTeams.subtitle}>
             {rankings.hasTeamResults ? (

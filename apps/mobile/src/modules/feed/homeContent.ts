@@ -1,83 +1,219 @@
 import type { PlatformAuthorityBandProps, PlatformPitchCardProps, UsageCta } from '@/modules/feed/HomeSections'
 
 export const HOME_SPORT_SLUG = 'basketball'
+export const HOME_PLAYER_STAT = 'points'
+export const HOME_TEAM_STAT = 'wins'
+
+export const HOME_SCREEN = {
+  title: 'Home',
+  error: 'The home feed could not be loaded.',
+} as const
 
 export const HOME_AUTHORITY: PlatformAuthorityBandProps = {
   sportLabel: 'Basketball · Central Texas',
-  headline: 'The stats authority for real game nights',
-  subhead: 'Verified box scores, live capture, and athlete profiles that travel with every performance — online and in the gym.',
+  headline: 'Tonight\'s stats authority',
+  subhead: 'Live box scores, verified leaders, and athlete profiles tied to real games.',
   metrics: [
-    { label: 'Profiles tracked', value: '20' },
-    { label: 'Games this season', value: '4' },
-    { label: 'Live reporters', value: '12' },
-    { label: 'Community reactions', value: '1.2k' },
+    { label: 'Active profiles', value: '248' },
+    { label: 'Games tracked', value: '36' },
+    { label: 'Scorers online', value: '18' },
+    { label: 'Feed reactions', value: '3.4k' },
   ],
 }
 
 export const HOME_PLATFORM_PITCH: PlatformPitchCardProps = {
-  eyebrow: 'Why post here',
-  title: 'Where verified stats become real opportunity',
-  body: 'Coaches, fans, and recruiters follow the numbers that matter. Statman turns every game night into a credible profile moment — not a screenshot lost in a group chat.',
+  eyebrow: 'For athletes & programs',
+  title: 'Post here. Get found.',
+  body: 'Verified stats, highlight surfacing, and a feed that rewards real game nights.',
   proofPoints: [
-    'Multi-reporter consensus keeps box scores trustworthy',
-    'Highlights and milestones surface automatically after finalize',
-    'Claimed profiles connect athletes to real accounts and exposure',
+    'Consensus scoring keeps your numbers credible',
+    'Profiles update automatically after finalize',
   ],
 }
 
 export const HOME_USAGE_CTAS: UsageCta[] = [
   {
     id: 'claim',
-    title: 'Claim your athlete profile',
-    description: 'Take ownership of your public stats, media, and identity.',
+    title: 'Claim your profile',
+    description: 'Own your stats, media, and public identity.',
     href: { pathname: '/(tabs)/explore' },
+    eyebrow: 'Athletes',
   },
   {
     id: 'enter',
-    title: 'Enter stats from the sideline',
-    description: 'Join a live game as scorer, broadcaster, or contributor.',
+    title: 'Score a game',
+    description: 'Join live capture from the sideline.',
     href: { pathname: '/(tabs)/enter' },
+    eyebrow: 'Teams',
   },
   {
     id: 'highlight',
-    title: 'Post a highlight reel',
-    description: 'Attach YouTube film to your profile and get in the feed.',
+    title: 'Add film',
+    description: 'Attach highlights and land in the feed.',
     href: { pathname: '/(tabs)/explore' },
+    eyebrow: 'Media',
   },
 ]
 
 export const HOME_COMMUNITY_METRICS = [
-  { label: 'Reactions today', value: '186' },
-  { label: 'New follows', value: '42' },
-  { label: 'Games finalized', value: '2' },
+  { label: 'Reactions', value: '412' },
+  { label: 'Follows', value: '89' },
+  { label: 'Live now', value: '3' },
 ]
 
 export const HOME_SECTION_COPY = {
   athletes: {
-    title: 'Athletes on the rise',
-    subtitle: 'Featured players climbing the leaderboard — the profiles scouts and fans actually check.',
+    title: 'Player leaders',
+    subtitle: 'Points leaders from finalized games this season.',
+    champion: 'Season leader',
+    podium: 'Podium',
+    podiumSubtitle: 'Top three by points.',
+    ribbonStat: 'Season high',
+    ribbonRank: 'Rank',
   },
   community: {
-    title: 'Community pulse',
-    subtitle: 'What the Statman network is doing right now — on the site and tied to real games.',
+    title: 'In the feed',
+    subtitle: 'Game nights, milestones, and media drops across the network.',
   },
   games: {
-    title: 'Big games',
-    subtitle: 'Final scores and live matchups driving tonight\'s conversation.',
+    title: 'Games',
+    subtitle: 'Live now and recent finals.',
+    liveShowcase: 'Live wire',
+    liveShowcaseSubtitle: 'Tap in before the run ends.',
   },
-  leaders: {
-    title: 'Season leaders',
-    subtitle: 'The numbers that define this basketball season.',
+  teams: {
+    title: 'Team leaders',
+    subtitle: 'Programs setting the pace in the standings.',
+    featuredEyebrow: 'Top program',
+  },
+  showcases: {
+    rebounds: {
+      title: 'Board leaders',
+      subtitle: 'Rebounders controlling the paint this month.',
+    },
+    live: {
+      title: 'On the floor',
+      subtitle: 'Matchups with active reporting.',
+    },
   },
   usage: {
-    title: 'Get on the board',
-    subtitle: 'Three ways athletes and teams turn game nights into profile equity.',
+    title: 'Join the board',
+    subtitle: 'Three entry points for athletes and teams.',
+  },
+  linkLabels: {
+    seeAll: 'Rankings',
   },
 } as const
 
 export const HOME_EMPTY_COPY = {
   feed: {
-    title: 'Quiet for now',
-    description: 'Finalized games and new media will show up here.',
+    title: 'Feed is quiet',
+    description: 'Finalized games and new media will populate this section.',
   },
+} as const
+
+export interface HomeAdSlot {
+  id: string
+  format: 'banner' | 'card'
+  sponsoredLabel: string
+  sponsor: string
+  headline: string
+  body?: string
+  cta: string
+}
+
+export const HOME_AD_SLOTS: HomeAdSlot[] = [
+  {
+    id: 'ad-top',
+    format: 'banner',
+    sponsoredLabel: 'Sponsored',
+    sponsor: 'Austin Sports Medicine',
+    headline: 'Friday night recovery starts here — free eval for varsity athletes',
+    cta: 'Book',
+  },
+  {
+    id: 'ad-mid',
+    format: 'card',
+    sponsoredLabel: 'Sponsored',
+    sponsor: 'Central Texas Hoops Club',
+    headline: 'Spring showcase circuit registration open',
+    body: 'Exposure events with verified Statman stat tracking for every session.',
+    cta: 'Register',
+  },
+  {
+    id: 'ad-bottom',
+    format: 'banner',
+    sponsoredLabel: 'Sponsored',
+    sponsor: 'Peak Performance Training',
+    headline: 'Off-season vertical & agility blocks — small groups, real progress',
+    cta: 'Details',
+  },
+]
+
+export type HomeActivityIcon =
+  | 'GAME_FINAL'
+  | 'STAT_MILESTONE'
+  | 'MEDIA_ADDED'
+  | 'PLAYER_JOINED_TEAM'
+  | 'PROFILE_CLAIMED'
+  | 'DISPUTE_RESOLVED'
+  | 'COMMUNITY'
+
+export interface HomeMockActivity {
+  id: string
+  icon: HomeActivityIcon
+  eyebrow: string
+  title: string
+  subtitle: string
+  timestamp: string
+}
+
+export const HOME_MOCK_ACTIVITY: HomeMockActivity[] = [
+  {
+    id: 'mock-1',
+    icon: 'STAT_MILESTONE',
+    eyebrow: 'Milestone',
+    title: 'Marcus Reed hits 500 career points',
+    subtitle: 'Eastside Ballers · verified box score',
+    timestamp: '2h ago',
+  },
+  {
+    id: 'mock-2',
+    icon: 'MEDIA_ADDED',
+    eyebrow: 'Highlight',
+    title: 'New film: Westview full-court press breakdown',
+    subtitle: 'Team reel attached to game archive',
+    timestamp: '4h ago',
+  },
+  {
+    id: 'mock-3',
+    icon: 'PROFILE_CLAIMED',
+    eyebrow: 'Claimed',
+    title: 'Jayden Rios claimed his public profile',
+    subtitle: 'Athlete account now linked to verified stats',
+    timestamp: '6h ago',
+  },
+  {
+    id: 'mock-4',
+    icon: 'COMMUNITY',
+    eyebrow: 'Trending',
+    title: '214 reactions on last night\'s rivalry final',
+    subtitle: 'Eastside 72 – Westview 68 · most engaged game this week',
+    timestamp: '8h ago',
+  },
+  {
+    id: 'mock-5',
+    icon: 'GAME_FINAL',
+    eyebrow: 'Final',
+    title: 'Knife-edge finish: Hawks edge Ballers by 2',
+    subtitle: 'Box score disputed on one assist — community reviewing',
+    timestamp: 'Yesterday',
+  },
+]
+
+export const HOME_LAYOUT = {
+  sectionGap: 'gap-lg',
+  railCardWidth: 'w-[42%]',
+  maxFeedItems: 4,
+  maxMockActivity: 5,
 } as const

@@ -20,6 +20,22 @@ export const EXPLORE_COPY = {
       title: 'Season rankings',
       subtitle: 'Leaders ranked from finalized games and verified stat lines.',
     },
+    champion: {
+      title: 'Champion Standard',
+      subtitle: 'The current leader, lifted out of the table and into the story.',
+    },
+    podium: {
+      title: 'The Podium',
+      subtitle: 'The names pushing the leader every week.',
+    },
+    showcases: {
+      title: 'Showcase Circuit',
+      subtitle: 'Different categories, different kinds of dominance.',
+    },
+    deeperBoards: {
+      title: 'More Ways To Win',
+      subtitle: 'Situational boards built from athlete, team, and game results.',
+    },
     featuredPlayer: {
       eyebrow: 'Season leader',
     },
