@@ -1,6 +1,5 @@
-import { CardManagerScreen } from '@/modules/cards/CardManagerScreen'
+import { Redirect } from 'expo-router'
 
-export default function CardManagerRoute() {
-  return <CardManagerScreen />
+export default function CardManagerRedirect() {
+  return <Redirect href="/cards" />
 }
-

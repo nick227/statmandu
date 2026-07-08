@@ -15,6 +15,7 @@ export default function AppShellLayout() {
         <Stack.Screen name="videos" />
         <Stack.Screen name="articles" />
         <Stack.Screen name="scores" />
+        <Stack.Screen name="cards" />
         <Stack.Screen name="teams" />
         <Stack.Screen name="me" />
         <Stack.Screen name="players" />

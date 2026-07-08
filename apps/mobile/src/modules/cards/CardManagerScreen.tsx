@@ -15,7 +15,7 @@ export function CardManagerScreen() {
 
   if (manager.isError) {
     return (
-      <Screen title="My Cards">
+      <Screen title="Trading Cards" insetTop={false}>
         <ErrorState message="Your cards couldn't be loaded." />
       </Screen>
     )
@@ -23,7 +23,7 @@ export function CardManagerScreen() {
 
   if (manager.isLoading) {
     return (
-      <Screen title="My Cards">
+      <Screen title="Trading Cards" insetTop={false}>
         <LoadingState label="Loading cards" />
       </Screen>
     )
@@ -31,7 +31,7 @@ export function CardManagerScreen() {
 
   if (manager.createdCards.length === 0 && manager.claimedCards.length === 0) {
     return (
-      <Screen title="My Cards" scroll contentClassName="gap-md p-lg">
+      <Screen title="Trading Cards" scroll contentClassName="gap-md p-lg" insetTop={false}>
         <EmptyState
           icon={CreditCard}
           title="No cards yet"
@@ -45,7 +45,7 @@ export function CardManagerScreen() {
   }
 
   return (
-    <Screen title="My Cards" scroll contentClassName="gap-md p-lg">
+    <Screen title="Trading Cards" scroll contentClassName="gap-md p-lg" insetTop={false}>
       {manager.createdCards.length > 0 ? (
         <View className="gap-sm">
           <View className="px-xs">
