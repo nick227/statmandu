@@ -4,7 +4,7 @@ import { Text } from '@/shared/ui/Text'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
-import { PageFrame, Screen } from '@/shared/layout'
+import { PageFrame, Screen, GlobalFilterBar } from '@/shared/layout'
 import { LAYOUT } from '@/shared/layout/layoutConstants'
 import { PlayerCardLink } from '@/modules/players/PlayerCardLink'
 import { useAthletesIndex } from '@/modules/players/useAthletesIndex'
@@ -44,6 +44,7 @@ export function AthletesIndexScreen() {
               columnWrapperClassName={columns > 1 ? 'gap-md' : undefined}
               ListHeaderComponent={
                 <View className="mb-sm gap-xs">
+                  <GlobalFilterBar />
                   <Text variant="caption">
                     Browse public athlete profiles — jersey, position, team, and verification at a glance.
                   </Text>

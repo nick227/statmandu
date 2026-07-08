@@ -3,7 +3,7 @@ import { db } from '@statman/db'
 import { normalizeLimit } from '../lib/pagination'
 import { decodeOffsetCursor, encodeOffsetCursor } from '../lib/searchCursor'
 
-export type SearchResultType = 'PLAYER' | 'TEAM' | 'GAME'
+export type SearchResultType = 'PLAYER' | 'TEAM' | 'GAME' | 'ARTICLE'
 
 type SearchResultItem = {
   type: SearchResultType
@@ -23,7 +23,7 @@ type SearchProvider = {
   toResult: (item: any) => Omit<SearchResultItem, 'type' | 'score'>
 }
 
-const ALL_TYPES: SearchResultType[] = ['PLAYER', 'TEAM', 'GAME']
+const ALL_TYPES: SearchResultType[] = ['PLAYER', 'TEAM', 'GAME', 'ARTICLE']
 
 // Small corpus (an MVP demo scale of dozens of rows per entity, not
 // millions) makes fetch-everything-then-fuzzy-match-in-process both
@@ -94,6 +94,25 @@ const providers: Record<SearchResultType, SearchProvider> = {
         title: [home?.name ?? 'TBD', away?.name ?? 'TBD'].join(' vs '),
         subtitle: `${game.status} · ${game.scheduledAt.toISOString().slice(0, 10)}`,
         imageUrl: null,
+      }
+    },
+  },
+  // PUBLISHED only — search is a public-read surface, same as listArticles'
+  // default (no authorUserId) behavior. Drafts/pending/rejected articles
+  // never appear here regardless of who's searching.
+  ARTICLE: {
+    type: 'ARTICLE',
+    async fetchCandidates() {
+      const articles = await db.article.findMany({ where: { status: 'PUBLISHED' } })
+      return articles.map((article) => ({ searchText: article.title, item: article }))
+    },
+    toResult(article) {
+      const keywords = (article.keywords as string[] | null) ?? []
+      return {
+        id: article.id,
+        title: article.title,
+        subtitle: keywords[0] ?? null,
+        imageUrl: article.thumbnailUrl ?? null,
       }
     },
   },

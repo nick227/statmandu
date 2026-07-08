@@ -1,6 +1,6 @@
 import { View } from 'react-native'
 import { Stack, Link, type Href } from 'expo-router'
-import { ShieldCheck, Users, GraduationCap, CalendarClock, Newspaper, ScrollText } from 'lucide-react-native'
+import { ShieldCheck, Users, GraduationCap, CalendarClock, Newspaper, ScrollText, type LucideIcon } from 'lucide-react-native'
 import { Screen } from '@/shared/layout'
 import { Card, CardContent } from '@/shared/ui/Card'
 import { Text } from '@/shared/ui/Text'
@@ -22,7 +22,7 @@ function MetricRow({ label, value }: { label: string; value: number }) {
   )
 }
 
-function AdminLinkCard({ href, title, subtitle, icon: Icon }: { href: Href; title: string; subtitle: string; icon: any }) {
+function AdminLinkCard({ href, title, subtitle, icon: Icon }: { href: Href; title: string; subtitle: string; icon: LucideIcon }) {
   const color = useStatusNativeColor('brand')
   return (
     <Link href={href} asChild>

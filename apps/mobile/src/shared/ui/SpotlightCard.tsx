@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
-import { Image, Pressable, View, type PressableProps } from 'react-native'
+import { Image, Pressable, StyleSheet, View, type PressableProps } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { cn } from '@/lib/utils'
 import { Avatar } from './Avatar'
 import { Text } from './Text'
 
 export type SpotlightCardSize = 'large' | 'small'
-export type SpotlightCardKind = 'athlete' | 'game' | 'activity'
+export type SpotlightCardKind = 'athlete' | 'game' | 'activity' | 'article'
 
 export interface SpotlightStat {
   label: string
@@ -25,10 +26,34 @@ export interface SpotlightCardProps extends PressableProps {
   className?: string
 }
 
-function CardBackdrop({ imageUri }: { imageUri?: string | null }) {
+// Article cards are photo-forward (the thumbnail is the content, not a
+// decorative backdrop behind an avatar like the athlete kind), so they get
+// their own, much lighter treatment: the photo at full clarity plus a
+// bottom-biased gradient scrim for title legibility — no flat dimming wash,
+// no decorative accent blobs. See docs/design-system-articles.md.
+function ArticleBackdrop({ imageUri }: { imageUri?: string | null }) {
+  if (!imageUri) return <View className="absolute inset-0 bg-sport-accent/25" />
   return (
     <>
-      {imageUri ? (
+      <Image source={{ uri: imageUri }} className="absolute inset-0 h-full w-full" resizeMode="cover" />
+      {/* LinearGradient is a third-party component NativeWind doesn't
+          intercept — className is a silent no-op on it (confirmed: it left
+          the element at 0 layout size on web, which also broke the gradient's
+          own angle calculation). Position it with a plain style prop instead,
+          same fix as Button.tsx's AnimatedPressable issue. */}
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.88)']}
+        locations={[0, 0.35, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+    </>
+  )
+}
+
+function CardBackdrop({ imageUri, showImage }: { imageUri?: string | null; showImage: boolean }) {
+  return (
+    <>
+      {showImage && imageUri ? (
         <>
           <Image source={{ uri: imageUri }} className="absolute inset-0 h-full w-full opacity-35" resizeMode="cover" />
           <View className="absolute inset-0 bg-black/55" />
@@ -119,15 +144,33 @@ function GameBody({ size, eyebrow, title, subtitle, stats, badge, footer }: Omit
   )
 }
 
-function ActivityBody({ size, eyebrow, title, subtitle, badge, footer }: Omit<SpotlightCardProps, 'kind' | 'imageUri' | 'stats'>) {
+function ActivityBody({
+  size,
+  eyebrow,
+  title,
+  subtitle,
+  badge,
+  footer,
+  isArticle,
+}: Omit<SpotlightCardProps, 'kind' | 'imageUri' | 'stats'> & { isArticle?: boolean }) {
   const large = size === 'large'
   return (
     <View className="flex-1 justify-between">
       <View className="flex-row items-center justify-between">
         {eyebrow ? (
-          <View className="rounded-pill border border-white/10 bg-white/10 px-sm py-xs">
-            <Text variant="caption" className="text-white/80">{eyebrow}</Text>
-          </View>
+          // Article cards render the eyebrow through the `kicker` type style
+          // (uppercase, weight 700, letter-spaced) — the same one the reader
+          // screen uses — instead of the generic caption pill every other
+          // kind gets, so the category label carries real weight here too.
+          isArticle ? (
+            <View className="rounded-pill bg-black/40 px-sm py-xs">
+              <Text variant="kicker" className="text-white">{eyebrow}</Text>
+            </View>
+          ) : (
+            <View className="rounded-pill border border-white/10 bg-white/10 px-sm py-xs">
+              <Text variant="caption" className="text-white/80">{eyebrow}</Text>
+            </View>
+          )
         ) : <View />}
         {badge}
       </View>
@@ -162,15 +205,19 @@ export function SpotlightCard({
   return (
     <Pressable className={cn('active:opacity-90', className)} style={style} {...props}>
       <View className={cn('overflow-hidden rounded-lg bg-black', padding)} style={{ minHeight }}>
-        <CardBackdrop imageUri={kind === 'athlete' ? imageUri : undefined} />
+        {kind === 'article' ? (
+          <ArticleBackdrop imageUri={imageUri} />
+        ) : (
+          <CardBackdrop imageUri={imageUri} showImage={kind === 'athlete'} />
+        )}
         {kind === 'athlete' ? (
           <AthleteBody size={size} eyebrow={eyebrow} title={title} subtitle={subtitle} stats={stats} imageUri={imageUri} badge={badge} footer={footer} />
         ) : null}
         {kind === 'game' ? (
           <GameBody size={size} eyebrow={eyebrow} title={title} subtitle={subtitle} stats={stats} badge={badge} footer={footer} />
         ) : null}
-        {kind === 'activity' ? (
-          <ActivityBody size={size} eyebrow={eyebrow} title={title} subtitle={subtitle} badge={badge} footer={footer} />
+        {kind === 'activity' || kind === 'article' ? (
+          <ActivityBody size={size} eyebrow={eyebrow} title={title} subtitle={subtitle} badge={badge} footer={footer} isArticle={kind === 'article'} />
         ) : null}
       </View>
     </Pressable>

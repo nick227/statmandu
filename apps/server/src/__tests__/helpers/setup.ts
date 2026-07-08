@@ -24,6 +24,7 @@ export async function resetTestDatabase() {
   await db.follow.deleteMany()
   await db.dispute.deleteMany()
   await db.claim.deleteMany()
+  await db.article.deleteMany()
   await db.sourceReference.deleteMany()
   await db.gameStatLine.deleteMany()
   await db.gameEvent.deleteMany()

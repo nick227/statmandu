@@ -79,6 +79,30 @@ describe('search', () => {
     }
   })
 
+  it('finds a published article by title', async () => {
+    await seedFixtures()
+    const author = await db.user.create({ data: { email: 'writer@test.local', passwordHash: 'x' } })
+    await db.article.create({
+      data: { authorUserId: author.id, title: 'Lakeside pulls off comeback win', body: 'Recap text', status: 'PUBLISHED', publishedAt: new Date() },
+    })
+
+    const res = await app.inject({ method: 'GET', url: '/search?q=comeback' })
+    expect(res.statusCode).toBe(200)
+    await validateResponse('search', 200, res.json())
+    expect(res.json().data.some((r: any) => r.type === 'ARTICLE' && r.title === 'Lakeside pulls off comeback win')).toBe(true)
+  })
+
+  it('excludes unpublished articles from search', async () => {
+    const author = await db.user.create({ data: { email: 'writer2@test.local', passwordHash: 'x' } })
+    await db.article.create({
+      data: { authorUserId: author.id, title: 'Draft about Lakeside', body: 'Not ready', status: 'DRAFT' },
+    })
+
+    const res = await app.inject({ method: 'GET', url: '/search?q=Lakeside' })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().data.some((r: any) => r.type === 'ARTICLE')).toBe(false)
+  })
+
   it('restricts to requested types', async () => {
     await seedFixtures()
 

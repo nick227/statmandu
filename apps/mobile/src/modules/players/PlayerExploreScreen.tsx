@@ -5,7 +5,7 @@ import { Text } from '@/shared/ui/Text'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { ContentSection } from '@/shared/layout/ContentSection'
-import { PageFrame, Screen } from '@/shared/layout'
+import { PageFrame, Screen, GlobalFilterBar } from '@/shared/layout'
 import { useSportTheme } from '@/lib/theme'
 import { SearchResultLink } from '@/modules/search/SearchResultLink'
 import { useUnifiedSearch } from '@/modules/search/useUnifiedSearch'
@@ -23,6 +23,7 @@ export function PlayerExploreScreen() {
   const sportTheme = useSportTheme(rankings.sportSlug)
   const header = (
     <View className="gap-md">
+      <GlobalFilterBar />
       <Input
         value={search.q}
         onChangeText={search.setQ}

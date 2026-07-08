@@ -1,7 +1,7 @@
 collection:
   get:
     operationId: search
-    summary: Centralized fuzzy search across players, teams, and games
+    summary: Centralized fuzzy search across players, teams, games, and articles
     security: []
     tags: [search]
     parameters:

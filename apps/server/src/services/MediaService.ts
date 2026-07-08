@@ -26,6 +26,7 @@ export class MediaService {
     return db.mediaAsset.findMany({
       where: { targetType, targetId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
+      include: { uploadedByUser: { include: { profile: true } } },
     })
   }
 
@@ -35,6 +36,7 @@ export class MediaService {
       where: { deletedAt: null },
       orderBy: { createdAt: 'desc' },
       take,
+      include: { uploadedByUser: { include: { profile: true } } },
     })
   }
 

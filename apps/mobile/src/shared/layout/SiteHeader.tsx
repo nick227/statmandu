@@ -20,9 +20,10 @@ export interface SiteHeaderProps {
 }
 
 const NAV_ITEMS = [
+  { label: 'Articles', href: '/articles' },
   { label: 'Athletes', href: '/players' },
   { label: 'Leaderboard', href: '/explore' },
-  { label: 'Score Keeper', href: '/scores' },
+  { label: 'Games', href: '/scores' },
   { label: 'Trading Cards', href: '/cards' },
 ] as const
 

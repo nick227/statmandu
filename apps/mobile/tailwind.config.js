@@ -41,6 +41,13 @@ module.exports = {
         'stat-value': ['32px', { lineHeight: '36px', fontWeight: '700' }],
         'stat-label': ['11px', { lineHeight: '14px', letterSpacing: '0.6px', fontWeight: '600' }],
         body: ['16px', { lineHeight: '24px' }],
+        // Long-form reading scale (Articles) — see docs/design-system-articles.md §2.2.
+        // Deliberately distinct from entityName/body: a headline isn't an
+        // identity, and reading prose wants a taller line-height than UI copy.
+        kicker: ['12px', { lineHeight: '16px', letterSpacing: '0.8px', fontWeight: '700' }],
+        'article-title': ['28px', { lineHeight: '34px', fontWeight: '800' }],
+        'article-dek': ['18px', { lineHeight: '26px', fontWeight: '400' }],
+        'article-body': ['17px', { lineHeight: '28px', fontWeight: '400' }],
       },
     },
   },

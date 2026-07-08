@@ -1,6 +1,6 @@
 import { Link } from 'expo-router'
 import { Pressable, View } from 'react-native'
-import { User, Users, CalendarDays } from 'lucide-react-native'
+import { User, Users, CalendarDays, Newspaper } from 'lucide-react-native'
 import type { components } from '@statman/sdk'
 import { Text } from '@/shared/ui/Text'
 import { Badge } from '@/shared/ui/Badge'
@@ -13,18 +13,21 @@ const ROUTE_BY_TYPE = {
   PLAYER: (id: string) => ({ pathname: '/players/[playerId]' as const, params: { playerId: id } }),
   TEAM: (id: string) => ({ pathname: '/teams/[teamId]' as const, params: { teamId: id } }),
   GAME: (id: string) => ({ pathname: '/games/[gameId]' as const, params: { gameId: id } }),
+  ARTICLE: (id: string) => ({ pathname: '/articles/[articleId]' as const, params: { articleId: id } }),
 }
 
 const TYPE_LABEL: Record<SearchResultItem['type'], string> = {
   PLAYER: 'Player',
   TEAM: 'Team',
   GAME: 'Game',
+  ARTICLE: 'Article',
 }
 
 const TYPE_ICON: Record<SearchResultItem['type'], React.ComponentType<{ size?: number; color?: string }>> = {
   PLAYER: User,
   TEAM: Users,
   GAME: CalendarDays,
+  ARTICLE: Newspaper,
 }
 
 export function SearchResultLink({ result }: { result: SearchResultItem }) {

@@ -8,6 +8,7 @@ MediaAsset:
     title: { type: ['string', 'null'] }
     targetType: { $ref: './common.yaml#/EntityType' }
     targetId: { type: string }
+    uploadedBy: { $ref: './auth.yaml#/User' }
     createdAt: { type: string, format: date-time }
 
 ImageAssetUsage:

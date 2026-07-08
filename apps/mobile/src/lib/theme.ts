@@ -120,3 +120,17 @@ const GAME_STATUS_COLOR: Record<string, StatusColorToken> = {
 export function gameStatusColor(status: string): StatusColorToken {
   return GAME_STATUS_COLOR[status] ?? 'muted-text'
 }
+
+// REJECTED deliberately maps to muted-text, not live(red) — `live` stays
+// reserved for actually-live games; a rejected article isn't an alarm, it's
+// "not published yet." See docs/design-system-articles.md §2.3/§6.
+const ARTICLE_STATUS_COLOR: Record<string, StatusColorToken> = {
+  DRAFT: 'muted-text',
+  PENDING_REVIEW: 'dispute',
+  PUBLISHED: 'verified',
+  REJECTED: 'muted-text',
+}
+
+export function articleStatusColor(status: string): StatusColorToken {
+  return ARTICLE_STATUS_COLOR[status] ?? 'muted-text'
+}

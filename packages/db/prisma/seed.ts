@@ -864,6 +864,89 @@ async function main() {
   }
   console.log('✓ Pending profile claim: 1 (visible in the admin Claims queue)')
 
+  // ── Articles ──────────────────────────────────────────────────────────────
+  // Deterministic picsum.photos seed URLs (no API key, stable per-slug image)
+  // rather than uploaded ImageAsset rows — Article.thumbnailUrl is a plain
+  // string column, same as avatarUrl/logoUrl elsewhere, and seeding through
+  // the image-upload pipeline would be a lot of machinery for a demo thumbnail.
+  const articleSeeds: Array<{
+    slug: string
+    authorId: string
+    title: string
+    body: string
+    keywords: string[]
+    status: 'PUBLISHED' | 'PENDING_REVIEW'
+    publishedDaysAgo?: number
+  }> = [
+    {
+      slug: 'comeback-win',
+      authorId: broadcaster.id,
+      title: `${teams[0].name} pull off a fourth-quarter comeback`,
+      body: `Down by 11 heading into the final period, ${teams[0].name} closed the game on a 12-2 run to steal a win nobody in the building saw coming.\n\nThe defense tightened up first — three empty possessions in a row forced a timeout — and the offense followed, finishing at the rim on back-to-back trips. It's the kind of finish that turns a quiet Tuesday night into the one people bring up all season.`,
+      keywords: ['recap', 'comeback', teams[0].name.toLowerCase()],
+      status: 'PUBLISHED',
+      publishedDaysAgo: 2,
+    },
+    {
+      slug: 'season-preview',
+      authorId: athleteUser.id,
+      title: 'Season preview: what to watch for this year',
+      body: `New season, new rotations. Both programs return their core, but the depth pieces are what will decide close games in February.\n\nWorth tracking early: who wins the minutes battle off the bench, and whether either team can hold up defensively against faster guards. The schedule front-loads a few tough road trips, so the first month will say a lot.`,
+      keywords: ['preview', 'season'],
+      status: 'PUBLISHED',
+      publishedDaysAgo: 14,
+    },
+    {
+      slug: 'training-offseason',
+      authorId: fan1.id,
+      title: 'Inside the offseason training block',
+      body: `A look at how the roster spent the summer — earlier tip times, more conditioning work, and a deliberate focus on free-throw consistency after a rough stretch last year.\n\nCoaches say the biggest gains came from repetition, not a scheme change: more reps at game speed, fewer walkthroughs.`,
+      keywords: ['training', 'offseason'],
+      status: 'PUBLISHED',
+      publishedDaysAgo: 30,
+    },
+    {
+      slug: 'player-spotlight',
+      authorId: fan2.id,
+      title: 'Player spotlight: the breakout sophomore everyone is talking about',
+      body: `Averaging a career high through the first stretch of the season, the sophomore guard has quickly become the name scouts are asking about.\n\nWhat stands out on tape isn't just the scoring — it's the shot selection. Fewer contested threes, more attacks off the bounce, and a real jump in free-throw rate.`,
+      keywords: ['spotlight', 'player'],
+      status: 'PUBLISHED',
+      publishedDaysAgo: 5,
+    },
+    {
+      slug: 'rivalry-week-preview',
+      authorId: fan1.id,
+      title: 'Rivalry week is here — a scouting breakdown',
+      body: `The annual rivalry game headlines this week's slate. Awaiting review before it goes live — a second source is confirming one of the injury notes below.`,
+      keywords: ['rivalry', 'preview'],
+      status: 'PENDING_REVIEW',
+    },
+  ]
+
+  let articleCount = 0
+  for (const seed of articleSeeds) {
+    const existing = await db.article.findFirst({ where: { authorUserId: seed.authorId, title: seed.title } })
+    if (existing) continue
+    const publishedAt = seed.status === 'PUBLISHED' && seed.publishedDaysAgo !== undefined
+      ? new Date(Date.now() - seed.publishedDaysAgo * 24 * 60 * 60 * 1000)
+      : null
+    await db.article.create({
+      data: {
+        authorUserId: seed.authorId,
+        title: seed.title,
+        body: seed.body,
+        keywords: seed.keywords,
+        status: seed.status,
+        thumbnailUrl: `https://picsum.photos/seed/statman-${seed.slug}/800/450`,
+        publishedAt,
+        ...(seed.status === 'PUBLISHED' ? { reviewedByUserId: admin.id, reviewedAt: publishedAt } : {}),
+      },
+    })
+    articleCount += 1
+  }
+  console.log(`✓ Articles: ${articleSeeds.filter((s) => s.status === 'PUBLISHED').length} published, ${articleSeeds.filter((s) => s.status === 'PENDING_REVIEW').length} pending review (${articleCount} newly created this run, visible in the admin Article Review queue)`)
+
   console.log('\nSeeding complete.')
   console.log('Demo accounts (all password: password123):')
   console.log('  admin@statman.dev       — ADMIN account, sees the Claims queue')

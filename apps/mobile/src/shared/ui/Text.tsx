@@ -14,6 +14,10 @@ const textVariants = cva('text-text', {
       statLabel: 'text-stat-label uppercase text-muted-text',
       body: 'text-body',
       caption: 'text-sm text-muted-text',
+      kicker: 'text-kicker uppercase text-sport-accent',
+      articleTitle: 'text-article-title',
+      articleDek: 'text-article-dek text-muted-text',
+      articleBody: 'text-article-body',
     },
   },
   defaultVariants: {

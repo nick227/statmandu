@@ -9,7 +9,7 @@ import { useNativeColor, useStatusNativeColor } from '@/lib/theme'
 import { Button } from '@/shared/ui/Button'
 import { Text } from '@/shared/ui/Text'
 
-type ImageTargetType = 'PLAYER' | 'TEAM' | 'GAME' | 'ATHLETE_PROFILE' | 'GAME_STAT_LINE'
+type ImageTargetType = 'PLAYER' | 'TEAM' | 'GAME' | 'ATHLETE_PROFILE' | 'GAME_STAT_LINE' | 'ARTICLE'
 type ImageUsage = 'AVATAR' | 'LOGO' | 'HERO' | 'EVIDENCE' | 'GALLERY'
 type UploadMode = 'button' | 'tile' | 'image'
 

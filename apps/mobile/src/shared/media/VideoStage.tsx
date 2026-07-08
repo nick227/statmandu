@@ -84,10 +84,9 @@ export function VideoStage({
         interactive ? (
           <Pressable
             className="absolute inset-0"
-            onPress={mode === 'inline' ? undefined : onPlayRequest}
-            disabled={mode === 'inline'}
-            accessibilityRole={mode === 'inline' ? undefined : 'button'}
-            accessibilityLabel={mode === 'inline' ? undefined : 'Play video'}
+            onPress={onPlayRequest}
+            accessibilityRole="button"
+            accessibilityLabel="Play video"
           >
             {previewLayer}
           </Pressable>

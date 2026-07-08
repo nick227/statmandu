@@ -7,11 +7,11 @@ export function isMediaTargetType(value: string): value is MediaTargetType {
 export function mediaFilmLabel(targetType: MediaTargetType) {
   switch (targetType) {
     case 'PLAYER':
-      return 'Athlete film'
+      return 'Athlete video'
     case 'TEAM':
-      return 'Team film'
+      return 'Team video'
     case 'GAME':
-      return 'Game film'
+      return 'Game video'
   }
 }
 

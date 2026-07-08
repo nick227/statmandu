@@ -5,8 +5,6 @@ import { cn } from '@/lib/utils'
 import { useNativeColor, motion } from '@/lib/theme'
 import { Text } from './Text'
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
-
 const buttonVariants = cva('flex-row items-center justify-center rounded-md active:opacity-70', {
   variants: {
     variant: {
@@ -53,8 +51,15 @@ export function Button({ variant, size, className, children, isLoading, disabled
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
 
   return (
-    <AnimatedPressable
-      style={animatedStyle}
+    // The box (background/border/rounding) lives on a plain Pressable so
+    // NativeWind's className interop is guaranteed to apply — wrapping the
+    // whole thing in Animated.createAnimatedComponent(Pressable) and putting
+    // className AND an animated `style` on the same node silently drops the
+    // className-driven background/border on web (Reanimated's web style
+    // handling doesn't merge cleanly with NativeWind's here). The scale-press
+    // animation instead applies to an inner Animated.View that carries only
+    // `style`, never `className`, so there's nothing for it to conflict with.
+    <Pressable
       className={cn(buttonVariants({ variant, size }), (disabled || isLoading) && 'opacity-50', className)}
       disabled={disabled || isLoading}
       onPressIn={(e) => {
@@ -67,11 +72,13 @@ export function Button({ variant, size, className, children, isLoading, disabled
       }}
       {...props}
     >
-      {isLoading ? (
-        <ActivityIndicator color={variant === 'secondary' || variant === 'ghost' ? brandColor : '#FFFFFF'} />
-      ) : (
-        <Text className={textVariants({ variant, size })}>{children}</Text>
-      )}
-    </AnimatedPressable>
+      <Animated.View style={animatedStyle}>
+        {isLoading ? (
+          <ActivityIndicator color={variant === 'secondary' || variant === 'ghost' ? brandColor : '#FFFFFF'} />
+        ) : (
+          <Text className={textVariants({ variant, size })}>{children}</Text>
+        )}
+      </Animated.View>
+    </Pressable>
   )
 }

@@ -7,7 +7,7 @@ import { Skeleton } from '@/shared/ui/Skeleton'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { SignInPrompt } from '@/shared/ui/SignInPrompt'
-import { Screen, PageFrame } from '@/shared/layout'
+import { Screen, PageFrame, GlobalFilterBar } from '@/shared/layout'
 import { GameStatusBadge } from '@/modules/games/GameStatusBadge'
 import { useAuthGate } from '@/modules/auth/useAuthGate'
 import { useLiveScoringGames } from '@/modules/live-scoring/useLiveScoringGames'
@@ -113,10 +113,10 @@ export function ScoresIndexScreen() {
 
   if (!isAuthLoading && !isAuthenticated) {
     return (
-      <Screen title="Score Keeper" insetTop={false} contentClassName="px-md">
+      <Screen title="Games" insetTop={false} contentClassName="px-md">
         <View className="flex-1 items-center justify-center py-xxl">
           <View className="w-full max-w-[420px] gap-md rounded-md border border-border bg-surface p-lg">
-            <Text className="text-center text-lg font-bold">Ready to keep score?</Text>
+            <Text className="text-center text-lg font-bold">Ready for game time?</Text>
             <Text variant="caption" className="text-center">
               Sign in to open live games, start scoring, or cast a broadcast display.
             </Text>
@@ -132,7 +132,7 @@ export function ScoresIndexScreen() {
   const finalGames = games.filter((g) => g.status === 'FINAL' || g.status === 'DISPUTED')
 
   return (
-    <Screen title="Score Keeper" insetTop={false}>
+    <Screen title="Games" insetTop={false}>
       <PageFrame
         main={
           isError ? (
@@ -149,6 +149,7 @@ export function ScoresIndexScreen() {
             />
           ) : (
             <ScrollView contentContainerClassName="gap-lg pb-xxl" showsVerticalScrollIndicator={false}>
+              <GlobalFilterBar />
               <Text variant="caption">
                 Pick a game, then score, broadcast, or watch from the sidelines.
               </Text>

@@ -74,6 +74,10 @@ export class ImageService {
       await db.team.update({ where: { id: data.targetId }, data: { logoUrl: image.url } })
     }
 
+    if (data.usage === 'HERO' && data.targetType === 'ARTICLE') {
+      await db.article.update({ where: { id: data.targetId }, data: { thumbnailUrl: image.url } })
+    }
+
     return image
   }
 
@@ -95,6 +99,12 @@ export class ImageService {
     if (usage === 'LOGO' && targetType === 'TEAM') {
       // Durable team-management roles are not modeled yet; admins own this path
       // until team-role claims land.
+      throw { statusCode: 403, message: 'Forbidden' }
+    }
+
+    if (usage === 'HERO' && targetType === 'ARTICLE') {
+      const article = await db.article.findUnique({ where: { id: targetId } })
+      if (article?.authorUserId === userId) return
       throw { statusCode: 403, message: 'Forbidden' }
     }
   }

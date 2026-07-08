@@ -163,9 +163,12 @@ export function useLiveScoringSession(gameId: string) {
     if (finalize.isSuccess) safeHaptic(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success))
   }, [finalize.isSuccess])
 
-  async function joinAsRole(role: string) {
-    await join.mutateAsync({ role })
+  async function joinAsRole(role: string, teamId?: string) {
+    await join.mutateAsync({ role, teamId })
     setJoinedRole(role)
+    if (teamId) {
+      setSelectedTeamId(teamId)
+    }
   }
 
   function nextClientTimestamp() {

@@ -29,6 +29,7 @@ tags:
   - name: sources
   - name: disputes
   - name: claims
+  - name: articles
   - name: leaderboards
   - name: admin
   - name: cards
@@ -171,6 +172,21 @@ components:
       $ref: './components/schemas/verification.yaml#/ReviewClaimInput'
     VerifyPlayerInput:
       $ref: './components/schemas/verification.yaml#/VerifyPlayerInput'
+
+    ArticleStatus:
+      $ref: './components/schemas/articles.yaml#/ArticleStatus'
+    ArticleAuthorSummary:
+      $ref: './components/schemas/articles.yaml#/ArticleAuthorSummary'
+    Article:
+      $ref: './components/schemas/articles.yaml#/Article'
+    PaginatedArticles:
+      $ref: './components/schemas/articles.yaml#/PaginatedArticles'
+    CreateArticleInput:
+      $ref: './components/schemas/articles.yaml#/CreateArticleInput'
+    UpdateArticleInput:
+      $ref: './components/schemas/articles.yaml#/UpdateArticleInput'
+    ModerateArticleInput:
+      $ref: './components/schemas/articles.yaml#/ModerateArticleInput'
 
     AdminMetrics:
       $ref: './components/schemas/admin.yaml#/AdminMetrics'
@@ -325,6 +341,17 @@ paths:
     $ref: './paths/claims.yaml#/collection'
   /claims/{claimId}:
     $ref: './paths/claims.yaml#/item'
+
+  /articles:
+    $ref: './paths/articles.yaml#/collection'
+  /articles/{articleId}:
+    $ref: './paths/articles.yaml#/item'
+  /articles/{articleId}/submit:
+    $ref: './paths/articles.yaml#/submit'
+  /articles/review:
+    $ref: './paths/articles.yaml#/reviewQueue'
+  /articles/{articleId}/review:
+    $ref: './paths/articles.yaml#/reviewItem'
 
   /admin/metrics:
     $ref: './paths/admin.yaml#/metrics'

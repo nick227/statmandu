@@ -81,33 +81,6 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
   const [isQuickPlayerOpen, setIsQuickPlayerOpen] = useState(false)
   const [followUpEventType, setFollowUpEventType] = useState<GameEventType | null>(null)
 
-  if (!isAuthLoading && !isAuthenticated) {
-    return (
-      <>
-        <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
-        <SignInPrompt message="Sign in to enter stats for this game." />
-      </>
-    )
-  }
-
-  if (session.isError) {
-    return (
-      <>
-        <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
-        <ErrorState message="This game couldn't be loaded." />
-      </>
-    )
-  }
-
-  if (session.isLoading || !session.game) {
-    return (
-      <>
-        <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
-        <LoadingState />
-      </>
-    )
-  }
-
   const {
     awayTeam,
     disciplineStatus,
@@ -143,10 +116,12 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
     undoLastEvent,
   } = session
 
+  // Must run before any early return — auth/loading gates below would otherwise
+  // change the hook count once the game finishes loading.
   useEffect(() => {
     if (intent && !joinedRole && game && !hasTriggeredIntent.current) {
       hasTriggeredIntent.current = true
-      
+
       if (intent === 'TEAM_SCORER') {
         if (!homeTeam || !awayTeam) {
           joinAsRole('TEAM_SCORER', homeTeam?.id ?? awayTeam?.id)
@@ -166,6 +141,54 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
       }
     }
   }, [intent, joinedRole, game, homeTeam, awayTeam])
+
+  const followUpOptions = useMemo(() => {
+    if (!followUpEventType) return []
+    return [
+      {
+        id: 'confirm',
+        label: 'Confirm',
+        tone: 'primary' as const,
+        onPress: () => {
+          submitEvent(followUpEventType)
+          setFollowUpEventType(null)
+        },
+      },
+      {
+        id: 'cancel',
+        label: 'Cancel',
+        tone: 'secondary' as const,
+        onPress: () => setFollowUpEventType(null),
+      },
+    ]
+  }, [followUpEventType, submitEvent])
+
+  if (!isAuthLoading && !isAuthenticated) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
+        <SignInPrompt message="Sign in to enter stats for this game." />
+      </>
+    )
+  }
+
+  if (session.isError) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
+        <ErrorState message="This game couldn't be loaded." />
+      </>
+    )
+  }
+
+  if (session.isLoading || !game) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
+        <LoadingState />
+      </>
+    )
+  }
 
   function finalizeWithWarning() {
     if (openConflictCount > 0) {
@@ -282,27 +305,6 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
   // mode looks identical to the full-game team-card (still needs one).
   const isTrackMode = joinedRole === 'CONTRIBUTOR'
   const isTrackingLocked = isTrackMode && Boolean(activePlayer)
-
-  const followUpOptions = useMemo(() => {
-    if (!followUpEventType) return []
-    return [
-      {
-        id: 'confirm',
-        label: 'Confirm',
-        tone: 'primary' as const,
-        onPress: () => {
-          submitEvent(followUpEventType)
-          setFollowUpEventType(null)
-        },
-      },
-      {
-        id: 'cancel',
-        label: 'Cancel',
-        tone: 'secondary' as const,
-        onPress: () => setFollowUpEventType(null),
-      },
-    ]
-  }, [followUpEventType, submitEvent])
 
   function openSheet(view: Exclude<SheetView, null>) {
     setSheetView(view)

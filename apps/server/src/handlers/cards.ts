@@ -1,28 +1,10 @@
 import { CardService } from '../services/CardService'
-import { db } from '@statman/db'
+import { optionalUser } from '../lib/optionalUser'
 
 const cardService = new CardService()
 
 function actor(request: any) {
   return { id: request.user.id, role: request.user.role }
-}
-
-async function optionalUser(request: any) {
-  if (request.user) return request.user
-  const token =
-    request.cookies?.token ??
-    request.headers.authorization?.replace('Bearer ', '')
-  if (!token) return null
-
-  const directUser = await db.user.findUnique({ where: { id: token }, include: { profile: true } }).catch(() => null)
-  if (directUser) return directUser
-
-  const session = await db.session.findUnique({
-    where: { token },
-    include: { user: { include: { profile: true } } },
-  }).catch(() => null)
-  if (!session || session.expiresAt < new Date() || session.user.suspendedAt) return null
-  return session.user
 }
 
 export async function createCard(request: any, reply: any) {

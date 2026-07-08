@@ -1,6 +1,6 @@
 import { FlatList, View, useWindowDimensions } from 'react-native'
 import { CreditCard } from 'lucide-react-native'
-import { PageFrame, Screen } from '@/shared/layout'
+import { PageFrame, Screen, GlobalFilterBar } from '@/shared/layout'
 import { LAYOUT } from '@/shared/layout/layoutConstants'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { EmptyState } from '@/shared/ui/EmptyState'
@@ -51,6 +51,7 @@ export function CardManagerScreen() {
   if (browse.isLoading || isAuthLoading) {
     return (
       <Screen title="Trading Cards" insetTop={false}>
+        <GlobalFilterBar />
         <PageFrame
           main={
             <View className="gap-md">
@@ -84,6 +85,7 @@ export function CardManagerScreen() {
             columnWrapperClassName={columns > 1 ? 'gap-md' : undefined}
             ListHeaderComponent={
               <View className="mb-md gap-md">
+                <GlobalFilterBar />
                 <Text variant="caption">
                   Browse published Statman Cards — claim a drop, then create your own from the sidebar.
                 </Text>

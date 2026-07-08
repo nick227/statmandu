@@ -38,6 +38,8 @@ export class EntityTargetService {
         return Boolean(await db.cardTemplate.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'CARD_ISSUE':
         return Boolean(await db.cardIssue.findUnique({ where: { id: targetId }, select: { id: true } }))
+      case 'ARTICLE':
+        return Boolean(await db.article.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'PROFILE_FIELD':
         throw { statusCode: 400, message: 'PROFILE_FIELD targets require field-level context and are not supported here' }
       default:

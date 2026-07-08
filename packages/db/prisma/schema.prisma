@@ -39,6 +39,8 @@ model User {
   disputesResolved  Dispute[]       @relation("DisputeResolver")
   claimsRequested   Claim[]         @relation("ClaimRequester")
   claimsReviewed    Claim[]         @relation("ClaimReviewer")
+  articlesAuthored  Article[]       @relation("ArticleAuthor")
+  articlesReviewed  Article[]       @relation("ArticleReviewer")
   mediaAssets       MediaAsset[]
   imageAssets       ImageAsset[]
   cardTemplates     CardTemplate[]  @relation("CreatedCardTemplates")
@@ -111,6 +113,7 @@ enum EntityType {
   TEAM_SEASON_STAT
   CARD_TEMPLATE
   CARD_ISSUE
+  ARTICLE
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -845,6 +848,45 @@ model Claim {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Content — sports articles. Submittable by any user, gated behind admin
+// approval before becoming publicly readable — same PENDING/APPROVED/
+// REJECTED review shape as Claim above, plus a DRAFT state Claim doesn't
+// need (a claim is submitted complete; an article is authored over time).
+// ─────────────────────────────────────────────────────────────────────────
+
+enum ArticleStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+}
+
+model Article {
+  id             String        @id @default(cuid())
+  authorUserId   String
+  title          String
+  body           String        @db.Text
+  // JSON string array, not a MySQL scalar list (Prisma/MySQL has no native
+  // array type — see the `stats` Json fields elsewhere in this schema for
+  // the same fallback).
+  keywords       Json?
+  thumbnailUrl   String?
+  status         ArticleStatus @default(DRAFT)
+  rejectionNote  String?
+  reviewedByUserId String?
+  reviewedAt     DateTime?
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  authorUser     User  @relation("ArticleAuthor", fields: [authorUserId], references: [id])
+  reviewedByUser User? @relation("ArticleReviewer", fields: [reviewedByUserId], references: [id])
+
+  @@index([status, publishedAt])
+  @@index([authorUserId, status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Social layer — follow, react, feed
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -904,6 +946,7 @@ enum FeedItemType {
   CARD_PUBLISHED
   CARD_CLAIMED
   CARD_DOWNLOADED
+  ARTICLE_PUBLISHED
 }
 
 model FeedItem {

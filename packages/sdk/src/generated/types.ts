@@ -628,7 +628,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Centralized fuzzy search across players, teams, and games */
+        /** Centralized fuzzy search across players, teams, games, and articles */
         get: operations["search"];
         put?: never;
         post?: never;
@@ -895,6 +895,93 @@ export interface paths {
         head?: never;
         /** Approve or reject a profile claim (admin only) */
         patch: operations["reviewClaim"];
+        trace?: never;
+    };
+    "/articles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List articles. Public callers see PUBLISHED only. Pass authorUserId (must match the caller, or caller must be admin) to include that author's DRAFT/PENDING_REVIEW/REJECTED articles too — same list used for the public reading feed and an author's own article history. */
+        get: operations["listArticles"];
+        put?: never;
+        /** Create a new article as a draft (any authenticated user) */
+        post: operations["createArticle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/articles/{articleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an article by id (public if PUBLISHED; author or admin otherwise) */
+        get: operations["getArticle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit an article's title/body/keywords. Author may edit while DRAFT or REJECTED (editing a REJECTED article does not resubmit it — call submitArticle separately). Admin may edit at any status. */
+        patch: operations["updateArticle"];
+        trace?: never;
+    };
+    "/articles/{articleId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit a DRAFT or REJECTED article for admin review */
+        post: operations["submitArticle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/articles/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List articles awaiting moderation (admin queue, defaults to PENDING_REVIEW) */
+        get: operations["listArticlesForReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/articles/{articleId}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Approve (publish) or reject a PENDING_REVIEW article (admin only) */
+        patch: operations["moderateArticle"];
         trace?: never;
     };
     "/admin/metrics": {
@@ -1444,7 +1531,7 @@ export interface components {
             seasonStat: components["schemas"]["TeamSeasonStat"];
         };
         /** @enum {string} */
-        SearchResultType: "PLAYER" | "TEAM" | "GAME";
+        SearchResultType: "PLAYER" | "TEAM" | "GAME" | "ARTICLE";
         SearchResultItem: {
             type: components["schemas"]["SearchResultType"];
             id: string;
@@ -1465,6 +1552,7 @@ export interface components {
             title?: string | null;
             targetType: components["schemas"]["EntityType"];
             targetId: string;
+            uploadedBy?: components["schemas"]["User"];
             /** Format: date-time */
             createdAt: string;
         };
@@ -1602,6 +1690,48 @@ export interface components {
         };
         VerifyPlayerInput: {
             sourceStatus: components["schemas"]["SourceStatus"];
+        };
+        /** @enum {string} */
+        ArticleStatus: "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "REJECTED";
+        ArticleAuthorSummary: {
+            id: string;
+            username?: string | null;
+            displayName?: string | null;
+        };
+        Article: {
+            id: string;
+            authorUserId: string;
+            title: string;
+            body: string;
+            keywords?: string[];
+            thumbnailUrl?: string | null;
+            status: components["schemas"]["ArticleStatus"];
+            rejectionNote?: string | null;
+            reviewedByUserId?: string | null;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            author: components["schemas"]["ArticleAuthorSummary"];
+        };
+        PaginatedArticles: {
+            data: components["schemas"]["Article"][];
+            meta: components["schemas"]["PaginatedMeta"];
+        };
+        CreateArticleInput: {
+            title: string;
+            body: string;
+            keywords?: string[];
+        };
+        UpdateArticleInput: {
+            title?: string;
+            body?: string;
+            keywords?: string[];
+        };
+        ModerateArticleInput: {
+            /** @enum {string} */
+            status: "PUBLISHED" | "REJECTED";
+            rejectionNote?: string;
         };
         AdminMetrics: {
             playersCount: number;
@@ -3893,6 +4023,269 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    listArticles: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor returned by the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Simple text search within this resource. */
+                q?: components["parameters"]["SearchQuery"];
+                authorUserId?: string;
+                keyword?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated articles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedArticles"];
+                };
+            };
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createArticle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateArticleInput"];
+            };
+        };
+        responses: {
+            /** @description Article created as a draft */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Article"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getArticle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                articleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Article */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Article"];
+                    };
+                };
+            };
+            /** @description Not published, and caller is neither the author nor an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateArticle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                articleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateArticleInput"];
+            };
+        };
+        responses: {
+            /** @description Updated article */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Article"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Not the author, or article is PENDING_REVIEW/PUBLISHED and caller is not an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    submitArticle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                articleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Article moved to PENDING_REVIEW */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Article"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Not the author */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Article is not in a submittable state */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listArticlesForReview: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ArticleStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Articles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Article"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Admin only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    moderateArticle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                articleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerateArticleInput"];
+            };
+        };
+        responses: {
+            /** @description Article moderated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Article"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Admin only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Article is not PENDING_REVIEW */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getAdminMetrics: {

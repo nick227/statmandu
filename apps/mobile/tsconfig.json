@@ -3,6 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "types": ["jest"],
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["./src/*"],
       "@statman/sports": ["../../packages/sports/src/index.ts"]

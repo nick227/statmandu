@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { MediaCarousel, type MediaCarouselItem } from '@/shared/media/MediaCarousel'
 import { VideoStage } from '@/shared/media/VideoStage'
 import { BackButton } from '@/shared/ui/BackButton'
+import { mediaSurfaceStyles } from '@/shared/layout/MediaSurface'
 
 export interface EntityHeroProps {
   youtubeVideoId?: string | null
@@ -21,16 +22,30 @@ export interface EntityHeroProps {
   /** Overrides the carousel's default tap-out-to-YouTube — e.g. escalate to
    *  the full-screen immersive viewer instead. No-op unless mediaItems is set. */
   onMediaPress?: (index: number) => void
+  height?: number
+  scrimHeight?: number
 }
 
-const HERO_HEIGHT = 420
+export const DEFAULT_ENTITY_HERO_HEIGHT = 420
+export const DEFAULT_ENTITY_HERO_SCRIM_HEIGHT = 224
 
 // Full-bleed media hero — "use media as the emotional layer" (brand guide).
 // Falls back to a flat brand-tinted panel when the entity has no media yet,
 // rather than a broken image or empty gray box. Always carries the back
 // affordance for the screen it's the top of — see BackButton for why hero
 // screens use this instead of a native header.
-export function EntityHero({ youtubeVideoId, fallbackImageUri, mediaItems, children, className, showBackButton = true, onShare, onMediaPress }: EntityHeroProps) {
+export function EntityHero({
+  youtubeVideoId,
+  fallbackImageUri,
+  mediaItems,
+  children,
+  className,
+  showBackButton = true,
+  onShare,
+  onMediaPress,
+  height = DEFAULT_ENTITY_HERO_HEIGHT,
+  scrimHeight = DEFAULT_ENTITY_HERO_SCRIM_HEIGHT,
+}: EntityHeroProps) {
   const insets = useSafeAreaInsets()
   const { width: screenWidth } = useWindowDimensions()
   const hasCarousel = Boolean(mediaItems && mediaItems.length > 0)
@@ -44,7 +59,7 @@ export function EntityHero({ youtubeVideoId, fallbackImageUri, mediaItems, child
 
   const shareButton = onShare ? (
     <View className="absolute right-lg z-10" style={{ top: insets.top + 12 }}>
-      <Pressable onPress={onShare} className="h-10 w-10 items-center justify-center rounded-full bg-black/40">
+      <Pressable onPress={onShare} className={mediaSurfaceStyles.chromeButton}>
         <Share2 size={20} color="#FFFFFF" />
       </Pressable>
     </View>
@@ -52,7 +67,7 @@ export function EntityHero({ youtubeVideoId, fallbackImageUri, mediaItems, child
 
   const heroChrome = (
     <>
-      <View pointerEvents="none" className="absolute inset-x-0 bottom-0 h-56 bg-black/45" />
+      <View pointerEvents="none" className="absolute inset-x-0 bottom-0 bg-black/45" style={{ height: scrimHeight }} />
       {backButton}
       {shareButton}
       {children}
@@ -61,9 +76,9 @@ export function EntityHero({ youtubeVideoId, fallbackImageUri, mediaItems, child
 
   if (hasCarousel) {
     return (
-      <View className={cn('h-[420px] w-full justify-end overflow-hidden', className)}>
+      <View className={cn('w-full justify-end overflow-hidden', className)} style={{ height }}>
         <View className="absolute inset-0">
-          <MediaCarousel items={mediaItems!} height={HERO_HEIGHT} onItemPress={onMediaPress} />
+          <MediaCarousel items={mediaItems!} height={height} onItemPress={onMediaPress} />
         </View>
         {heroChrome}
       </View>
@@ -72,13 +87,13 @@ export function EntityHero({ youtubeVideoId, fallbackImageUri, mediaItems, child
 
   if (hasVideo) {
     return (
-      <View className={cn('h-[420px] w-full justify-end overflow-hidden', className)}>
+      <View className={cn('w-full justify-end overflow-hidden', className)} style={{ height }}>
         <View className="absolute inset-0">
           <VideoStage
             videoId={youtubeVideoId!}
             mode="chrome"
             width={screenWidth}
-            height={HERO_HEIGHT}
+            height={height}
             interactive={Boolean(onMediaPress)}
             onPlayRequest={() => onMediaPress?.(0)}
           />
@@ -91,7 +106,7 @@ export function EntityHero({ youtubeVideoId, fallbackImageUri, mediaItems, child
 
   if (!fallbackImageUri) {
     return (
-      <View className={cn('h-[420px] w-full bg-black justify-end overflow-hidden', className)}>
+      <View className={cn('w-full bg-black justify-end overflow-hidden', className)} style={{ height }}>
         <View className="absolute inset-0 bg-sport-accent/15" />
         <View className="absolute -right-20 top-12 h-64 w-64 rounded-full bg-live/15" />
         <View className="absolute -left-20 bottom-8 h-72 w-72 rounded-full bg-sport-accent/25" />
@@ -103,9 +118,9 @@ export function EntityHero({ youtubeVideoId, fallbackImageUri, mediaItems, child
   }
 
   return (
-    <ImageBackground source={{ uri: fallbackImageUri }} resizeMode="cover" className={cn('h-[420px] w-full justify-end overflow-hidden', className)}>
+    <ImageBackground source={{ uri: fallbackImageUri }} resizeMode="cover" className={cn('w-full justify-end overflow-hidden', className)} style={{ height }}>
       <View className="absolute inset-0 bg-black/35" />
-      <View className="absolute inset-x-0 bottom-0 h-56 bg-black/45" />
+      <View className="absolute inset-x-0 bottom-0 bg-black/45" style={{ height: scrimHeight }} />
       {backButton}
       {shareButton}
       {children}

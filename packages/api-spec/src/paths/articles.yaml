@@ -1,0 +1,225 @@
+collection:
+  get:
+    operationId: listArticles
+    summary: >
+      List articles. Public callers see PUBLISHED only. Pass authorUserId
+      (must match the caller, or caller must be admin) to include that
+      author's DRAFT/PENDING_REVIEW/REJECTED articles too — same list used
+      for the public reading feed and an author's own article history.
+    security: []
+    tags: [articles]
+    parameters:
+      - $ref: '../components/parameters/common.yaml#/Cursor'
+      - $ref: '../components/parameters/common.yaml#/Limit'
+      - $ref: '../components/parameters/common.yaml#/SearchQuery'
+      - in: query
+        name: authorUserId
+        schema: { type: string }
+      - in: query
+        name: keyword
+        schema: { type: string }
+    responses:
+      '200':
+        description: Paginated articles
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/articles.yaml#/PaginatedArticles' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+  post:
+    operationId: createArticle
+    summary: Create a new article as a draft (any authenticated user)
+    tags: [articles]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/articles.yaml#/CreateArticleInput' }
+    responses:
+      '201':
+        description: Article created as a draft
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/articles.yaml#/Article' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+item:
+  get:
+    operationId: getArticle
+    summary: Get an article by id (public if PUBLISHED; author or admin otherwise)
+    security: []
+    tags: [articles]
+    parameters:
+      - in: path
+        name: articleId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Article
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/articles.yaml#/Article' }
+      '403':
+        description: Not published, and caller is neither the author nor an admin
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+  patch:
+    operationId: updateArticle
+    summary: >
+      Edit an article's title/body/keywords. Author may edit while DRAFT or
+      REJECTED (editing a REJECTED article does not resubmit it — call
+      submitArticle separately). Admin may edit at any status.
+    tags: [articles]
+    parameters:
+      - in: path
+        name: articleId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/articles.yaml#/UpdateArticleInput' }
+    responses:
+      '200':
+        description: Updated article
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/articles.yaml#/Article' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not the author, or article is PENDING_REVIEW/PUBLISHED and caller is not an admin
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+submit:
+  post:
+    operationId: submitArticle
+    summary: Submit a DRAFT or REJECTED article for admin review
+    tags: [articles]
+    parameters:
+      - in: path
+        name: articleId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Article moved to PENDING_REVIEW
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/articles.yaml#/Article' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not the author
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+      '409':
+        description: Article is not in a submittable state
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+reviewQueue:
+  get:
+    operationId: listArticlesForReview
+    summary: List articles awaiting moderation (admin queue, defaults to PENDING_REVIEW)
+    security: [{ adminAuth: [] }]
+    tags: [articles]
+    parameters:
+      - in: query
+        name: status
+        schema: { $ref: '../components/schemas/articles.yaml#/ArticleStatus' }
+    responses:
+      '200':
+        description: Articles
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/articles.yaml#/Article' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Admin only
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+reviewItem:
+  patch:
+    operationId: moderateArticle
+    summary: Approve (publish) or reject a PENDING_REVIEW article (admin only)
+    security: [{ adminAuth: [] }]
+    tags: [articles]
+    parameters:
+      - in: path
+        name: articleId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/articles.yaml#/ModerateArticleInput' }
+    responses:
+      '200':
+        description: Article moderated
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/articles.yaml#/Article' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Admin only
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+      '409':
+        description: Article is not PENDING_REVIEW
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }

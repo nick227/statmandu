@@ -1,0 +1,69 @@
+ArticleStatus:
+  type: string
+  enum: [DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED]
+
+ArticleAuthorSummary:
+  type: object
+  required: [id]
+  properties:
+    id: { type: string }
+    username: { type: ['string', 'null'] }
+    displayName: { type: ['string', 'null'] }
+
+Article:
+  type: object
+  required: [id, authorUserId, title, body, status, author]
+  properties:
+    id: { type: string }
+    authorUserId: { type: string }
+    title: { type: string }
+    body: { type: string }
+    keywords:
+      type: array
+      items: { type: string }
+    thumbnailUrl: { type: ['string', 'null'] }
+    status: { $ref: '#/ArticleStatus' }
+    rejectionNote: { type: ['string', 'null'] }
+    reviewedByUserId: { type: ['string', 'null'] }
+    publishedAt: { type: ['string', 'null'], format: date-time }
+    createdAt: { type: string, format: date-time }
+    author: { $ref: '#/ArticleAuthorSummary' }
+
+PaginatedArticles:
+  type: object
+  required: [data, meta]
+  properties:
+    data:
+      type: array
+      items: { $ref: '#/Article' }
+    meta: { $ref: './common.yaml#/PaginatedMeta' }
+
+CreateArticleInput:
+  type: object
+  required: [title, body]
+  properties:
+    title: { type: string, minLength: 1, maxLength: 140 }
+    body: { type: string, minLength: 1, maxLength: 20000 }
+    keywords:
+      type: array
+      items: { type: string, maxLength: 30 }
+      maxItems: 10
+
+UpdateArticleInput:
+  type: object
+  properties:
+    title: { type: string, minLength: 1, maxLength: 140 }
+    body: { type: string, minLength: 1, maxLength: 20000 }
+    keywords:
+      type: array
+      items: { type: string, maxLength: 30 }
+      maxItems: 10
+
+ModerateArticleInput:
+  type: object
+  required: [status]
+  properties:
+    status:
+      type: string
+      enum: [PUBLISHED, REJECTED]
+    rejectionNote: { type: string, maxLength: 1000 }
