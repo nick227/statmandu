@@ -74,3 +74,10 @@ export const HOME_SECTION_COPY = {
     subtitle: 'Three ways athletes and teams turn game nights into profile equity.',
   },
 } as const
+
+export const HOME_EMPTY_COPY = {
+  feed: {
+    title: 'Quiet for now',
+    description: 'Finalized games and new media will show up here.',
+  },
+} as const

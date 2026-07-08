@@ -3,34 +3,9 @@ import { View } from 'react-native'
 import { Link } from 'expo-router'
 import { Text } from '@/shared/ui/Text'
 import { SpotlightCard } from '@/shared/ui/SpotlightCard'
+import { ContentSection } from '@/shared/layout/ContentSection'
 
-export interface HomeSectionProps {
-  title: string
-  subtitle?: string
-  href?: { pathname: string; params?: Record<string, string> }
-  linkLabel?: string
-  children: ReactNode
-  className?: string
-}
-
-export function HomeSection({ title, subtitle, href, linkLabel = 'See all', children, className }: HomeSectionProps) {
-  return (
-    <View className={className ?? 'gap-sm'}>
-      <View className="flex-row items-end justify-between gap-md">
-        <View className="flex-1 gap-xs">
-          <Text className="text-lg font-semibold">{title}</Text>
-          {subtitle ? <Text variant="caption">{subtitle}</Text> : null}
-        </View>
-        {href ? (
-          <Link href={href as never}>
-            <Text variant="caption" className="text-brand font-semibold">{linkLabel}</Text>
-          </Link>
-        ) : null}
-      </View>
-      {children}
-    </View>
-  )
-}
+export { ContentSection as HomeSection }
 
 export interface PlatformAuthorityBandProps {
   sportLabel: string

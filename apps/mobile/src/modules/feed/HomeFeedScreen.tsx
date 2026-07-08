@@ -12,10 +12,10 @@ import {
   PlatformPitchCard,
   UsageCtaRow,
 } from '@/modules/feed/HomeSections'
-import { AthleteSpotlightCardLink, GameSpotlightCardLink } from '@/modules/feed/SpotlightCardLinks'
-import { TeamLeaderboardCard } from '@/modules/leaderboards/LeaderboardEntryCard'
+import { AthleteSpotlightCardLink, TeamSpotlightCardLink } from '@/modules/leaderboards/SpotlightCardLinks'
+import { GameSpotlightCardLink } from '@/modules/feed/SpotlightCardLinks'
 import { useHomeFeed } from '@/modules/feed/useHomeFeed'
-import { HOME_SPORT_SLUG } from '@/modules/feed/homeContent'
+import { HOME_EMPTY_COPY, HOME_SPORT_SLUG } from '@/modules/feed/homeContent'
 
 export function HomeFeedScreen() {
   const home = useHomeFeed()
@@ -60,7 +60,7 @@ export function HomeFeedScreen() {
         <CommunityPulseMetrics metrics={home.communityMetrics} />
         <View className="gap-sm pt-sm">
           {home.communityActivity.length === 0 ? (
-            <EmptyState icon={Rss} title="Quiet for now" description="Finalized games and new media will show up here." />
+            <EmptyState icon={Rss} title={HOME_EMPTY_COPY.feed.title} description={HOME_EMPTY_COPY.feed.description} />
           ) : (
             home.communityActivity.map((item, index) => (
               <FeedItemCard key={item.id} item={item} index={index} />
@@ -93,7 +93,7 @@ export function HomeFeedScreen() {
         <HomeSection title={home.sectionCopy.leaders.title} subtitle={home.sectionCopy.leaders.subtitle} href={{ pathname: '/(tabs)/explore' }}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-md pb-sm">
             {home.leaderboardTeams.map((entry) => (
-              <TeamLeaderboardCard key={entry.team.id} entry={entry} sportSlug={HOME_SPORT_SLUG} className="w-44" />
+              <TeamSpotlightCardLink key={entry.team.id} entry={entry} sportSlug={HOME_SPORT_SLUG} size="small" className="w-44" />
             ))}
           </ScrollView>
         </HomeSection>
