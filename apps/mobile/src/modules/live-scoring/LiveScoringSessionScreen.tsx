@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, View } from 'react-native'
-import { Link, Stack, useRouter } from 'expo-router'
+import { Link, Stack, useRouter, useLocalSearchParams } from 'expo-router'
 import type GorhomBottomSheet from '@gorhom/bottom-sheet'
 import { getSportDefinition } from '@statman/sports'
 import { ClipboardList, Eye, Radio, Target } from 'lucide-react-native'
@@ -20,6 +20,8 @@ import { ReporterPresencePill } from '@/modules/live-scoring/ReporterPresencePil
 import { PlayerSwitchSheet } from '@/modules/live-scoring/PlayerSwitchSheet'
 import { SubstitutionPicker } from '@/modules/live-scoring/SubstitutionPicker'
 import { RecentPlaysStrip } from '@/modules/live-scoring/RecentPlaysStrip'
+import { QuickPlayerOverlay } from '@/modules/live-scoring/QuickPlayerOverlay'
+import { EventFollowUpModal } from '@/modules/live-scoring/EventFollowUpModal'
 import { useLiveScoringSession } from '@/modules/live-scoring/useLiveScoringSession'
 import { useAuthGate } from '@/modules/auth/useAuthGate'
 import { SportEventPad, SportStatStrip } from '@/modules/sports'
@@ -70,9 +72,14 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
   const session = useLiveScoringSession(gameId)
   const { isAuthenticated, isAuthLoading } = useAuthGate()
   const router = useRouter()
+  const { intent } = useLocalSearchParams<{ intent?: string }>()
+  const hasTriggeredIntent = useRef(false)
   const sheetRef = useRef<GorhomBottomSheet>(null)
   const [sheetView, setSheetView] = useState<SheetView>(null)
   const [undoingEventId, setUndoingEventId] = useState<string | null>(null)
+  const [pendingEventType, setPendingEventType] = useState<GameEventType | null>(null)
+  const [isQuickPlayerOpen, setIsQuickPlayerOpen] = useState(false)
+  const [followUpEventType, setFollowUpEventType] = useState<GameEventType | null>(null)
 
   if (!isAuthLoading && !isAuthenticated) {
     return (
@@ -135,6 +142,30 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
     undoEventById,
     undoLastEvent,
   } = session
+
+  useEffect(() => {
+    if (intent && !joinedRole && game && !hasTriggeredIntent.current) {
+      hasTriggeredIntent.current = true
+      
+      if (intent === 'TEAM_SCORER') {
+        if (!homeTeam || !awayTeam) {
+          joinAsRole('TEAM_SCORER', homeTeam?.id ?? awayTeam?.id)
+          return
+        }
+        Alert.alert(
+          'Select Team',
+          'Which team are you scoring for?',
+          [
+            { text: homeTeam.name, onPress: () => joinAsRole('TEAM_SCORER', homeTeam.id) },
+            { text: awayTeam.name, onPress: () => joinAsRole('TEAM_SCORER', awayTeam.id) },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        )
+      } else {
+        joinAsRole(intent)
+      }
+    }
+  }, [intent, joinedRole, game, homeTeam, awayTeam])
 
   function finalizeWithWarning() {
     if (openConflictCount > 0) {
@@ -252,6 +283,27 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
   const isTrackMode = joinedRole === 'CONTRIBUTOR'
   const isTrackingLocked = isTrackMode && Boolean(activePlayer)
 
+  const followUpOptions = useMemo(() => {
+    if (!followUpEventType) return []
+    return [
+      {
+        id: 'confirm',
+        label: 'Confirm',
+        tone: 'primary' as const,
+        onPress: () => {
+          submitEvent(followUpEventType)
+          setFollowUpEventType(null)
+        },
+      },
+      {
+        id: 'cancel',
+        label: 'Cancel',
+        tone: 'secondary' as const,
+        onPress: () => setFollowUpEventType(null),
+      },
+    ]
+  }, [followUpEventType, submitEvent])
+
   function openSheet(view: Exclude<SheetView, null>) {
     setSheetView(view)
     requestAnimationFrame(() => sheetRef.current?.snapToIndex(0))
@@ -265,6 +317,16 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
     const eventDefinition = definition.events[type]
     if (eventDefinition?.confirmationMode === 'detail' && eventDefinition.requiresSecondaryPlayer) {
       openSheet('substitution')
+      return
+    }
+    if (eventDefinition?.requiresPlayer && !selectedPlayerId) {
+      if (!selectedTeamId) return
+      setPendingEventType(type)
+      setIsQuickPlayerOpen(true)
+      return
+    }
+    if (eventDefinition?.confirmationMode === 'confirm') {
+      setFollowUpEventType(type)
       return
     }
     submitEvent(type)
@@ -365,7 +427,7 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
 
       <SportEventPad
         sport={sport}
-        disabled={!selectedPlayerId}
+        disabled={!selectedTeamId || (isTrackMode && !selectedPlayerId)}
         suggestedEventTypes={suggestedEventTypes}
         onEvent={handleEventTap}
         className="flex-1 px-lg"
@@ -420,6 +482,32 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
         ) : null}
         {sheetView === 'conflicts' ? <ConnectedConflictQueue gameId={game.id} className="gap-md px-lg pt-sm" /> : null}
       </Sheet>
+
+      <QuickPlayerOverlay
+        visible={isQuickPlayerOpen}
+        roster={roster}
+        selectedPlayerId={selectedPlayerId}
+        title="Who made the play?"
+        onRequestClose={() => {
+          setIsQuickPlayerOpen(false)
+          setPendingEventType(null)
+        }}
+        onSelect={(playerId) => {
+          if (!pendingEventType) return
+          setSelectedPlayerId(playerId)
+          submitEvent(pendingEventType, playerId)
+          setIsQuickPlayerOpen(false)
+          setPendingEventType(null)
+        }}
+      />
+
+      <EventFollowUpModal
+        visible={Boolean(followUpEventType)}
+        title={followUpEventType ? definition.events[followUpEventType]?.label ?? 'Confirm event' : 'Confirm event'}
+        description="Tap confirm to record this play."
+        options={followUpOptions}
+        onRequestClose={() => setFollowUpEventType(null)}
+      />
       </View>
     </View>
   )

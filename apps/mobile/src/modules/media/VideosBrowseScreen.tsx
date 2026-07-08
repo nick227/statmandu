@@ -46,7 +46,7 @@ export function VideosBrowseScreen() {
   }
 
   return (
-    <Screen title="Video" className="bg-black">
+    <Screen title="Video">
       <PageFrame
         main={<VideoFeed items={browse.videos} stageWidth={stageWidth} />}
         sidebar={<VideosSidebar videos={browse.videos} />}
