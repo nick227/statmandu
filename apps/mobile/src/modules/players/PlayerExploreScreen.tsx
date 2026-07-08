@@ -8,6 +8,7 @@ import { Screen } from '@/shared/layout'
 import { useSportTheme } from '@/lib/theme'
 import { SearchResultLink } from '@/modules/search/SearchResultLink'
 import { useUnifiedSearch } from '@/modules/search/useUnifiedSearch'
+import { ConnectedCardsExploreSection } from '@/modules/cards/ConnectedCardsExploreSection'
 import { EXPLORE_COPY } from '@/modules/leaderboards/exploreContent'
 import { ExploreRankingsPanel } from '@/modules/leaderboards/ExploreRankingsPanel'
 import { SearchResultsSkeleton } from '@/modules/leaderboards/RankingsSkeleton'
@@ -39,6 +40,7 @@ export function PlayerExploreScreen() {
               className="mb-sm"
             />
             <ExploreRankingsPanel rankings={rankings} />
+            {!search.isSearching ? <ConnectedCardsExploreSection /> : null}
             {search.isSearching ? (
               <ContentSection
                 title={copy.sections.searchResults.title}

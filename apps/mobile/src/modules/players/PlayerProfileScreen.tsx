@@ -20,6 +20,7 @@ import { EntityProfileShell } from '@/shared/layout/entity-profile/EntityProfile
 import { MediaGrid } from '@/modules/media/MediaGrid'
 import { YouTubeMediaAttachForm } from '@/modules/media/YouTubeMediaAttachForm'
 import { ConnectedSourcesPanel } from '@/modules/disputes/ConnectedSourcesPanel'
+import { ConnectedCardProfileRail } from '@/modules/cards/ConnectedCardProfileRail'
 import { PlayerSourceBadge } from '@/modules/players/PlayerSourceBadge'
 import { PlayerHighlights } from '@/modules/players/PlayerHighlights'
 import { usePlayerProfile } from '@/modules/players/usePlayerProfile'
@@ -287,6 +288,12 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
           <Animated.View entering={FadeIn.duration(200)} className="px-lg gap-md">
             <MediaGrid items={mediaItems} onItemPress={setViewerIndex} />
             <YouTubeMediaAttachForm targetType="PLAYER" targetId={player.id} />
+          </Animated.View>
+        ) : null}
+
+        {tab === 'Cards' ? (
+          <Animated.View entering={FadeIn.duration(200)}>
+            <ConnectedCardProfileRail athleteProfileId={profile.id} canEdit={canEditProfile} />
           </Animated.View>
         ) : null}
 

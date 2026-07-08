@@ -39,6 +39,11 @@ recent:
                 data:
                   type: array
                   items: { $ref: '../components/schemas/cards.yaml#/Card' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
 
 item:
   get:
@@ -187,11 +192,16 @@ athleteCards:
                 data:
                   type: array
                   items: { $ref: '../components/schemas/cards.yaml#/Card' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
 
 mine:
   get:
     operationId: listMyCards
-    summary: List cards claimed by the current user
+    summary: List cards created and claimed by the current user
     tags: [cards]
     responses:
       '200':
@@ -203,15 +213,14 @@ mine:
               required: [data]
               properties:
                 data:
-                  type: array
-                  items: { $ref: '../components/schemas/cards.yaml#/MyCard' }
+                  $ref: '../components/schemas/cards.yaml#/MyCards'
       '401':
         $ref: '../components/responses/common.yaml#/Unauthorized'
 
 downloaded:
   post:
     operationId: markCardDownloaded
-    summary: Mark a claimed card issue downloaded
+    summary: Mark a claimed card issue downloaded and return authenticity metadata
     tags: [cards]
     parameters:
       - in: path
@@ -220,13 +229,13 @@ downloaded:
         schema: { type: string }
     responses:
       '200':
-        description: Card issue marked downloaded
+        description: Card issue marked downloaded with authenticity metadata
         content:
           application/json:
             schema:
               type: object
               required: [data]
               properties:
-                data: { $ref: '../components/schemas/cards.yaml#/CardIssue' }
+                data: { $ref: '../components/schemas/cards.yaml#/CardIssueDownload' }
       '401':
         $ref: '../components/responses/common.yaml#/Unauthorized'

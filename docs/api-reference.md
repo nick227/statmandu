@@ -171,5 +171,5 @@
 | `POST /cards/{cardId}/publish` | Publish a Statman Card | Auth required | `200` |
 | `POST /cards/{cardId}/claim` | Claim an issued copy of a public Statman Card | Auth required | `201` |
 | `GET /athlete-profiles/{athleteProfileId}/cards` | List public Statman Cards for an athlete profile | Public | `200` |
-| `GET /me/cards` | List cards claimed by the current user | Auth required | `200` |
-| `POST /card-issues/{issueId}/downloaded` | Mark a claimed card issue downloaded | Auth required | `200` |
+| `GET /me/cards` | List cards created and claimed by the current user | Auth required | `200` |
+| `POST /card-issues/{issueId}/downloaded` | Mark a claimed card issue downloaded and return authenticity metadata | Auth required | `200` |

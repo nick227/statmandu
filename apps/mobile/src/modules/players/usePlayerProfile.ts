@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useCurrentUser, useGame, useMedia, usePlayer, usePlayerGames, usePlayerSeasonStats, useUpdatePlayer } from '@statman/sdk'
 import { sportStatChips } from '@/modules/sports'
 
-const PLAYER_PROFILE_TABS = ['Stats', 'Games', 'Media', 'Sources']
+const PLAYER_PROFILE_TABS = ['Stats', 'Games', 'Media', 'Cards', 'Sources']
 
 export function usePlayerProfile(playerId: string) {
   const [tab, setTab] = useState(PLAYER_PROFILE_TABS[0])

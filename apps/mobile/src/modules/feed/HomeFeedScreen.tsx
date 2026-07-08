@@ -18,6 +18,7 @@ import { GameSpotlightCardLink } from '@/modules/feed/SpotlightCardLinks'
 import { useHomeFeed } from '@/modules/feed/useHomeFeed'
 import { HOME_EMPTY_COPY, HOME_PLAYER_STAT, HOME_SCREEN, HOME_SPORT_SLUG } from '@/modules/feed/homeContent'
 import { ConnectedVideoCard } from '@/modules/media/ConnectedVideoCard'
+import { ConnectedCardDropSection } from '@/modules/cards/ConnectedCardDropSection'
 import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
 import { Button } from '@/shared/ui/Button'
 import { RankingsSkeleton } from '@/modules/leaderboards/RankingsSkeleton'
@@ -156,6 +157,8 @@ export function HomeFeedScreen() {
           ))}
         </ScrollView>
       ) : null}
+
+      <ConnectedCardDropSection />
 
       {home.featuredTeam ? (
         <ContentSection

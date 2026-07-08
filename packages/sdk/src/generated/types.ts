@@ -1126,7 +1126,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List cards claimed by the current user */
+        /** List cards created and claimed by the current user */
         get: operations["listMyCards"];
         put?: never;
         post?: never;
@@ -1145,7 +1145,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mark a claimed card issue downloaded */
+        /** Mark a claimed card issue downloaded and return authenticity metadata */
         post: operations["markCardDownloaded"];
         delete?: never;
         options?: never;
@@ -1716,6 +1716,10 @@ export interface components {
             status: components["schemas"]["CardIssueStatus"];
             /** Format: date-time */
             createdAt: string;
+            editionMode?: components["schemas"]["CardEditionMode"];
+            editionSize?: number | null;
+            issuedCount?: number;
+            originHash?: string | null;
         };
         CreateCardInput: {
             athleteProfileId: string;
@@ -1751,6 +1755,14 @@ export interface components {
         MyCard: {
             issue: components["schemas"]["CardIssue"];
             card: components["schemas"]["Card"];
+        };
+        MyCards: {
+            created: components["schemas"]["Card"][];
+            claimed: components["schemas"]["MyCard"][];
+        };
+        CardIssueDownload: {
+            issue: components["schemas"]["CardIssue"];
+            authenticity: components["schemas"]["CardAuthenticityPayload"];
         };
         MeAthleteProfileCapability: {
             athleteProfileId: string;
@@ -1893,6 +1905,29 @@ export interface components {
         };
         /** @enum {string} */
         CardIssueStatus: "CLAIMED" | "DOWNLOADED" | "REVOKED";
+        CardAuthenticityJson: {
+            /** @enum {string} */
+            schema: "statman.card.authenticity.v1";
+            cardTemplateId: string;
+            cardTitle?: string | null;
+            athleteProfileId?: string | null;
+            athleteName?: string | null;
+            editionMode?: components["schemas"]["CardEditionMode"] | null;
+            editionSize?: number | null;
+            issuedCount?: number | null;
+            issueNumber?: number | null;
+            originHash?: string | null;
+            issueHash: string;
+            claimedByUserId?: string | null;
+            /** Format: date-time */
+            claimedAt?: string | null;
+            /** Format: date-time */
+            downloadedAt?: string | null;
+        };
+        CardAuthenticityPayload: {
+            json: components["schemas"]["CardAuthenticityJson"];
+            text: string;
+        };
     };
     responses: {
         /** @description Not authenticated */
@@ -4168,6 +4203,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getCard: {
@@ -4325,6 +4369,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     listMyCards: {
@@ -4343,7 +4396,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        data: components["schemas"]["MyCard"][];
+                        data: components["schemas"]["MyCards"];
                     };
                 };
             };
@@ -4361,14 +4414,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Card issue marked downloaded */
+            /** @description Card issue marked downloaded with authenticity metadata */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        data: components["schemas"]["CardIssue"];
+                        data: components["schemas"]["CardIssueDownload"];
                     };
                 };
             };

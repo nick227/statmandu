@@ -201,6 +201,10 @@ components:
       $ref: './components/schemas/cards.yaml#/PublishCardInput'
     MyCard:
       $ref: './components/schemas/cards.yaml#/MyCard'
+    MyCards:
+      $ref: './components/schemas/cards.yaml#/MyCards'
+    CardIssueDownload:
+      $ref: './components/schemas/cards.yaml#/CardIssueDownload'
 
 paths:
   /auth/register:

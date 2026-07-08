@@ -163,6 +163,7 @@ function serialize(card: any, viewerUserId?: string | null) {
 }
 
 function serializeIssue(issue: any) {
+  const card = issue.cardTemplate
   return {
     id: issue.id,
     cardTemplateId: issue.cardTemplateId,
@@ -174,7 +175,42 @@ function serializeIssue(issue: any) {
     issueHash: issue.issueHash,
     status: issue.status,
     createdAt: issue.createdAt,
+    editionMode: card?.editionMode,
+    editionSize: card?.editionSize,
+    issuedCount: card?.issuedCount,
+    originHash: card?.originHash,
   }
+}
+
+function authenticityPayload(issue: any) {
+  const card = issue.cardTemplate
+  const athlete = card?.athleteProfile
+  const json = {
+    schema: 'statman.card.authenticity.v1',
+    cardTemplateId: issue.cardTemplateId,
+    cardTitle: card?.title ?? null,
+    athleteProfileId: card?.athleteProfileId ?? null,
+    athleteName: athlete ? `${athlete.firstName} ${athlete.lastName}` : null,
+    editionMode: card?.editionMode ?? null,
+    editionSize: card?.editionSize ?? null,
+    issuedCount: card?.issuedCount ?? null,
+    issueNumber: issue.issueNumber,
+    originHash: card?.originHash ?? null,
+    issueHash: issue.issueHash,
+    claimedByUserId: issue.claimedByUserId,
+    claimedAt: issue.claimedAt,
+    downloadedAt: issue.downloadedAt,
+  }
+  const text = [
+    'Statman Card Authenticity',
+    `Card: ${json.cardTitle ?? issue.cardTemplateId}`,
+    `Athlete: ${json.athleteName ?? json.athleteProfileId ?? 'Unknown'}`,
+    `Edition: ${json.issueNumber ?? 'Unlimited'}${json.editionSize ? ` of ${json.editionSize}` : ''}`,
+    `Origin Hash: ${json.originHash ?? 'Unavailable'}`,
+    `Issue Hash: ${json.issueHash}`,
+    `Claimed At: ${json.claimedAt ? new Date(json.claimedAt).toISOString() : 'Unavailable'}`,
+  ].join('\n')
+  return { json, text }
 }
 
 export class CardService {
@@ -346,12 +382,21 @@ export class CardService {
     return cards.map((card) => serialize(card, viewerUserId))
   }
 
-  async listCardsForAthlete(athleteProfileId: string, viewerUserId?: string | null) {
+  async listCardsForAthlete(athleteProfileId: string, viewerUserId?: string | null, isAdmin = false) {
+    const athlete = await db.athleteProfile.findUnique({ where: { id: athleteProfileId }, select: { id: true, claimedByUserId: true } })
+    if (!athlete) throw { statusCode: 404, message: 'Athlete profile not found' }
+    const canSeePrivate = isAdmin || athlete.claimedByUserId === viewerUserId
+    const where = canSeePrivate
+      ? { athleteProfileId }
+      : {
+          athleteProfileId,
+          OR: [
+            { status: 'PUBLISHED' as const, visibility: 'PUBLIC' as const },
+            ...(viewerUserId ? [{ createdByUserId: viewerUserId }] : []),
+          ],
+        }
     const cards = await db.cardTemplate.findMany({
-      where: {
-        athleteProfileId,
-        OR: [{ status: 'PUBLISHED', visibility: 'PUBLIC' }, ...(viewerUserId ? [{ createdByUserId: viewerUserId }] : [])],
-      },
+      where,
       orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
       include: CARD_INCLUDE,
     })
@@ -359,15 +404,25 @@ export class CardService {
   }
 
   async listCardsForUser(userId: string) {
-    const issues = await db.cardIssue.findMany({
-      where: { claimedByUserId: userId, status: { not: 'REVOKED' } },
-      orderBy: { createdAt: 'desc' },
-      include: { cardTemplate: { include: CARD_INCLUDE } },
-    })
-    return issues.map((issue) => ({
-      issue: serializeIssue(issue),
-      card: serialize(issue.cardTemplate, userId),
-    }))
+    const [created, issues] = await Promise.all([
+      db.cardTemplate.findMany({
+        where: { createdByUserId: userId },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        include: CARD_INCLUDE,
+      }),
+      db.cardIssue.findMany({
+        where: { claimedByUserId: userId, status: { not: 'REVOKED' } },
+        orderBy: { createdAt: 'desc' },
+        include: { cardTemplate: { include: CARD_INCLUDE } },
+      }),
+    ])
+    return {
+      created: created.map((card) => serialize(card, userId)),
+      claimed: issues.map((issue) => ({
+        issue: serializeIssue(issue),
+        card: serialize(issue.cardTemplate, userId),
+      })),
+    }
   }
 
   async getCard(id: string, viewerUserId?: string | null, isAdmin = false) {
@@ -410,7 +465,10 @@ export class CardService {
         },
       })
       await tx.cardTemplate.update({ where: { id: card.id }, data: { issuedCount: { increment: 1 } } })
-      return created
+      return tx.cardIssue.findUniqueOrThrow({
+        where: { id: created.id },
+        include: { cardTemplate: true },
+      })
     })
 
     await feedService.record({
@@ -432,6 +490,7 @@ export class CardService {
     const updated = await db.cardIssue.update({
       where: { id: issueId },
       data: { downloadedAt: new Date(), status: 'DOWNLOADED' },
+      include: { cardTemplate: { include: { athleteProfile: true } } },
     })
 
     await feedService.record({
@@ -441,7 +500,10 @@ export class CardService {
       summary: `Card issue #${updated.issueNumber ?? '?'} downloaded`,
     })
 
-    return serializeIssue(updated)
+    return {
+      issue: serializeIssue(updated),
+      authenticity: authenticityPayload(updated),
+    }
   }
 
   private async requireCardTargets(input: Pick<CreateDraftCardInput, 'athleteProfileId' | 'teamId' | 'gameId' | 'sourceImageAssetId'>) {

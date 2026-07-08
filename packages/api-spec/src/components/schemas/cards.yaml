@@ -79,6 +79,10 @@ CardIssue:
     issueHash: { type: string }
     status: { $ref: '#/CardIssueStatus' }
     createdAt: { type: string, format: date-time }
+    editionMode: { $ref: '#/CardEditionMode' }
+    editionSize: { type: ['integer', 'null'] }
+    issuedCount: { type: integer }
+    originHash: { type: ['string', 'null'] }
 
 Card:
   type: object
@@ -188,3 +192,50 @@ MyCard:
   properties:
     issue: { $ref: '#/CardIssue' }
     card: { $ref: '#/Card' }
+
+MyCards:
+  type: object
+  required: [created, claimed]
+  properties:
+    created:
+      type: array
+      items: { $ref: '#/Card' }
+    claimed:
+      type: array
+      items: { $ref: '#/MyCard' }
+
+CardAuthenticityJson:
+  type: object
+  required: [schema, cardTemplateId, issueHash]
+  properties:
+    schema: { type: string, enum: [statman.card.authenticity.v1] }
+    cardTemplateId: { type: string }
+    cardTitle: { type: ['string', 'null'] }
+    athleteProfileId: { type: ['string', 'null'] }
+    athleteName: { type: ['string', 'null'] }
+    editionMode:
+      oneOf:
+        - $ref: '#/CardEditionMode'
+        - type: 'null'
+    editionSize: { type: ['integer', 'null'] }
+    issuedCount: { type: ['integer', 'null'] }
+    issueNumber: { type: ['integer', 'null'] }
+    originHash: { type: ['string', 'null'] }
+    issueHash: { type: string }
+    claimedByUserId: { type: ['string', 'null'] }
+    claimedAt: { type: ['string', 'null'], format: date-time }
+    downloadedAt: { type: ['string', 'null'], format: date-time }
+
+CardAuthenticityPayload:
+  type: object
+  required: [json, text]
+  properties:
+    json: { $ref: '#/CardAuthenticityJson' }
+    text: { type: string }
+
+CardIssueDownload:
+  type: object
+  required: [issue, authenticity]
+  properties:
+    issue: { $ref: '#/CardIssue' }
+    authenticity: { $ref: '#/CardAuthenticityPayload' }
