@@ -16,20 +16,23 @@ const SNAP_POINTS: Record<SheetSnapPoint, string> = {
 
 export interface SheetProps extends Omit<BottomSheetProps, 'snapPoints' | 'children'> {
   snaps?: SheetSnapPoint[]
+  /** Which snap to start at (defaults to first snap). */
+  initialSnap?: SheetSnapPoint
   children: ReactNode
 }
 
 export const Sheet = forwardRef<GorhomBottomSheet, SheetProps>(function Sheet(
-  { snaps = ['collapsed', 'half', 'expanded'], children, ...props },
+  { snaps = ['collapsed', 'half', 'expanded'], initialSnap, children, ...props },
   ref
 ) {
   const surfaceColor = useNativeColor('surface')
   const borderColor = useNativeColor('border')
   const animationConfigs = useBottomSheetTimingConfigs({ duration: motion.sheetSnapMs })
+  const initialIndex = Math.max(0, snaps.indexOf(initialSnap ?? snaps[0] ?? 'collapsed'))
   return (
     <GorhomBottomSheet
       ref={ref}
-      index={0}
+      index={initialIndex}
       snapPoints={snaps.map((s) => SNAP_POINTS[s])}
       backgroundStyle={{ backgroundColor: surfaceColor }}
       handleIndicatorStyle={{ backgroundColor: borderColor }}

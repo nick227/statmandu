@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
-import { View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native'
+import { Platform, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native'
 import type GorhomBottomSheet from '@gorhom/bottom-sheet'
 import { Sheet, SheetScrollView } from '@/shared/ui/Sheet'
 import { Avatar } from '@/shared/ui/Avatar'
@@ -49,6 +49,7 @@ export function EntityProfileShell({
   const [isExpanded, setIsExpanded] = useState(false)
   const { width } = useWindowDimensions()
   const showSidebar = Boolean(sidebar) && width >= LAYOUT.wideBreakpoint
+  const initialSnap = Platform.OS === 'web' ? 'half' : 'collapsed'
 
   const profile = (
     <View className="flex-1 bg-canvas">
@@ -57,7 +58,7 @@ export function EntityProfileShell({
         <StatChipRail stats={stats} tone="glass" />
       </EntityHero>
 
-      <Sheet ref={sheetRef} onChange={(index) => setIsExpanded(index === 2)}>
+      <Sheet ref={sheetRef} initialSnap={initialSnap} onChange={(index) => setIsExpanded(index === 2)}>
         {isExpanded ? (
           <View className="flex-row items-center gap-sm px-lg pb-sm">
             <Avatar uri={identity.avatarUri} fallback={identity.name} size="sm" />
