@@ -40,6 +40,7 @@ model User {
   claimsRequested  Claim[]          @relation("ClaimRequester")
   claimsReviewed   Claim[]          @relation("ClaimReviewer")
   mediaAssets      MediaAsset[]
+  imageAssets      ImageAsset[]
 
   @@index([createdAt])
 }
@@ -331,6 +332,7 @@ model Game {
   events           GameEvent[]
   consensusGroups  GameConsensusGroup[]
   statLines        GameStatLine[]
+  gameReactions    GameReaction[]
 
   @@index([sportId])
   @@index([scheduledAt])
@@ -563,6 +565,20 @@ enum MediaAssetType {
   YOUTUBE
 }
 
+enum ImageAssetUsage {
+  AVATAR
+  LOGO
+  HERO
+  EVIDENCE
+  GALLERY
+}
+
+enum ImageStorageProvider {
+  LOCAL
+  R2
+  RAILWAY_VOLUME
+}
+
 model MediaAsset {
   id              String         @id @default(cuid())
   type            MediaAssetType @default(YOUTUBE)
@@ -578,6 +594,29 @@ model MediaAsset {
   uploadedByUser User? @relation(fields: [uploadedByUserId], references: [id])
 
   @@index([targetType, targetId])
+}
+
+model ImageAsset {
+  id               String               @id @default(cuid())
+  targetType       EntityType
+  targetId         String
+  usage            ImageAssetUsage
+  storageProvider  ImageStorageProvider @default(LOCAL)
+  objectKey        String
+  url              String
+  originalFilename String?
+  contentType      String
+  byteSize         Int
+  width            Int?
+  height           Int?
+  uploadedByUserId String?
+  createdAt        DateTime             @default(now())
+  deletedAt        DateTime?
+
+  uploadedByUser User? @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([targetType, targetId, usage])
+  @@index([createdAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -705,6 +744,19 @@ model Reaction {
 
   @@unique([userId, targetType, targetId])
   @@index([targetType, targetId])
+}
+
+// Ephemeral reactions specifically for live game broadcasts (spamming allowed, no user auth required)
+model GameReaction {
+  id         String       @id @default(cuid())
+  gameId     String
+  deviceId   String
+  type       ReactionType
+  createdAt  DateTime     @default(now())
+
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@index([gameId, createdAt])
 }
 
 enum FeedItemType {

@@ -335,16 +335,48 @@ export class GameService {
     const game = await db.game.findUnique({ where: { id: gameId }, include: { ...GAME_INCLUDE, sport: true } })
     if (!game) throw { statusCode: 404, message: 'Game not found' }
 
+    // Fetch all events for accurate scoring
+    const events = await db.gameEvent.findMany({
+      where: { gameId, status: { in: ['ACCEPTED', 'PENDING'] } },
+      orderBy: { clientTimestamp: 'desc' },
+    })
+
+    const recentEvents = events.slice(0, 20)
+    const recentEventIds = recentEvents.map(e => e.id)
+
     // Independent of each other and of `game` beyond the id — fetch in parallel.
-    const [events, reporterCount, mediaAsset] = await Promise.all([
-      db.gameEvent.findMany({
-        where: { gameId, status: { in: ['ACCEPTED', 'PENDING'] } },
-        orderBy: { clientTimestamp: 'desc' },
-      }),
+    const [reporterCount, mediaAsset, recentReactions, recentImageAssets, recentMediaAssets] = await Promise.all([
       db.gameReporter.count({ where: { gameId } }),
       db.mediaAsset.findFirst({
         where: { targetType: 'GAME', targetId: gameId, type: 'YOUTUBE', deletedAt: null },
         orderBy: { createdAt: 'desc' },
+      }),
+      db.gameReaction.findMany({
+        where: { gameId },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+      db.imageAsset.findMany({
+        where: {
+          OR: [
+            { targetType: 'GAME', targetId: gameId },
+            { targetType: 'GAME_EVENT', targetId: { in: recentEventIds } }
+          ],
+          deletedAt: null
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+      db.mediaAsset.findMany({
+        where: {
+          OR: [
+            { targetType: 'GAME', targetId: gameId },
+            { targetType: 'GAME_EVENT', targetId: { in: recentEventIds } }
+          ],
+          deletedAt: null
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
       }),
     ])
 
@@ -356,9 +388,24 @@ export class GameService {
       status: game.status,
       youtubeVideoId: mediaAsset?.youtubeVideoId ?? null,
       score: [...teamScores.entries()].map(([teamId, points]) => ({ teamId, points })),
-      recentEvents: events.slice(0, 20),
+      recentEvents,
+      recentReactions,
+      recentImageAssets,
+      recentMediaAssets,
       reporterCount,
     }
+  }
+
+  async createReaction(gameId: string, data: { deviceId: string; type: any }) {
+    const game = await db.game.findUnique({ where: { id: gameId } })
+    if (!game) throw { statusCode: 404, message: 'Game not found' }
+    return db.gameReaction.create({
+      data: {
+        gameId,
+        deviceId: data.deviceId,
+        type: data.type,
+      },
+    })
   }
 
   // Full play-by-play — unlike getSnapshot (live-polling, last 20, PENDING

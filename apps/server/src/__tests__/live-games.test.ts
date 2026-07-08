@@ -404,6 +404,28 @@ describe('getGameSnapshot', () => {
   })
 })
 
+describe('createGameReaction', () => {
+  it('records an ephemeral spectator reaction and includes it in the snapshot', async () => {
+    const { game } = await seedGameFixture()
+
+    const created = await app.inject({
+      method: 'POST',
+      url: `/games/${game.id}/reactions`,
+      payload: { deviceId: 'device-1', type: 'FIRE' },
+    })
+
+    expect(created.statusCode).toBe(201)
+    await validateResponse('createGameReaction', 201, created.json())
+
+    const snapshot = await app.inject({ method: 'GET', url: `/games/${game.id}/snapshot` })
+    expect(snapshot.statusCode).toBe(200)
+    expect(snapshot.json().data.recentReactions[0]).toMatchObject({
+      deviceId: 'device-1',
+      type: 'FIRE',
+    })
+  })
+})
+
 describe('finalizeGame', () => {
   it('requires auth', async () => {
     const res = await app.inject({ method: 'POST', url: '/games/00000000-0000-0000-0000-000000000001/finalize' })

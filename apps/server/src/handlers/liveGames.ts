@@ -47,6 +47,11 @@ export async function getGameSnapshot(request: any, reply: any) {
   return reply.send({ data: snapshot })
 }
 
+export async function createGameReaction(request: any, reply: any) {
+  const reaction = await gameService.createReaction(request.params.gameId, request.body)
+  return reply.status(201).send({ data: reaction })
+}
+
 export async function finalizeGame(request: any, reply: any) {
   const game = await gameService.finalize(request.params.gameId, request.user.id)
   return reply.send({ data: game })

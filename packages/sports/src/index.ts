@@ -1,4 +1,5 @@
 export type {
+  DisciplineConfig,
   EventDefinition,
   EventFlow,
   ReconcileEvent,
@@ -13,6 +14,8 @@ export { emptyNumericStats, reconcileEvents, validateEventDefinition } from './c
 export { formatStatValue, getStatField, readStatValue } from './core/format'
 export { predictNext } from './core/predictNext'
 export type { PredictedNext } from './core/predictNext'
+export { computeDisciplineStatus } from './core/discipline'
+export type { DisciplineStatus } from './core/discipline'
 export { getSportDefinition, listSportDefinitions } from './registry'
 export { basketballDefinition } from './definitions/basketball'
 export { footballDefinition } from './definitions/football'

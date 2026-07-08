@@ -8,6 +8,8 @@ export type {
   GameReporterRole,
   UserRole,
   ReactionType,
+  ImageAssetUsage,
+  ImageStorageProvider,
   ReferenceSourceType,
   SourceStatus,
 } from '@prisma/client'

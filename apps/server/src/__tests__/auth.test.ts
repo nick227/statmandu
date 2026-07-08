@@ -108,3 +108,57 @@ describe('getCurrentUser', () => {
     await validateResponse('getCurrentUser', 200, res.json())
   })
 })
+
+describe('getMeCapabilities', () => {
+  it('requires auth', async () => {
+    const res = await app.inject({ method: 'GET', url: '/auth/me/capabilities' })
+    expect(res.statusCode).toBe(401)
+  })
+
+  it('returns claimed athlete profiles and reporter assignments', async () => {
+    const sport = await db.sport.create({ data: { slug: 'basketball', name: 'Basketball' } })
+    const league = await db.league.create({ data: { sportId: sport.id, slug: 'demo', name: 'Demo League' } })
+    const home = await db.team.create({ data: { sportId: sport.id, leagueId: league.id, slug: 'home', name: 'Home' } })
+    const away = await db.team.create({ data: { sportId: sport.id, leagueId: league.id, slug: 'away', name: 'Away' } })
+    const athleteProfile = await db.athleteProfile.create({
+      data: {
+        slug: 'alice-athlete',
+        firstName: 'Alice',
+        lastName: 'Athlete',
+        claimedByUserId: testUserId,
+      },
+    })
+    await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id, position: 'PG' } })
+    const game = await db.game.create({
+      data: {
+        sportId: sport.id,
+        leagueId: league.id,
+        scheduledAt: new Date('2026-01-01T18:00:00.000Z'),
+        gameTeams: {
+          create: [
+            { teamId: home.id, isHome: true },
+            { teamId: away.id, isHome: false },
+          ],
+        },
+      },
+    })
+    await db.gameReporter.create({
+      data: { gameId: game.id, userId: testUserId, role: 'OFFICIAL_SCORER', teamId: home.id },
+    })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/auth/me/capabilities',
+      headers: asAuth(testUserId),
+    })
+
+    expect(res.statusCode).toBe(200)
+    await validateResponse('getMeCapabilities', 200, res.json())
+    expect(res.json().data.athleteProfiles[0].name).toBe('Alice Athlete')
+    expect(res.json().data.reporterAssignments[0]).toMatchObject({
+      role: 'OFFICIAL_SCORER',
+      teamName: 'Home',
+      canManageGame: true,
+    })
+  })
+})

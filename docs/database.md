@@ -24,11 +24,13 @@
 - `PlayerSeasonStat`
 - `TeamSeasonStat`
 - `MediaAsset`
+- `ImageAsset`
 - `SourceReference`
 - `Dispute`
 - `Claim`
 - `Follow`
 - `Reaction`
+- `GameReaction`
 - `FeedItem`
 
 ## Enums
@@ -44,6 +46,8 @@
 - `GameEventStatus`
 - `ConsensusStatus`
 - `MediaAssetType`
+- `ImageAssetUsage`
+- `ImageStorageProvider`
 - `ReferenceSourceType`
 - `DisputeStatus`
 - `ClaimStatus`

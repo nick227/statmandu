@@ -13,8 +13,10 @@ function assertTestDatabase() {
 // Clean between tests — order matters for FK constraints (children before parents).
 export async function resetTestDatabase() {
   await db.feedItem.deleteMany()
+  await db.imageAsset.deleteMany()
   await db.mediaAsset.deleteMany()
   await db.reaction.deleteMany()
+  await db.gameReaction.deleteMany()
   await db.follow.deleteMany()
   await db.dispute.deleteMany()
   await db.claim.deleteMany()

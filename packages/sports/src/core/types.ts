@@ -37,6 +37,19 @@ export type EventDefinition = {
   flow?: EventFlow
 }
 
+export type DisciplineConfig = {
+  // Event types that count toward foul/discipline totals.
+  foulEventTypes: string[]
+  // Team fouls at which the fouled team goes into a bonus free-throw
+  // situation. Deliberately a single running-game threshold, not
+  // reset-per-period — GameEvent has no period column yet (see CLAUDE.md's
+  // "Period/game-clock tracking" deferred item), so this is a documented
+  // simplification, not the real by-half rule.
+  bonusThreshold: number
+  // Individual fouls at which a player is disqualified/fouled out.
+  foulOutThreshold?: number
+}
+
 export type SportDefinition = {
   slug: string
   name: string
@@ -66,6 +79,10 @@ export type SportDefinition = {
     leaderboard: string[]
     livePad: string[][]
   }
+  // Optional — only sports with a real foul/bonus/disqualification concept
+  // declare this. Absent for sports where computeDisciplineStatus should
+  // just return null rather than guess at an unresearched rule.
+  discipline?: DisciplineConfig
 }
 
 export type ReconcileEvent = {

@@ -18,6 +18,18 @@ node apps/server/dist/index.js
 Recommended hosts: Railway, Render, Fly.io. All support Node.js with a
 Dockerfile or buildpack.
 
+## Image storage
+
+Image uploads use one API path and one asset model across local dev, Railway,
+athlete profile images, and UGC evidence images. Localhost stores files under
+`IMAGE_STORAGE_DIR` and serves them from `/uploads/images/:objectKey`.
+
+For Railway dev, set `IMAGE_STORAGE_DRIVER=r2` and configure `R2_ENDPOINT`,
+`R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and
+`R2_PUBLIC_BASE_URL`. If R2 is unavailable or not fully configured, the server
+falls back to `RAILWAY_VOLUME_MOUNT_PATH/uploads/images`; without a Railway
+volume it falls back to local `IMAGE_STORAGE_DIR`.
+
 **Dockerfile (server):**
 
 ```dockerfile

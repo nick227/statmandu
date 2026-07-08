@@ -64,4 +64,8 @@ export const basketballDefinition: SportDefinition = {
       ['STEAL', 'BLOCK', 'TURNOVER', 'FOUL'],
     ],
   },
+  // NFHS-style thresholds (bonus at 7 team fouls, foul-out at 5 personal
+  // fouls) — a single running-game bucket, not reset per half, since there's
+  // no period tracking yet. Documented simplification, see DisciplineConfig.
+  discipline: { foulEventTypes: ['FOUL'], bonusThreshold: 7, foulOutThreshold: 5 },
 }

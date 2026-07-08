@@ -53,8 +53,9 @@ const envLines: string[] = [
 
 for (const line of envExample.split('\n')) {
   if (line.startsWith('#') || !line.trim()) continue
-  const [key] = line.split('=')
-  envLines.push(`| \`${key.trim()}\` | Yes | — |`)
+  const [key, ...valueParts] = line.split('=')
+  const hasDefault = valueParts.join('=').trim().length > 0
+  envLines.push(`| \`${key.trim()}\` | ${hasDefault ? 'Yes' : 'No'} | — |`)
 }
 
 writeFileSync(resolve(docsDir, 'env-vars.md'), envLines.join('\n'))

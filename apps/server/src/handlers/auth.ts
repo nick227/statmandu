@@ -38,3 +38,8 @@ export async function logout(request: any, reply: any) {
 export async function getCurrentUser(request: any, reply: any) {
   return reply.send({ data: request.user })
 }
+
+export async function getMeCapabilities(request: any, reply: any) {
+  const capabilities = await authService.capabilities(request.user.id)
+  return reply.send({ data: capabilities })
+}

@@ -66,6 +66,7 @@ async function main() {
 
   // health check — not in spec, always public
   server.get('/health', async () => ({ status: 'ok' }))
+  server.get('/uploads/images/*', handlers.serveUploadedImage)
 
   await server.listen({
     port: Number(process.env.PORT ?? 3001),
