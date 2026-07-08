@@ -1,13 +1,14 @@
-import { View, Platform } from 'react-native'
+import { View, useWindowDimensions } from 'react-native'
 import { Stack } from 'expo-router'
 import { useSportTheme } from '@/lib/theme'
-import { Text } from '@/shared/ui/Text'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
+import { YouTubePlayer } from '@/shared/media/YouTubePlayer'
 import { GameStatusBadge } from '@/modules/games/GameStatusBadge'
 import { GamePlayByPlay } from '@/modules/games/GamePlayByPlay'
 import { ReporterPresencePill } from '@/modules/live-scoring/ReporterPresencePill'
 import { useBroadcastDisplay } from '@/modules/live-scoring/useBroadcastDisplay'
+import { Text } from '@/shared/ui/Text'
 
 // Public, read-only, meant for a second/larger device (venue TV, propped-up
 // tablet, stream overlay) — not a casting protocol, just a big-type view of
@@ -17,6 +18,8 @@ import { useBroadcastDisplay } from '@/modules/live-scoring/useBroadcastDisplay'
 export function BroadcastDisplayScreen({ gameId }: { gameId: string }) {
   const { game, isError, isLoading, recentEvents, reporterCount, score, youtubeVideoId } = useBroadcastDisplay(gameId)
   const sportTheme = useSportTheme(game?.sport?.slug)
+  const { width: screenWidth } = useWindowDimensions()
+  const broadcastHeight = Math.round(screenWidth * (9 / 16))
 
   if (isError) {
     return (
@@ -41,31 +44,22 @@ export function BroadcastDisplayScreen({ gameId }: { gameId: string }) {
   const scoreFor = (teamId?: string, fallback?: number | null) => (teamId ? score[teamId] : undefined) ?? fallback ?? 0
 
   return (
-    // `dark` forces every token-based class in this subtree (including ones
-    // inside reused components like GamePlayByPlay/Badge) to resolve their
-    // dark-mode CSS variable regardless of the device's OS scheme — a
-    // broadcast/jumbotron display should always be the bold dark look, not
-    // flip to a light background if someone's phone happens to be in light
-    // mode. Same variable-scoping mechanism useSportTheme() already relies on.
     <View className="dark flex-1 bg-canvas" style={sportTheme}>
       <Stack.Screen options={{ headerShown: false, title: 'Broadcast' }} />
 
       {youtubeVideoId ? (
-        <View className="w-full aspect-video bg-black items-center justify-center">
-          {Platform.OS === 'web' ? (
-            <iframe
-              src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=1`}
-              style={{ width: '100%', height: '100%', border: 0 }}
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-            />
-          ) : (
-            <Text className="text-white text-lg font-bold">YouTube Broadcast: Available on Web</Text>
-          )}
+        <View className="w-full bg-black items-center justify-center" style={{ height: broadcastHeight }}>
+          <YouTubePlayer
+            videoId={youtubeVideoId}
+            autoplay
+            mute
+            mounted
+            style={{ width: screenWidth, height: broadcastHeight }}
+          />
         </View>
       ) : null}
 
-      <View className={youtubeVideoId ? "items-center gap-sm pt-md pb-md px-lg" : "items-center gap-sm pt-xxl pb-lg px-lg"}>
+      <View className={youtubeVideoId ? 'items-center gap-sm pt-md pb-md px-lg' : 'items-center gap-sm pt-xxl pb-lg px-lg'}>
         <View className="flex-row items-center gap-md">
           <GameStatusBadge status={game.status} />
           <ReporterPresencePill count={reporterCount} />

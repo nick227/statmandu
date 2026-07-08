@@ -6,7 +6,7 @@ export function youtubeWatchUrl(videoId: string) {
   return `https://www.youtube.com/watch?v=${videoId}`
 }
 
-export function youtubeEmbedUrl(videoId: string, { autoplay = false }: { autoplay?: boolean } = {}) {
+export function youtubeEmbedUrl(videoId: string, { autoplay = false, mute = false }: { autoplay?: boolean; mute?: boolean } = {}) {
   const params = new URLSearchParams({
     playsinline: '1',
     rel: '0',
@@ -15,6 +15,7 @@ export function youtubeEmbedUrl(videoId: string, { autoplay = false }: { autopla
     fs: '1',
     iv_load_policy: '3',
     ...(autoplay ? { autoplay: '1' } : {}),
+    ...(mute ? { mute: '1' } : {}),
   })
   return `https://www.youtube.com/embed/${videoId}?${params.toString()}`
 }

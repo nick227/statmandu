@@ -9,7 +9,6 @@ import { Button } from '@/shared/ui/Button'
 import { Sheet, SheetScrollView } from '@/shared/ui/Sheet'
 import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
 import { toViewerItemsForTarget } from '@/modules/media/mediaViewerItem'
-import { youtubeThumbnailUrl } from '@/shared/media/youtube'
 import { EntityProfileTabs } from '@/shared/layout/entity-profile/EntityProfileTabs'
 import { GlassPanel, MediaChrome, MediaSurface } from '@/shared/layout'
 import { StatChip } from '@/shared/ui/StatChip'
@@ -55,7 +54,7 @@ export function GameDetailScreen({ gameId }: { gameId: string }) {
   const sport = game.sport?.slug ?? 'basketball'
   const leaderboardStats = getSportDefinition(sport).views.leaderboard.slice(0, 3)
   const primaryMedia = media[0]
-  const heroImageUri = primaryMedia?.youtubeVideoId ? youtubeThumbnailUrl(primaryMedia.youtubeVideoId) : null
+  const heroVideoId = primaryMedia?.youtubeVideoId ?? null
   const mediaItems = media.map((m) => ({ id: m.id, youtubeVideoId: m.youtubeVideoId, title: m.title }))
   const viewerItems = toViewerItemsForTarget(mediaItems, 'GAME', game.id)
   const scoreFor = (score?: number | null) => score ?? 0
@@ -64,7 +63,11 @@ export function GameDetailScreen({ gameId }: { gameId: string }) {
 
   return (
     <>
-    <MediaSurface imageUri={heroImageUri} style={sportTheme}>
+    <MediaSurface
+      youtubeVideoId={heroVideoId}
+      onVideoPress={heroVideoId ? () => setViewerIndex(0) : undefined}
+      style={sportTheme}
+    >
       <Stack.Screen options={{ headerShown: false, title: gameTitle }} />
       <MediaChrome title={game.sport?.name ?? 'Game'} />
 

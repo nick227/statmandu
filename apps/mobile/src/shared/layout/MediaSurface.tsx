@@ -1,19 +1,41 @@
-import { ImageBackground, Pressable, View, type ViewProps } from 'react-native'
+import { ImageBackground, Pressable, View, useWindowDimensions, type ViewProps } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MoreHorizontal } from 'lucide-react-native'
 import { cn } from '@/lib/utils'
 import { BackButton } from '@/shared/ui/BackButton'
 import { Text } from '@/shared/ui/Text'
+import { VideoStage } from '@/shared/media/VideoStage'
 
 export interface MediaSurfaceProps extends ViewProps {
   imageUri?: string | null
+  youtubeVideoId?: string | null
+  onVideoPress?: () => void
   children?: React.ReactNode
   overlay?: 'deep' | 'soft'
 }
 
-export function MediaSurface({ imageUri, children, className, overlay = 'deep', ...props }: MediaSurfaceProps) {
+export function MediaSurface({ imageUri, youtubeVideoId, onVideoPress, children, className, overlay = 'deep', ...props }: MediaSurfaceProps) {
+  const { width, height } = useWindowDimensions()
   const baseClassName = cn('flex-1 bg-black overflow-hidden', className)
   const overlayClassName = overlay === 'deep' ? 'bg-black/45' : 'bg-black/25'
+
+  if (youtubeVideoId) {
+    return (
+      <View className={baseClassName} {...props}>
+        <VideoStage
+          videoId={youtubeVideoId}
+          mode="chrome"
+          width={width}
+          height={height}
+          interactive={Boolean(onVideoPress)}
+          onPlayRequest={onVideoPress}
+        />
+        <View className={cn('absolute inset-0', overlayClassName)} pointerEvents="none" />
+        <View className="absolute inset-x-0 bottom-0 h-72 bg-black/45" pointerEvents="none" />
+        {children}
+      </View>
+    )
+  }
 
   if (!imageUri) {
     return (

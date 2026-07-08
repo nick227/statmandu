@@ -9,6 +9,7 @@ import { SmartImage } from './SmartImage'
 import { YouTubePlayer } from './YouTubePlayer'
 import { videoFrameSize } from './videoFrame'
 import { videoStageFit, type VideoStageMode } from './videoStageTypes'
+import type { YouTubeVideoVariant } from './videoVariants'
 import { youtubeThumbnailUrl } from './youtube'
 
 export interface VideoStageProps {
@@ -22,6 +23,12 @@ export interface VideoStageProps {
   isPlaying?: boolean
   /** Preload embed for next clip (inline feed). */
   preload?: boolean
+  /** Play overlay size — grid/tile/hero etc. Defaults to hero. */
+  playVariant?: YouTubeVideoVariant
+  /** When false, preview is display-only (parent handles press). */
+  interactive?: boolean
+  /** Subtle scrim on card-style previews. */
+  showCardScrim?: boolean
   onPlayRequest?: () => void
   className?: string
   style?: StyleProp<ViewStyle>
@@ -35,6 +42,9 @@ export function VideoStage({
   isActive = false,
   isPlaying = false,
   preload = false,
+  playVariant = 'hero',
+  interactive = true,
+  showCardScrim = false,
   onPlayRequest,
   className,
   style,
@@ -44,6 +54,16 @@ export function VideoStage({
   const shouldPlay = (mode === 'inline' && isActive) || (mode === 'immersive' && isPlaying)
   const mountPlayer = shouldPlay || preload
   const showPreview = !shouldPlay
+
+  const previewLayer = showPreview ? (
+    <>
+      <SmartImage uri={youtubeThumbnailUrl(videoId)} className="h-full w-full" resizeMode="cover" />
+      {showCardScrim ? <View className="absolute inset-0 bg-black/15" /> : null}
+      {mode !== 'chrome' ? <View className="absolute inset-0 bg-black/25" /> : null}
+      {mode === 'inline' && !isActive ? <PlayOverlay variant={playVariant} /> : null}
+      {mode === 'immersive' || mode === 'chrome' ? <PlayOverlay variant={playVariant} /> : null}
+    </>
+  ) : null
 
   return (
     <View style={[{ width, height }, style]} className={cn('items-center justify-center overflow-hidden bg-black', className)}>
@@ -61,18 +81,21 @@ export function VideoStage({
       ) : null}
 
       {showPreview ? (
-        <Pressable
-          className="absolute inset-0"
-          onPress={mode === 'inline' ? undefined : onPlayRequest}
-          disabled={mode === 'inline'}
-          accessibilityRole={mode === 'inline' ? undefined : 'button'}
-          accessibilityLabel={mode === 'inline' ? undefined : 'Play video'}
-        >
-          <SmartImage uri={youtubeThumbnailUrl(videoId)} className="h-full w-full" resizeMode="cover" />
-          {mode !== 'chrome' ? <View className="absolute inset-0 bg-black/25" /> : null}
-          {mode === 'inline' && !isActive ? <PlayOverlay variant="hero" /> : null}
-          {mode === 'immersive' || mode === 'chrome' ? <PlayOverlay variant="hero" /> : null}
-        </Pressable>
+        interactive ? (
+          <Pressable
+            className="absolute inset-0"
+            onPress={mode === 'inline' ? undefined : onPlayRequest}
+            disabled={mode === 'inline'}
+            accessibilityRole={mode === 'inline' ? undefined : 'button'}
+            accessibilityLabel={mode === 'inline' ? undefined : 'Play video'}
+          >
+            {previewLayer}
+          </Pressable>
+        ) : (
+          <View className="absolute inset-0" pointerEvents="none">
+            {previewLayer}
+          </View>
+        )
       ) : null}
     </View>
   )
@@ -83,7 +106,6 @@ export interface VideoStageChromeProps {
   filmLabelTone?: FilmLabelTone
   title?: string | null
   children?: ReactNode
-  /** When true, pad for hidden tab bar (bottom safe area only). */
   immersive?: boolean
   className?: string
 }

@@ -23,14 +23,14 @@ export function MediaGrid({ items, onItemPress, className }: MediaGridProps) {
   return (
     <View className={className ?? 'flex-row flex-wrap gap-xs'}>
       {items.map((item, index) => (
-        <Pressable
+        <YouTubeVideoCard
           key={item.id}
+          videoId={item.youtubeVideoId}
+          variant="grid"
           onPress={() => onItemPress(index)}
           className="active:opacity-80"
           style={{ width: '32.5%' }}
-        >
-          <YouTubeVideoCard videoId={item.youtubeVideoId} variant="grid" />
-        </Pressable>
+        />
       ))}
     </View>
   )

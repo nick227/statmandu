@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { Pressable, View, type PressableProps } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { cn } from '@/lib/utils'
 import { motion } from '@/lib/theme'
 import { Text } from '@/shared/ui/Text'
 import { FilmLabelBadge } from './FilmLabelBadge'
-import { PlayOverlay } from './PlayOverlay'
-import { SmartImage } from './SmartImage'
-import { youtubeThumbnailUrl } from './youtube'
+import { VideoStage } from './VideoStage'
+import { videoCardFrameClass } from './videoCardLayout'
 import type { YouTubeVideoVariant } from './videoVariants'
 
 export type { YouTubeVideoVariant }
@@ -24,27 +24,28 @@ export interface YouTubeVideoCardProps extends PressableProps {
   footer?: ReactNode
 }
 
-function ThumbFrame({
-  videoId,
-  variant,
-  className,
-}: {
-  videoId: string
-  variant: YouTubeVideoVariant
-  className?: string
-}) {
-  const frameClass =
-    variant === 'banner'
-      ? 'aspect-[21/9] min-h-[88px]'
-      : variant === 'grid'
-        ? 'aspect-square'
-        : 'aspect-video'
+function VideoStageThumb({ videoId, variant, className }: { videoId: string; variant: YouTubeVideoVariant; className?: string }) {
+  const [layout, setLayout] = useState({ width: 0, height: 0 })
 
   return (
-    <View className={cn('relative w-full overflow-hidden rounded-md bg-black', frameClass, className)}>
-      <SmartImage uri={youtubeThumbnailUrl(videoId)} className="h-full w-full" resizeMode="cover" />
-      <View className="absolute inset-0 bg-black/15" />
-      <PlayOverlay variant={variant} />
+    <View
+      className={cn('relative w-full overflow-hidden rounded-md bg-black', videoCardFrameClass(variant), className)}
+      onLayout={(event) => {
+        const { width, height } = event.nativeEvent.layout
+        if (width > 0 && height > 0) setLayout({ width, height })
+      }}
+    >
+      {layout.width > 0 ? (
+        <VideoStage
+          videoId={videoId}
+          mode="chrome"
+          width={layout.width}
+          height={layout.height}
+          playVariant={variant}
+          interactive={false}
+          showCardScrim
+        />
+      ) : null}
     </View>
   )
 }
@@ -80,7 +81,7 @@ export function YouTubeVideoCard({
       {...props}
     >
       <View className="gap-xs">
-        <ThumbFrame videoId={videoId} variant={variant} />
+        <VideoStageThumb videoId={videoId} variant={variant} />
         {showMeta ? (
           <View className="gap-xs px-xs">
             {eyebrow ? <FilmLabelBadge label={eyebrow} tone="accent" /> : null}
@@ -95,5 +96,5 @@ export function YouTubeVideoCard({
 }
 
 export function YouTubeVideoCardThumb({ videoId, variant, className }: Pick<YouTubeVideoCardProps, 'videoId' | 'variant' | 'className'>) {
-  return <ThumbFrame videoId={videoId} variant={variant} className={className} />
+  return <VideoStageThumb videoId={videoId} variant={variant} className={className} />
 }
