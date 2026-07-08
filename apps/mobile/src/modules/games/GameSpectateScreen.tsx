@@ -84,7 +84,7 @@ export function GameSpectateScreen({ gameId }: { gameId: string }) {
       <Text className="font-semibold px-lg pb-sm">Timeline</Text>
       <GamePlayByPlay
         sport={game.sport?.slug ?? 'basketball'}
-        events={recentEvents}
+        events={[...recentEvents].reverse()}
         playerNameById={{}}
         teamNameById={Object.fromEntries(game.gameTeams.map((gt) => [gt.teamId, gt.team?.name ?? '']))}
         className="px-lg gap-sm pb-xxl"
