@@ -1,33 +1,103 @@
-import { FlatList, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import { Rss } from 'lucide-react-native'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { EmptyState } from '@/shared/ui/EmptyState'
+import { ErrorState } from '@/shared/ui/ErrorState'
 import { Screen } from '@/shared/layout'
 import { FeedItemCard } from '@/modules/feed/FeedItemCard'
+import {
+  CommunityPulseMetrics,
+  HomeSection,
+  PlatformAuthorityBand,
+  PlatformPitchCard,
+  UsageCtaRow,
+} from '@/modules/feed/HomeSections'
+import { AthleteSpotlightCardLink, GameSpotlightCardLink } from '@/modules/feed/SpotlightCardLinks'
+import { TeamLeaderboardCard } from '@/modules/leaderboards/LeaderboardEntryCard'
 import { useHomeFeed } from '@/modules/feed/useHomeFeed'
+import { HOME_SPORT_SLUG } from '@/modules/feed/homeContent'
 
 export function HomeFeedScreen() {
-  const { fetchNextPage, hasNextPage, isLoading, items } = useHomeFeed()
+  const home = useHomeFeed()
+
+  if (home.isError) {
+    return (
+      <Screen title="Home">
+        <ErrorState message="The home feed couldn't be loaded." />
+      </Screen>
+    )
+  }
+
+  if (home.isLoading) {
+    return (
+      <Screen title="Home">
+        <View className="gap-sm px-lg">
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28 w-full" />)}
+        </View>
+      </Screen>
+    )
+  }
 
   return (
-    <Screen title="Home">
-      {isLoading ? (
-        <View className="gap-sm px-lg">
-          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
+    <Screen title="Home" scroll contentClassName="gap-xl px-lg">
+      <PlatformAuthorityBand {...home.authority} />
+
+      {home.featuredAthlete ? (
+        <HomeSection title={home.sectionCopy.athletes.title} subtitle={home.sectionCopy.athletes.subtitle} href={{ pathname: '/(tabs)/explore' }}>
+          <AthleteSpotlightCardLink entry={home.featuredAthlete} sportSlug={HOME_SPORT_SLUG} size="large" />
+        </HomeSection>
+      ) : null}
+
+      {home.risingAthletes.length > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-md">
+          {home.risingAthletes.map((entry) => (
+            <AthleteSpotlightCardLink key={entry.player.id} entry={entry} sportSlug={HOME_SPORT_SLUG} size="small" className="w-44" />
+          ))}
+        </ScrollView>
+      ) : null}
+
+      <HomeSection title={home.sectionCopy.community.title} subtitle={home.sectionCopy.community.subtitle}>
+        <CommunityPulseMetrics metrics={home.communityMetrics} />
+        <View className="gap-sm pt-sm">
+          {home.communityActivity.length === 0 ? (
+            <EmptyState icon={Rss} title="Quiet for now" description="Finalized games and new media will show up here." />
+          ) : (
+            home.communityActivity.map((item, index) => (
+              <FeedItemCard key={item.id} item={item} index={index} />
+            ))
+          )}
         </View>
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.id}
-          contentContainerClassName="gap-sm px-lg pb-xxl"
-          renderItem={({ item }) => <FeedItemCard item={item} />}
-          onEndReached={() => hasNextPage && fetchNextPage()}
-          onEndReachedThreshold={0.4}
-          ListEmptyComponent={
-            <EmptyState icon={Rss} title="No activity yet" description="Finalized games and new media will show up here." />
-          }
-        />
-      )}
+      </HomeSection>
+
+      {home.featuredGame ? (
+        <HomeSection title={home.sectionCopy.games.title} subtitle={home.sectionCopy.games.subtitle}>
+          <GameSpotlightCardLink game={home.featuredGame} size="large" />
+        </HomeSection>
+      ) : null}
+
+      {home.recentGames.length > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-md">
+          {home.recentGames.map((game) => (
+            <GameSpotlightCardLink key={game.id} game={game} size="small" className="w-56" />
+          ))}
+        </ScrollView>
+      ) : null}
+
+      <PlatformPitchCard {...home.platformPitch} />
+
+      <HomeSection title={home.sectionCopy.usage.title} subtitle={home.sectionCopy.usage.subtitle}>
+        <UsageCtaRow ctas={home.usageCtas} />
+      </HomeSection>
+
+      {home.leaderboardTeams.length > 0 ? (
+        <HomeSection title={home.sectionCopy.leaders.title} subtitle={home.sectionCopy.leaders.subtitle} href={{ pathname: '/(tabs)/explore' }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-md pb-sm">
+            {home.leaderboardTeams.map((entry) => (
+              <TeamLeaderboardCard key={entry.team.id} entry={entry} sportSlug={HOME_SPORT_SLUG} className="w-44" />
+            ))}
+          </ScrollView>
+        </HomeSection>
+      ) : null}
     </Screen>
   )
 }
