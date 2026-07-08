@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, View } from 'react-native'
+import { ActivityIndicator, FlatList, View, useWindowDimensions } from 'react-native'
 import { Link } from 'expo-router'
 import { Newspaper } from 'lucide-react-native'
 import { Skeleton } from '@/shared/ui/Skeleton'
@@ -10,9 +10,22 @@ import { useAuthGate } from '@/modules/auth/useAuthGate'
 import { ArticleCardLink } from '@/modules/articles/ArticleCardLink'
 import { useArticlesFeed } from '@/modules/articles/useArticlesFeed'
 
+// PageFrame centers this screen's content up to a 1180px column regardless
+// of viewport width (it only grows a sidebar rail past 1024px, and this
+// screen has none) — a fixed 2-column grid left most of that column empty
+// on a wide desktop window. Scale columns with width instead so the grid
+// actually uses the space PageFrame already gives it.
+function useColumnCount() {
+  const { width } = useWindowDimensions()
+  if (width >= 1100) return 4
+  if (width >= 700) return 3
+  return 2
+}
+
 export function ArticlesListScreen() {
   const { isAuthenticated } = useAuthGate()
   const { articles, isError, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } = useArticlesFeed()
+  const numColumns = useColumnCount()
 
   const writeAction = isAuthenticated ? (
     <Link href="/articles/new" asChild>
@@ -21,7 +34,7 @@ export function ArticlesListScreen() {
   ) : null
 
   return (
-    <Screen title="Articles" withBack headerActions={writeAction}>
+    <Screen title="Articles" insetTop={false} headerActions={writeAction}>
 
       {isError ? (
         <ErrorState message="Articles couldn't be loaded." />
@@ -33,9 +46,10 @@ export function ArticlesListScreen() {
         <PageFrame
           main={
             <FlatList
+              key={numColumns}
               data={articles}
               keyExtractor={(a) => a.id}
-              numColumns={2}
+              numColumns={numColumns}
               contentContainerClassName="gap-md pb-xxl"
               columnWrapperClassName="gap-md"
               renderItem={({ item }) => <ArticleCardLink article={item} className="flex-1" />}

@@ -34,31 +34,35 @@ export function AccountScreen() {
   const { capabilities, isCapabilitiesLoading, isError, isLoading, logout, user } = useAccountSession()
 
   if (isLoading) {
-    return <LoadingState />
-  }
-
-  // isError here almost always just means "not signed in" (useCurrentUser's
-  // query fails with 401) — this tab's whole purpose requires an account,
-  // so a sign-in prompt is the right fallback, not a generic error message.
-  if (isError || !user) {
     return (
-      <Screen title="Me" withBack>
-        <SignInPrompt message="Sign in to view your account." />
+      <Screen insetTop={false}>
+        <LoadingState />
       </Screen>
     )
   }
 
-  const isAdmin = user?.role === 'ADMIN'
+  // isError here almost always just means "not signed in" (useCurrentUser's
+  // query fails with 401) — this hub requires an account, so a sign-in
+  // prompt is the right fallback, not a generic error message.
+  if (isError || !user) {
+    return (
+      <Screen title="Profile" insetTop={false}>
+        <SignInPrompt message="Sign in to view your profile." />
+      </Screen>
+    )
+  }
+
+  const displayName = user.profile?.displayName ?? user.profile?.username ?? user.email ?? 'Profile'
+  const isAdmin = user.role === 'ADMIN'
   const athleteProfiles = capabilities?.athleteProfiles ?? []
   const reporterAssignments = capabilities?.reporterAssignments ?? []
 
   const main = (
     <ScrollView contentContainerClassName="gap-md pb-xxl">
       <View className="flex-row items-center gap-md">
-        <Avatar uri={user?.profile?.avatarUrl} fallback={user?.profile?.displayName ?? user?.email ?? '?'} size="lg" />
+        <Avatar uri={user.profile?.avatarUrl} fallback={displayName} size="lg" />
         <View className="flex-1">
-          <Text className="text-2xl font-bold">{user?.profile?.displayName}</Text>
-          <Text variant="caption">{user?.profile?.username ? `@${user.profile.username}` : user?.email}</Text>
+          <Text variant="caption">{user.profile?.username ? `@${user.profile.username}` : user.email}</Text>
         </View>
         <Badge tone={isAdmin ? 'verified' : 'muted-text'}>{isAdmin ? 'Admin' : 'Neutral'}</Badge>
       </View>
@@ -187,8 +191,12 @@ export function AccountScreen() {
   )
 
   return (
-    <Screen title="Me" withBack>
-      <PageFrame main={main} sidebar={<MeSidebar user={user} capabilities={capabilities ?? undefined} />} />
+    <Screen title={displayName} insetTop={false}>
+      <PageFrame
+        main={main}
+        sidebar={<MeSidebar user={user} capabilities={capabilities ?? undefined} />}
+        narrowSidebar="below"
+      />
     </Screen>
   )
 }

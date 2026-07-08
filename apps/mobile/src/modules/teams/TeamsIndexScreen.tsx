@@ -12,7 +12,7 @@ export function TeamsIndexScreen() {
   const { isError, isLoading, teams } = useTeamsIndex()
 
   return (
-    <Screen title="Teams" withBack>
+    <Screen title="Teams" insetTop={false}>
       {isError ? (
         <ErrorState message="Teams couldn't be loaded." />
       ) : isLoading ? (

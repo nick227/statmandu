@@ -15,6 +15,8 @@ export interface ScreenProps extends ViewProps {
   withBack?: boolean
   /** Trailing chrome beside the title (search, account, write, etc.). */
   headerActions?: ReactNode
+  /** When parent chrome (e.g. SiteHeader) already owns the top safe-area inset. */
+  insetTop?: boolean
   className?: string
   contentClassName?: string
 }
@@ -24,6 +26,7 @@ export function Screen({
   scroll,
   withBack,
   headerActions,
+  insetTop = true,
   className,
   contentClassName,
   children,
@@ -39,7 +42,11 @@ export function Screen({
   )
 
   return (
-    <View className={cn('flex-1 bg-canvas', className)} style={{ paddingTop: insets.top }} {...props}>
+    <View
+      className={cn('flex-1 bg-canvas', className)}
+      style={{ paddingTop: insetTop ? insets.top : 0 }}
+      {...props}
+    >
       <View style={{ width: '100%', maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center', flex: 1 }}>
         {showHeader ? (
           <View className="flex-row items-center gap-sm px-lg pt-md pb-sm">

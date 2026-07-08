@@ -20,7 +20,7 @@ export function VideosBrowseScreen() {
 
   if (browse.isError) {
     return (
-      <Screen title="Video" withBack>
+      <Screen title="Video" insetTop={false}>
         <ErrorState message={VIDEOS_SCREEN.error} />
       </Screen>
     )
@@ -28,7 +28,7 @@ export function VideosBrowseScreen() {
 
   if (browse.isLoading) {
     return (
-      <Screen title="Video" withBack>
+      <Screen title="Video" insetTop={false}>
         <VideoFilmSkeleton />
       </Screen>
     )
@@ -36,14 +36,14 @@ export function VideosBrowseScreen() {
 
   if (!hasVideos) {
     return (
-      <Screen title="Video" withBack>
+      <Screen title="Video" insetTop={false}>
         <EmptyState icon={Video} title={copy.empty.title} description={copy.empty.description} />
       </Screen>
     )
   }
 
   return (
-    <Screen title="Video" withBack>
+    <Screen title="Video" insetTop={false}>
       <PageFrame
         main={<VideoFeed items={browse.videos} stageWidth={stageWidth} />}
         sidebar={<VideosSidebar videos={browse.videos} />}

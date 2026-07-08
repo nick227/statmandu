@@ -68,7 +68,7 @@ export function PlayerExploreScreen() {
   )
 
   return (
-    <Screen title={copy.screenTitle} style={sportTheme} withBack>
+    <Screen title={copy.screenTitle} style={sportTheme} insetTop={false}>
       <PageFrame
         main={main}
         sidebar={<ExploreSidebar rankings={rankings} />}

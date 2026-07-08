@@ -8,10 +8,11 @@ export function MeSidebar({ user, capabilities }: { user: User; capabilities?: M
   const athleteProfiles = capabilities?.athleteProfiles ?? []
   const reporterAssignments = capabilities?.reporterAssignments ?? []
   const isAdmin = user.role === 'ADMIN'
+  const displayName = user.profile?.displayName ?? user.profile?.username ?? user.email ?? 'Profile'
 
   return (
     <SidebarRail>
-      <SidebarBrandPanel title="Me" subtitle={user.profile?.displayName ?? user.profile?.username ?? user.email} />
+      <SidebarBrandPanel title={displayName} subtitle={user.profile?.username ? `@${user.profile.username}` : user.email} />
 
       <SidebarPanel title="Summary">
         <SidebarGlanceRow label="Profiles" value={`${athleteProfiles.length}`} />

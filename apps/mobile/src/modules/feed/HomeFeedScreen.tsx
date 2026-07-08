@@ -16,7 +16,6 @@ import {
   PlatformPitchCard,
   UsageCtaRow,
 } from '@/modules/feed/HomeSections'
-import { HomeHeaderActions } from '@/modules/feed/HomeHeaderActions'
 import { HomeScoresStrip } from '@/modules/feed/HomeScoresStrip'
 import { GameSpotlightCardLink } from '@/modules/feed/SpotlightCardLinks'
 import { ArticleCardLink } from '@/modules/articles/ArticleCardLink'
@@ -77,7 +76,7 @@ export function HomeFeedScreen() {
 
   if (home.isError) {
     return (
-      <Screen title={HOME_SCREEN.title} headerActions={<HomeHeaderActions />}>
+      <Screen title={HOME_SCREEN.title} insetTop={false}>
         <ErrorState message={HOME_SCREEN.error} />
       </Screen>
     )
@@ -85,7 +84,7 @@ export function HomeFeedScreen() {
 
   if (home.isLoading) {
     return (
-      <Screen title={HOME_SCREEN.title} headerActions={<HomeHeaderActions />}>
+      <Screen title={HOME_SCREEN.title} insetTop={false}>
         <View className="px-lg pt-sm">
           <RankingsSkeleton />
         </View>
@@ -268,7 +267,7 @@ export function HomeFeedScreen() {
 
   return (
     <>
-    <Screen title={HOME_SCREEN.title} scroll contentClassName="pb-xxl" headerActions={<HomeHeaderActions />}>
+    <Screen title={HOME_SCREEN.title} scroll contentClassName="pb-xxl" insetTop={false}>
       <PageFrame
         main={mainColumn}
         sidebar={<HomeSidebar ad={topAd ?? bottomAd} items={sidebarItems} />}

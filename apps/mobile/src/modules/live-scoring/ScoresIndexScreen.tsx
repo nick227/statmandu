@@ -98,7 +98,7 @@ export function ScoresIndexScreen() {
 
   if (!isAuthLoading && !isAuthenticated) {
     return (
-      <Screen title="Scores" withBack>
+      <Screen title="Scores" insetTop={false}>
         <SignInPrompt message="Sign in to view and enter scores." />
       </Screen>
     )
@@ -109,7 +109,7 @@ export function ScoresIndexScreen() {
   const finalGames = games.filter((g) => g.status === 'FINAL' || g.status === 'DISPUTED')
 
   return (
-    <Screen title="Scores" withBack>
+    <Screen title="Scores" insetTop={false}>
       <PageFrame
         main={
           isError ? (
