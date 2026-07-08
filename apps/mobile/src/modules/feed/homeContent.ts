@@ -50,7 +50,7 @@ export const HOME_USAGE_CTAS: UsageCta[] = [
     id: 'highlight',
     title: 'Add film',
     description: 'Attach highlights and land in the feed.',
-    href: { pathname: '/(tabs)/explore' },
+    href: { pathname: '/(tabs)/videos' },
     eyebrow: 'Media',
   },
 ]
@@ -123,6 +123,10 @@ export const HOME_EMPTY_COPY = {
   feed: {
     title: 'Feed is quiet',
     description: 'Finalized games and new media will populate this section.',
+  },
+  videos: {
+    title: 'No film uploaded yet',
+    description: 'Athlete highlights, team reels, and game recaps will surface here as they are submitted.',
   },
 } as const
 

@@ -58,6 +58,7 @@ export const EXPLORE_COPY = {
       champion: {
         title: 'Leader film',
         subtitle: 'Video attached to the current #1 player.',
+        empty: 'No film attached to the current leader yet.',
       },
       board: {
         title: 'Film from the board',

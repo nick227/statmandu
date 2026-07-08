@@ -11,7 +11,8 @@ import Animated, {
   Extrapolation,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { X, Play } from 'lucide-react-native'
+import { X, Play, UserRound } from 'lucide-react-native'
+import type { MediaTargetType } from './mediaLabels'
 import { SmartImage } from './SmartImage'
 import { youtubeThumbnailUrl, youtubeWatchUrl } from './youtube'
 import { Text } from '@/shared/ui/Text'
@@ -20,6 +21,9 @@ export interface FullScreenMediaItem {
   id: string
   youtubeVideoId: string
   title?: string | null
+  targetType?: MediaTargetType
+  targetId?: string
+  filmLabel?: string
 }
 
 export interface FullScreenMediaViewerProps {
@@ -27,16 +31,20 @@ export interface FullScreenMediaViewerProps {
   items: FullScreenMediaItem[]
   initialIndex?: number
   onClose: () => void
+  onViewTarget?: (item: FullScreenMediaItem) => void
+  getTargetActionLabel?: (item: FullScreenMediaItem) => string | null
 }
 
 const DISMISS_THRESHOLD = 120
 
-// The "full screen immersive" tier of the three-tier media system (grid →
-// half-screen hero → this). Tap anywhere fades the chrome in/out, swipe
-// horizontally moves between items, drag down shrinks + fades the whole
-// stage away and dismisses past a threshold — "reducing view size
-// transition" as an actual gesture, not just a close button.
-export function FullScreenMediaViewer({ visible, items, initialIndex = 0, onClose }: FullScreenMediaViewerProps) {
+export function FullScreenMediaViewer({
+  visible,
+  items,
+  initialIndex = 0,
+  onClose,
+  onViewTarget,
+  getTargetActionLabel,
+}: FullScreenMediaViewerProps) {
   const insets = useSafeAreaInsets()
   const { width, height } = useWindowDimensions()
   const listRef = useRef<FlatList<FullScreenMediaItem>>(null)
@@ -103,6 +111,8 @@ export function FullScreenMediaViewer({ visible, items, initialIndex = 0, onClos
   if (!visible || items.length === 0) return null
 
   const activeItem = items[activeIndex]
+  const targetActionLabel = activeItem && getTargetActionLabel?.(activeItem)
+  const canViewTarget = Boolean(activeItem?.targetType && activeItem.targetId && onViewTarget && targetActionLabel)
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
@@ -150,10 +160,24 @@ export function FullScreenMediaViewer({ visible, items, initialIndex = 0, onClos
             </Animated.View>
 
             <Animated.View pointerEvents={chromeVisible ? 'auto' : 'none'} style={[{ position: 'absolute', bottom: insets.bottom + 24, left: 0, right: 0 }, chromeStyle]} className="gap-md px-lg">
+              {activeItem?.filmLabel ? (
+                <View className="self-start rounded-pill border border-white/20 bg-black/40 px-sm py-xs">
+                  <Text variant="statLabel" className="text-white/90">{activeItem.filmLabel}</Text>
+                </View>
+              ) : null}
               {activeItem?.title ? <Text className="font-semibold text-white">{activeItem.title}</Text> : null}
+              {canViewTarget ? (
+                <Pressable
+                  onPress={() => activeItem && onViewTarget?.(activeItem)}
+                  className="flex-row items-center justify-center gap-sm rounded-md border border-white/25 bg-white/10 py-md"
+                >
+                  <UserRound size={16} color="#FFFFFF" />
+                  <Text className="font-semibold text-white">{targetActionLabel}</Text>
+                </Pressable>
+              ) : null}
               <Pressable
                 onPress={() => activeItem && Linking.openURL(youtubeWatchUrl(activeItem.youtubeVideoId))}
-                className="flex-row items-center justify-center gap-sm rounded-md bg-white/15 border border-white/20 py-md"
+                className="flex-row items-center justify-center gap-sm rounded-md border border-white/20 bg-white/15 py-md"
               >
                 <Play size={16} color="#FFFFFF" fill="#FFFFFF" />
                 <Text className="font-semibold text-white">Watch on YouTube</Text>

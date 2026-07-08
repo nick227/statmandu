@@ -1,4 +1,6 @@
-type MediaTargetType = 'PLAYER' | 'TEAM' | 'GAME'
+import { mediaFilmLabel, type MediaTargetType } from './mediaLabels'
+
+export type { MediaTargetType }
 
 export function mediaTargetHref(targetType: MediaTargetType, targetId: string) {
   switch (targetType) {
@@ -14,14 +16,7 @@ export function mediaTargetHref(targetType: MediaTargetType, targetId: string) {
 }
 
 export function mediaSourceEyebrow(targetType: MediaTargetType) {
-  switch (targetType) {
-    case 'PLAYER':
-      return 'Athlete'
-    case 'TEAM':
-      return 'Team'
-    case 'GAME':
-      return 'Game film'
-    default:
-      return 'Video'
-  }
+  return mediaFilmLabel(targetType)
 }
+
+export { isMediaTargetType, mediaFilmLabelForTarget } from './mediaLabels'

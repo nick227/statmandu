@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
-import { BarChart3, Shield } from 'lucide-react-native'
+import { BarChart3, Shield, Video } from 'lucide-react-native'
 import { getSportDefinition } from '@statman/sports'
+import type { components } from '@statman/sdk'
 import { ContentSection } from '@/shared/layout/ContentSection'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
@@ -11,8 +13,11 @@ import { RankingsSkeleton } from '@/modules/leaderboards/RankingsSkeleton'
 import { ChampionRibbon, PodiumStrip, ShowcaseMosaic } from '@/modules/leaderboards/RankingsShowcase'
 import { AthleteSpotlightCardLink, TeamSpotlightCardLink } from '@/modules/leaderboards/SpotlightCardLinks'
 import { ConnectedVideoCard } from '@/modules/media/ConnectedVideoCard'
+import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
 import { VideoRail } from '@/modules/media/VideoRail'
 import type { useExploreRankings } from '@/modules/leaderboards/useExploreRankings'
+
+type MediaAsset = components['schemas']['MediaAsset']
 
 function FilterChip({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
   return (
@@ -30,8 +35,15 @@ type RankingsState = ReturnType<typeof useExploreRankings>
 export function ExploreRankingsPanel({ rankings }: { rankings: RankingsState }) {
   const copy = EXPLORE_COPY
   const authority = exploreAuthorityBand(rankings.sport.name)
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null)
+
+  function openViewer(video: MediaAsset) {
+    const index = rankings.exploreViewerVideos.findIndex((entry) => entry.id === video.id)
+    if (index >= 0) setViewerIndex(index)
+  }
 
   return (
+    <>
     <View className="gap-lg pb-md">
       <PlatformAuthorityBand {...authority} />
 
@@ -79,14 +91,28 @@ export function ExploreRankingsPanel({ rankings }: { rankings: RankingsState }) 
               />
               <ChampionRibbon sportSlug={rankings.sportSlug} stat={rankings.playerStat} entry={rankings.featuredPlayer} />
               {rankings.championVideo ? (
-                <ConnectedVideoCard item={rankings.championVideo} variant="hero" />
-              ) : null}
+                <ConnectedVideoCard
+                  item={rankings.championVideo}
+                  variant="hero"
+                  onPress={() => openViewer(rankings.championVideo!)}
+                />
+              ) : (
+                <EmptyState
+                  icon={Video}
+                  title={copy.sections.videos.champion.title}
+                  description={copy.sections.videos.champion.empty}
+                  className="py-md"
+                />
+              )}
             </ContentSection>
           ) : null}
 
           {rankings.leaderVideos.length > 0 ? (
             <ContentSection title={copy.sections.videos.board.title} subtitle={copy.sections.videos.board.subtitle}>
-              <VideoRail items={rankings.leaderVideos} />
+              <VideoRail
+                items={rankings.leaderVideos}
+                onItemPress={(index) => openViewer(rankings.leaderVideos[index]!)}
+              />
             </ContentSection>
           ) : null}
 
@@ -170,5 +196,13 @@ export function ExploreRankingsPanel({ rankings }: { rankings: RankingsState }) 
         </View>
       )}
     </View>
+
+    <ConnectedFullScreenMediaViewer
+      visible={viewerIndex != null}
+      items={rankings.exploreViewerVideos}
+      initialIndex={viewerIndex ?? 0}
+      onClose={() => setViewerIndex(null)}
+    />
+    </>
   )
 }

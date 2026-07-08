@@ -1,7 +1,7 @@
 import { Link } from 'expo-router'
 import type { components } from '@statman/sdk'
 import { YouTubeVideoCard, type YouTubeVideoVariant } from '@/shared/media/YouTubeVideoCard'
-import { mediaSourceEyebrow, mediaTargetHref } from '@/shared/media/videoTarget'
+import { mediaFilmLabelForTarget, mediaTargetHref, isMediaTargetType } from '@/shared/media/videoTarget'
 
 type MediaAsset = components['schemas']['MediaAsset']
 
@@ -14,12 +14,12 @@ export interface ConnectedVideoCardProps {
 }
 
 export function ConnectedVideoCard({ item, variant, subtitle, onPress, className }: ConnectedVideoCardProps) {
-  const href = mediaTargetHref(item.targetType, item.targetId)
+  const href = isMediaTargetType(item.targetType) ? mediaTargetHref(item.targetType, item.targetId) : null
   const cardProps = {
     videoId: item.youtubeVideoId,
     title: item.title,
     subtitle,
-    eyebrow: mediaSourceEyebrow(item.targetType),
+    eyebrow: mediaFilmLabelForTarget(item.targetType),
     variant,
     className,
     onPress,

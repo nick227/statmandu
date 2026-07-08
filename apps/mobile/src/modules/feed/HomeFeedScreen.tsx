@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react'
 import { ScrollView, View } from 'react-native'
-import { Rss } from 'lucide-react-native'
+import { Rss, Video } from 'lucide-react-native'
 import { ContentSection } from '@/shared/layout/ContentSection'
-import { FullScreenMediaViewer } from '@/shared/media'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { Screen } from '@/shared/layout'
 import { AdPlaceholder } from '@/modules/feed/AdPlaceholder'
-import { FeedItemCard } from '@/modules/feed/FeedItemCard'
-import { HomeActivityCard } from '@/modules/feed/HomeActivityCard'
+import { CommunityPulseFeed } from '@/modules/feed/CommunityPulseFeed'
 import {
   CommunityPulseMetrics,
   PlatformAuthorityBand,
@@ -19,6 +17,7 @@ import { GameSpotlightCardLink } from '@/modules/feed/SpotlightCardLinks'
 import { useHomeFeed } from '@/modules/feed/useHomeFeed'
 import { HOME_EMPTY_COPY, HOME_PLAYER_STAT, HOME_SCREEN, HOME_SPORT_SLUG } from '@/modules/feed/homeContent'
 import { ConnectedVideoCard } from '@/modules/media/ConnectedVideoCard'
+import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
 import { VideoRail } from '@/modules/media/VideoRail'
 import { RankingsSkeleton } from '@/modules/leaderboards/RankingsSkeleton'
 import { ChampionRibbon, PodiumStrip, ShowcaseMosaic } from '@/modules/leaderboards/RankingsShowcase'
@@ -29,10 +28,7 @@ export function HomeFeedScreen() {
   const copy = home.sectionCopy
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
 
-  const viewerItems = useMemo(
-    () => home.recentVideos.map((item) => ({ id: item.id, youtubeVideoId: item.youtubeVideoId, title: item.title })),
-    [home.recentVideos]
-  )
+  const viewerItems = useMemo(() => home.recentVideos, [home.recentVideos])
 
   if (home.isError) {
     return (
@@ -55,7 +51,7 @@ export function HomeFeedScreen() {
   const topAd = home.ads.find((slot) => slot.id === 'ad-top')
   const midAd = home.ads.find((slot) => slot.id === 'ad-mid')
   const bottomAd = home.ads.find((slot) => slot.id === 'ad-bottom')
-  const hasFeed = home.communityActivity.length > 0 || home.mockActivity.length > 0
+  const hasPulse = home.communityPulse.length > 0
 
   return (
     <>
@@ -63,15 +59,17 @@ export function HomeFeedScreen() {
       <PlatformAuthorityBand {...home.authority} />
       {topAd ? <AdPlaceholder slot={topAd} /> : null}
 
-      {home.featuredVideo ? (
-        <ContentSection title={copy.videos.featured.title} subtitle={copy.videos.featured.subtitle}>
+      <ContentSection title={copy.videos.featured.title} subtitle={copy.videos.featured.subtitle}>
+        {home.featuredVideo ? (
           <ConnectedVideoCard
             item={home.featuredVideo}
             variant="hero"
             onPress={() => setViewerIndex(0)}
           />
-        </ContentSection>
-      ) : null}
+        ) : (
+          <EmptyState icon={Video} title={HOME_EMPTY_COPY.videos.title} description={HOME_EMPTY_COPY.videos.description} className="py-lg" />
+        )}
+      </ContentSection>
 
       {home.featuredAthlete ? (
         <ContentSection
@@ -102,7 +100,7 @@ export function HomeFeedScreen() {
         </ContentSection>
       ) : null}
 
-      {home.latestVideos.length > 0 ? (
+      {home.hasVideos && home.latestVideos.length > 0 ? (
         <ContentSection title={copy.videos.latest.title} subtitle={copy.videos.latest.subtitle}>
           <VideoRail
             items={home.latestVideos}
@@ -130,17 +128,13 @@ export function HomeFeedScreen() {
       <ContentSection title={copy.community.title} subtitle={copy.community.subtitle}>
         <CommunityPulseMetrics metrics={home.communityMetrics} />
         <View className="gap-sm pt-sm">
-          {!hasFeed ? (
+          {!hasPulse ? (
             <EmptyState icon={Rss} title={HOME_EMPTY_COPY.feed.title} description={HOME_EMPTY_COPY.feed.description} />
           ) : (
-            <>
-              {home.communityActivity.map((item, index) => (
-                <FeedItemCard key={item.id} item={item} index={index} />
-              ))}
-              {home.mockActivity.map((item, index) => (
-                <HomeActivityCard key={item.id} item={item} large={index === 0 && home.communityActivity.length === 0} />
-              ))}
-            </>
+            <CommunityPulseFeed
+              items={home.communityPulse}
+              onVideoPress={setViewerIndex}
+            />
           )}
         </View>
       </ContentSection>
@@ -214,7 +208,7 @@ export function HomeFeedScreen() {
       </ContentSection>
     </Screen>
 
-    <FullScreenMediaViewer
+    <ConnectedFullScreenMediaViewer
       visible={viewerIndex != null}
       items={viewerItems}
       initialIndex={viewerIndex ?? 0}

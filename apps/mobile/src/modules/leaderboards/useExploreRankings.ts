@@ -144,6 +144,13 @@ export function useExploreRankings() {
     () => recentVideos.filter((video) => video.targetType === 'PLAYER' && playerIds.has(video.targetId)).slice(0, 6),
     [playerIds, recentVideos]
   )
+  const exploreViewerVideos = useMemo(() => {
+    const list = championVideo ? [championVideo] : []
+    for (const video of leaderVideos) {
+      if (!list.some((entry) => entry.id === video.id)) list.push(video)
+    }
+    return list
+  }, [championVideo, leaderVideos])
 
   return {
     sport,
@@ -171,6 +178,7 @@ export function useExploreRankings() {
     recentVideos,
     championVideo,
     leaderVideos,
+    exploreViewerVideos,
     isLoading: playersQuery.isLoading || secondaryPlayersQuery.isLoading || tertiaryPlayersQuery.isLoading || teamsQuery.isLoading || gamesQuery.isLoading || recentMediaQuery.isLoading,
     isError: playersQuery.isError || secondaryPlayersQuery.isError || tertiaryPlayersQuery.isError || teamsQuery.isError || gamesQuery.isError || recentMediaQuery.isError,
   }

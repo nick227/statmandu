@@ -41,6 +41,45 @@ export function GamePlayByPlay({
 
   const definition = getSportDefinition(sport)
 
+  // Pre-calculate auto-moments (streaks / on-fire)
+  const momentsByEventId = new Map<string, { run?: string; fire?: boolean }>()
+  let currentScoringTeam: string | null = null
+  let teamRunCount = 0
+  let currentScoringPlayer: string | null = null
+  let playerRunCount = 0
+
+  for (const event of events) {
+    const eventDefinition = definition.events[event.type]
+    const isScoring = Boolean(eventDefinition?.points)
+
+    if (isScoring && event.teamId) {
+      if (event.teamId === currentScoringTeam) {
+        teamRunCount++
+      } else {
+        currentScoringTeam = event.teamId
+        teamRunCount = 1
+      }
+
+      if (event.playerId && event.playerId === currentScoringPlayer) {
+        playerRunCount++
+      } else if (event.playerId) {
+        currentScoringPlayer = event.playerId
+        playerRunCount = 1
+      } else {
+        currentScoringPlayer = null
+        playerRunCount = 0
+      }
+
+      if (teamRunCount >= 3) {
+        momentsByEventId.set(event.id, { run: `${teamRunCount} SCORE RUN` })
+      }
+      if (playerRunCount >= 3) {
+        const existing = momentsByEventId.get(event.id) || {}
+        momentsByEventId.set(event.id, { ...existing, fire: true })
+      }
+    }
+  }
+
   return (
     <View className={className ?? 'px-lg gap-sm'}>
       {events.map((event) => {
@@ -49,14 +88,20 @@ export function GamePlayByPlay({
         const playerName = event.playerId ? playerNameById[event.playerId] : null
         const teamName = event.teamId ? teamNameById[event.teamId] : null
         const isScoring = Boolean(eventDefinition?.points)
+        const moment = momentsByEventId.get(event.id)
+        
         const title = [playerName, label].filter(Boolean).join(' — ') || label
 
         return (
           <View key={event.id} className="flex-row items-start justify-between gap-sm border-b border-border py-sm">
             <View className="flex-1 gap-xs">
-              <Text className={isScoring ? 'font-semibold' : undefined} numberOfLines={2}>
-                {title}
-              </Text>
+              <View className="flex-row items-center gap-xs">
+                <Text className={isScoring ? 'font-semibold' : undefined} numberOfLines={2}>
+                  {title}
+                </Text>
+                {moment?.fire ? <Text>🔥</Text> : null}
+                {moment?.run ? <Badge tone="live">{moment.run}</Badge> : null}
+              </View>
               {teamName ? <Text variant="caption">{teamName}</Text> : null}
             </View>
             <View className="items-end gap-xs">

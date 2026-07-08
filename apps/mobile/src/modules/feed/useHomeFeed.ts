@@ -14,6 +14,7 @@ import {
   HOME_TEAM_STAT,
   HOME_USAGE_CTAS,
 } from '@/modules/feed/homeContent'
+import { buildCommunityPulse } from '@/modules/feed/interleavePulseFeed'
 
 export function useHomeFeed() {
   const feedQuery = useFeed()
@@ -81,6 +82,12 @@ export function useHomeFeed() {
   const featuredVideo = recentVideos[0] ?? null
   const latestVideos = useMemo(() => recentVideos.slice(1, 7), [recentVideos])
   const moreVideos = useMemo(() => recentVideos.slice(7, 13), [recentVideos])
+  const pulseVideos = useMemo(() => recentVideos.slice(0, 6), [recentVideos])
+  const communityPulse = useMemo(
+    () => buildCommunityPulse(communityActivity, mockActivity, pulseVideos),
+    [communityActivity, mockActivity, pulseVideos]
+  )
+  const hasVideos = recentVideos.length > 0
 
   const ads = HOME_AD_SLOTS
 
@@ -106,6 +113,9 @@ export function useHomeFeed() {
     featuredVideo,
     latestVideos,
     moreVideos,
+    pulseVideos,
+    communityPulse,
+    hasVideos,
     layout: HOME_LAYOUT,
     isLoading: feedQuery.isLoading || playerLeaderboardQuery.isLoading || teamLeaderboardQuery.isLoading || gamesQuery.isLoading || recentMediaQuery.isLoading,
     isError: feedQuery.isError || playerLeaderboardQuery.isError || gamesQuery.isError || recentMediaQuery.isError,
