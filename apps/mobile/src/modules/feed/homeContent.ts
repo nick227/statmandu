@@ -36,21 +36,21 @@ export const HOME_USAGE_CTAS: UsageCta[] = [
     id: 'claim',
     title: 'Claim your profile',
     description: 'Own your stats, media, and public identity.',
-    href: { pathname: '/(tabs)/explore' },
+    href: { pathname: '/explore' },
     eyebrow: 'Athletes',
   },
   {
     id: 'enter',
     title: 'Score a game',
     description: 'Join live capture from the sideline.',
-    href: { pathname: '/(tabs)/enter' },
+    href: { pathname: '/scores' },
     eyebrow: 'Teams',
   },
   {
     id: 'highlight',
-    title: 'Add video',
-    description: 'Attach highlights and land in the feed.',
-    href: { pathname: '/(tabs)/videos' },
+    title: 'Browse video',
+    description: 'Open the full highlight board.',
+    href: { pathname: '/videos' },
     eyebrow: 'Media',
   },
 ]
@@ -81,6 +81,10 @@ export const HOME_SECTION_COPY = {
     liveShowcase: 'Live wire',
     liveShowcaseSubtitle: 'Tap in before the run ends.',
   },
+  scores: {
+    title: 'Tonight\'s board',
+    subtitle: 'Live and upcoming — score, broadcast, or watch from here.',
+  },
   teams: {
     title: 'Team leaders',
     subtitle: 'Programs setting the pace in the standings.',
@@ -103,12 +107,19 @@ export const HOME_SECTION_COPY = {
   videos: {
     featured: {
       title: 'Featured video',
-      subtitle: 'Latest highlight across the network. Open Video for the full vertical browse.',
+      subtitle: 'Latest highlight across the network.',
     },
   },
+  articles: {
+    title: 'From the newsroom',
+    subtitle: 'Recaps and reporting from the community.',
+  },
   linkLabels: {
-    seeAll: 'Rankings',
+    seeAll: 'Search & rankings',
     allVideos: 'All videos',
+    allArticles: 'All articles',
+    allTeams: 'All teams',
+    scores: 'Scores & entry',
   },
 } as const
 
@@ -121,6 +132,11 @@ export const HOME_EMPTY_COPY = {
     title: 'No video uploaded yet',
     description: 'Athlete highlights, team reels, and game recaps will surface here as they are submitted.',
     browseCta: 'Browse Video',
+  },
+  articles: {
+    title: 'No articles yet',
+    description: 'Be the first to write one.',
+    browseCta: 'Write an article',
   },
 } as const
 

@@ -60,7 +60,7 @@ export function TeamSidebar({ team, roster, games, media }: TeamSidebarProps) {
       section: 'Videos',
       title: asset.title ?? 'Team video',
       meta: asset.targetType,
-      href: { pathname: '/(tabs)/videos' },
+      href: { pathname: '/videos' },
     })
   }
 
@@ -83,7 +83,7 @@ export function TeamSidebar({ team, roster, games, media }: TeamSidebarProps) {
         <SidebarActionRow
           title="Browse videos"
           meta="Highlights attached to this team."
-          href={{ pathname: '/(tabs)/videos' }}
+          href={{ pathname: '/videos' }}
         />
       </SidebarPanel>
 

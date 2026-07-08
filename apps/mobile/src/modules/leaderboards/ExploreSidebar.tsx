@@ -35,7 +35,7 @@ export function ExploreSidebar({ rankings }: { rankings: RankingsState }) {
     section: 'Videos',
     title: video.title ?? 'Ranked athlete video',
     meta: video.targetType,
-    href: { pathname: '/(tabs)/videos' },
+    href: { pathname: '/videos' },
   }))
 
   return (

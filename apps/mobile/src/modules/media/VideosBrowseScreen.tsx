@@ -4,7 +4,6 @@ import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { VideoFeed } from '@/modules/media/VideoFeed'
 import { VideoFilmSkeleton } from '@/modules/media/VideoFilmSkeleton'
-import { useImmersiveFilmTabBar } from '@/modules/media/useImmersiveFilmTabBar'
 import { VIDEOS_COPY, VIDEOS_SCREEN } from '@/modules/media/videosContent'
 import { useVideosBrowse } from '@/modules/media/useVideosBrowse'
 import { LAYOUT, PageFrame, Screen } from '@/shared/layout'
@@ -19,11 +18,9 @@ export function VideosBrowseScreen() {
   const contentWidth = Math.min(width, LAYOUT.pageMaxWidth)
   const stageWidth = showSidebar ? Math.floor(contentWidth * 0.7) : contentWidth
 
-  useImmersiveFilmTabBar(hasVideos)
-
   if (browse.isError) {
     return (
-      <Screen title="Video">
+      <Screen title="Video" withBack>
         <ErrorState message={VIDEOS_SCREEN.error} />
       </Screen>
     )
@@ -31,7 +28,7 @@ export function VideosBrowseScreen() {
 
   if (browse.isLoading) {
     return (
-      <Screen title="Video">
+      <Screen title="Video" withBack>
         <VideoFilmSkeleton />
       </Screen>
     )
@@ -39,14 +36,14 @@ export function VideosBrowseScreen() {
 
   if (!hasVideos) {
     return (
-      <Screen title="Video">
+      <Screen title="Video" withBack>
         <EmptyState icon={Video} title={copy.empty.title} description={copy.empty.description} />
       </Screen>
     )
   }
 
   return (
-    <Screen title="Video">
+    <Screen title="Video" withBack>
       <PageFrame
         main={<VideoFeed items={browse.videos} stageWidth={stageWidth} />}
         sidebar={<VideosSidebar videos={browse.videos} />}

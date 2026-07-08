@@ -66,7 +66,7 @@ export function PlayerSidebar({
       section: 'Videos',
       title: asset.title ?? 'Highlight',
       meta: asset.targetType,
-      href: { pathname: '/(tabs)/videos' },
+      href: { pathname: '/videos' },
     })
   }
 

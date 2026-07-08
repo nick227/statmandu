@@ -132,20 +132,26 @@ gap.
 
 ## Route map
 
+Home is the sole browsing surface. Former tab destinations remain as push
+routes (reachable from Home sections / header chrome), not peer tabs.
+
 | Surface | Route | Screen |
 |---|---|---|
 | 1. Home / 13. Social feed | `app/(tabs)/index.tsx` | `modules/feed/HomeFeedScreen.tsx` |
-| 2. Explore | `app/(tabs)/explore.tsx` | `modules/players/PlayerExploreScreen.tsx` |
-| 3. Player Profile | `app/players/[playerId]/index.tsx` | `modules/players/PlayerProfileScreen.tsx` |
+| 2. Explore (search + rankings) | `app/(tabs)/explore.tsx` | `modules/players/PlayerExploreScreen.tsx` |
+| 3. Player Profile | `app/(tabs)/players/[playerId]/index.tsx` | `modules/players/PlayerProfileScreen.tsx` |
 | 4. Team Profile | `app/teams/[teamId]/index.tsx` | `modules/teams/TeamProfileScreen.tsx` |
 | 5. Game Page | `app/games/[gameId]/index.tsx` | `modules/games/GameDetailScreen.tsx` |
 | 6. Live Game Capture | `app/games/[gameId]/live.tsx` | `modules/live-scoring/LiveScoringSessionScreen.tsx` |
 | 7. Spectator Game View | `app/games/[gameId]/spectate.tsx` | `modules/games/GameSpectateScreen.tsx` |
-| 8. Enter Stats | `app/(tabs)/enter.tsx` | `modules/live-scoring/LiveScoringIndexScreen.tsx` |
+| 8. Scores & entry | `app/(tabs)/scores.tsx` | `modules/live-scoring/ScoresIndexScreen.tsx` |
 | 9. Media Upload/Attach | *(embedded, not a route)* | `modules/media/YouTubeMediaAttachForm.tsx` |
 | 10. Claims & Verification | `app/players/[playerId]/claim.tsx` + `app/claims/index.tsx` | `PlayerClaimScreen.tsx` (request) + `ClaimsQueueScreen.tsx` (admin) |
 | 11. Disputes & Corrections | `app/disputes/index.tsx` | `modules/disputes/DisputesScreen.tsx` |
 | 12. Me/Dashboard | `app/(tabs)/me.tsx` | `modules/account/AccountScreen.tsx` |
+| Video browse | `app/(tabs)/videos.tsx` | `modules/media/VideosBrowseScreen.tsx` |
+| Articles index | `app/(tabs)/articles.tsx` | `modules/articles/ArticlesListScreen.tsx` |
+| Teams directory | `app/(tabs)/teams.tsx` | `modules/teams/TeamsIndexScreen.tsx` |
 
 ## Known gaps (parking lot, not forgotten)
 

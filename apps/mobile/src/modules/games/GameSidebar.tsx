@@ -64,7 +64,7 @@ export function GameSidebar({ game, topPerformers, media, performerMeta }: GameS
       section: 'Videos',
       title: asset.title ?? 'Game video',
       meta: asset.targetType,
-      href: { pathname: '/(tabs)/videos' },
+      href: { pathname: '/videos' },
     })
   }
 

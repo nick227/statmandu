@@ -42,7 +42,7 @@ export function AccountScreen() {
   // so a sign-in prompt is the right fallback, not a generic error message.
   if (isError || !user) {
     return (
-      <Screen title="Me">
+      <Screen title="Me" withBack>
         <SignInPrompt message="Sign in to view your account." />
       </Screen>
     )
@@ -187,7 +187,7 @@ export function AccountScreen() {
   )
 
   return (
-    <Screen title="Me">
+    <Screen title="Me" withBack>
       <PageFrame main={main} sidebar={<MeSidebar user={user} capabilities={capabilities ?? undefined} />} />
     </Screen>
   )

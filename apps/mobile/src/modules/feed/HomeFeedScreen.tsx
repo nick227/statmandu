@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { Link } from 'expo-router'
-import { Rss, Video } from 'lucide-react-native'
+import { Newspaper, Rss, Video } from 'lucide-react-native'
 import { ContentSection } from '@/shared/layout/ContentSection'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
@@ -16,7 +16,10 @@ import {
   PlatformPitchCard,
   UsageCtaRow,
 } from '@/modules/feed/HomeSections'
+import { HomeHeaderActions } from '@/modules/feed/HomeHeaderActions'
+import { HomeScoresStrip } from '@/modules/feed/HomeScoresStrip'
 import { GameSpotlightCardLink } from '@/modules/feed/SpotlightCardLinks'
+import { ArticleCardLink } from '@/modules/articles/ArticleCardLink'
 import { useHomeFeed } from '@/modules/feed/useHomeFeed'
 import { HOME_EMPTY_COPY, HOME_PLAYER_STAT, HOME_SCREEN, HOME_SPORT_SLUG } from '@/modules/feed/homeContent'
 import { ConnectedVideoCard } from '@/modules/media/ConnectedVideoCard'
@@ -67,14 +70,14 @@ export function HomeFeedScreen() {
       section: 'Videos' as const,
       title: video.title ?? 'New video',
       meta: video.targetType,
-      href: { pathname: '/(tabs)/videos' },
+      href: { pathname: '/videos' },
     }))
     return [...gameItems, ...leaderItems, ...videoItems]
   }, [home.featuredAthlete, home.featuredGame, home.podiumPlayers, home.recentGames, home.recentVideos])
 
   if (home.isError) {
     return (
-      <Screen title={HOME_SCREEN.title}>
+      <Screen title={HOME_SCREEN.title} headerActions={<HomeHeaderActions />}>
         <ErrorState message={HOME_SCREEN.error} />
       </Screen>
     )
@@ -82,7 +85,7 @@ export function HomeFeedScreen() {
 
   if (home.isLoading) {
     return (
-      <Screen title={HOME_SCREEN.title}>
+      <Screen title={HOME_SCREEN.title} headerActions={<HomeHeaderActions />}>
         <View className="px-lg pt-sm">
           <RankingsSkeleton />
         </View>
@@ -94,10 +97,21 @@ export function HomeFeedScreen() {
     <View className="gap-md">
       <PlatformAuthorityBand {...home.authority} />
 
+      {home.scoreboardGames.length > 0 ? (
+        <ContentSection
+          title={copy.scores.title}
+          subtitle={copy.scores.subtitle}
+          href={{ pathname: '/scores' }}
+          linkLabel={copy.linkLabels.scores}
+        >
+          <HomeScoresStrip games={home.scoreboardGames} />
+        </ContentSection>
+      ) : null}
+
       <ContentSection
         title={copy.videos.featured.title}
         subtitle={copy.videos.featured.subtitle}
-        href={{ pathname: '/(tabs)/videos' }}
+        href={{ pathname: '/videos' }}
         linkLabel={copy.linkLabels.allVideos}
       >
         {home.featuredVideo ? (
@@ -109,10 +123,27 @@ export function HomeFeedScreen() {
         ) : (
           <View className="gap-sm">
             <EmptyState icon={Video} title={HOME_EMPTY_COPY.videos.title} description={HOME_EMPTY_COPY.videos.description} className="py-lg" />
-            <Link href="/(tabs)/videos" asChild>
+            <Link href="/videos" asChild>
               <Button variant="secondary">{HOME_EMPTY_COPY.videos.browseCta}</Button>
             </Link>
           </View>
+        )}
+      </ContentSection>
+
+      <ContentSection
+        title={copy.articles.title}
+        subtitle={copy.articles.subtitle}
+        href={{ pathname: '/articles' }}
+        linkLabel={copy.linkLabels.allArticles}
+      >
+        {home.recentArticles.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-sm">
+            {home.recentArticles.map((article) => (
+              <ArticleCardLink key={article.id} article={article} className={home.layout.railCardWidth} />
+            ))}
+          </ScrollView>
+        ) : (
+          <EmptyState icon={Newspaper} title={HOME_EMPTY_COPY.articles.title} description={HOME_EMPTY_COPY.articles.description} className="py-lg" />
         )}
       </ContentSection>
 
@@ -120,7 +151,7 @@ export function HomeFeedScreen() {
         <ContentSection
           title={copy.athletes.title}
           subtitle={copy.athletes.subtitle}
-          href={{ pathname: '/(tabs)/explore' }}
+          href={{ pathname: '/explore' }}
           linkLabel={copy.linkLabels.seeAll}
         >
           <AthleteSpotlightCardLink
@@ -197,8 +228,8 @@ export function HomeFeedScreen() {
         <ContentSection
           title={copy.teams.title}
           subtitle={copy.teams.subtitle}
-          href={{ pathname: '/(tabs)/explore' }}
-          linkLabel={copy.linkLabels.seeAll}
+          href={{ pathname: '/teams' }}
+          linkLabel={copy.linkLabels.allTeams}
         >
           <TeamSpotlightCardLink
             entry={home.featuredTeam}
@@ -237,7 +268,7 @@ export function HomeFeedScreen() {
 
   return (
     <>
-    <Screen title={HOME_SCREEN.title} scroll contentClassName="pb-xxl">
+    <Screen title={HOME_SCREEN.title} scroll contentClassName="pb-xxl" headerActions={<HomeHeaderActions />}>
       <PageFrame
         main={mainColumn}
         sidebar={<HomeSidebar ad={topAd ?? bottomAd} items={sidebarItems} />}

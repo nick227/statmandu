@@ -1,21 +1,16 @@
 import type { ReactNode } from 'react'
-import { View } from 'react-native'
-import { BackButton } from '@/shared/ui/BackButton'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { Screen, type ScreenProps } from './Screen'
 
-export interface ScreenStateProps extends Pick<ScreenProps, 'title' | 'className' | 'contentClassName'> {
+export interface ScreenStateProps extends Pick<ScreenProps, 'title' | 'className' | 'contentClassName' | 'withBack'> {
   message?: string
   label?: string
-  withBack?: boolean
-  backTone?: 'light' | 'dark'
 }
 
-function ScreenStateShell({ title, className, contentClassName, withBack, backTone = 'dark', children }: ScreenStateProps & { children: ReactNode }) {
+function ScreenStateShell({ title, className, contentClassName, withBack, children }: ScreenStateProps & { children: ReactNode }) {
   return (
-    <Screen title={title} className={className} contentClassName={contentClassName}>
-      {withBack ? <View className="px-lg pb-md"><BackButton tone={backTone} /></View> : null}
+    <Screen title={title} className={className} contentClassName={contentClassName} withBack={withBack}>
       {children}
     </Screen>
   )

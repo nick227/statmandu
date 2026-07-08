@@ -48,6 +48,7 @@ export function EntityProfileShell({
   const sheetRef = useRef<GorhomBottomSheet>(null)
   const [isExpanded, setIsExpanded] = useState(false)
   const { width } = useWindowDimensions()
+  const sheetBottomPad = 48
   const showSidebar = Boolean(sidebar) && width >= LAYOUT.wideBreakpoint
   const initialSnap = Platform.OS === 'web' ? 'half' : 'collapsed'
 
@@ -67,7 +68,7 @@ export function EntityProfileShell({
         ) : null}
         {highlights}
         <EntityProfileTabs tabs={tabs} active={activeTab} onChange={onTabChange} />
-        <SheetScrollView contentContainerClassName="pb-xxl">{children}</SheetScrollView>
+        <SheetScrollView contentContainerStyle={{ paddingBottom: sheetBottomPad }}>{children}</SheetScrollView>
       </Sheet>
     </View>
   )

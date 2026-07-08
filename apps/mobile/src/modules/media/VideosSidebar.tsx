@@ -8,7 +8,7 @@ function targetHref(targetType: EntityType, targetId: string): SidebarHref {
   if (targetType === 'PLAYER') return { pathname: '/players/[playerId]', params: { playerId: targetId } }
   if (targetType === 'TEAM') return { pathname: '/teams/[teamId]', params: { teamId: targetId } }
   if (targetType === 'GAME') return { pathname: '/games/[gameId]', params: { gameId: targetId } }
-  return { pathname: '/(tabs)/videos' }
+  return { pathname: '/videos' }
 }
 
 export function VideosSidebar({ videos }: { videos: MediaAsset[] }) {

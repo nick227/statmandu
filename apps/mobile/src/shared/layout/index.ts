@@ -1,4 +1,3 @@
-export * from './TabBarIcon'
 export * from './Screen'
 export * from './ScreenState'
 export * from './ContentSection'

@@ -1,6 +1,6 @@
-import { ScrollView, View } from 'react-native'
-import { Link } from 'expo-router'
-import { Radio } from 'lucide-react-native'
+import { ScrollView, View, Pressable } from 'react-native'
+import { Link, useRouter } from 'expo-router'
+import { Radio, ClipboardList, Target, Eye, MonitorPlay } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { EmptyState } from '@/shared/ui/EmptyState'
@@ -13,15 +13,18 @@ import { GameStatusBadge } from '@/modules/games/GameStatusBadge'
 import { useAuthGate } from '@/modules/auth/useAuthGate'
 import { useLiveScoringGames } from '@/modules/live-scoring/useLiveScoringGames'
 import { EnterSidebar } from '@/modules/live-scoring/EnterSidebar'
+import { useNativeColor } from '@/lib/theme'
 
 function GameCard({ item }: { item: any }) {
   const homeTeam = item.gameTeams.find((gt: any) => gt.isHome)?.team
   const awayTeam = item.gameTeams.find((gt: any) => !gt.isHome)?.team
+  const router = useRouter()
+  const brandColor = useNativeColor('brand')
   
   return (
     <View className="rounded-md border border-border bg-surface overflow-hidden">
       <Link href={{ pathname: '/games/[gameId]/live', params: { gameId: item.id } }} asChild>
-        <View className="flex-row items-center justify-between p-md">
+        <Pressable className="flex-row items-center justify-between p-md active:opacity-70">
           <View>
             <Text className="font-semibold">
               {homeTeam?.name} vs {awayTeam?.name}
@@ -29,23 +32,46 @@ function GameCard({ item }: { item: any }) {
             <Text variant="caption">{new Date(item.scheduledAt).toLocaleString()}</Text>
           </View>
           <GameStatusBadge status={item.status} />
-        </View>
+        </Pressable>
       </Link>
       
       {item.status !== 'FINAL' && (
-        <View className="flex-row items-center border-t border-border p-sm gap-sm bg-canvas/30">
-          <Link href={{ pathname: '/games/[gameId]/live', params: { gameId: item.id, intent: 'TEAM_SCORER' } }} asChild>
-            <Button variant="secondary" size="sm" className="flex-1">Score</Button>
-          </Link>
-          <Link href={{ pathname: '/games/[gameId]/live', params: { gameId: item.id, intent: 'CONTRIBUTOR' } }} asChild>
-            <Button variant="secondary" size="sm" className="flex-1">Track</Button>
-          </Link>
-          <Link href={{ pathname: '/games/[gameId]/live', params: { gameId: item.id, intent: 'BROADCASTER' } }} asChild>
-            <Button variant="secondary" size="sm" className="flex-1">Cast</Button>
-          </Link>
-          <Link href={{ pathname: '/games/[gameId]/spectate', params: { gameId: item.id } }} asChild>
-            <Button variant="secondary" size="sm" className="flex-1">Watch</Button>
-          </Link>
+        <View className="flex-col border-t border-border p-sm gap-sm bg-canvas/30">
+          <Pressable 
+            onPress={() => router.push({ pathname: '/games/[gameId]/live', params: { gameId: item.id, intent: 'TEAM_SCORER' } })}
+            className="flex-row items-center gap-md rounded-md border border-border bg-surface p-sm active:opacity-70"
+          >
+            <View className="h-8 w-8 items-center justify-center rounded-full bg-brand/10">
+              <ClipboardList size={16} color={brandColor} />
+            </View>
+            <View className="flex-1">
+              <Text className="font-semibold text-sm">Score the Game</Text>
+            </View>
+          </Pressable>
+
+          <Pressable 
+            onPress={() => router.push({ pathname: '/games/[gameId]/live', params: { gameId: item.id, intent: 'BROADCASTER' } })}
+            className="flex-row items-center gap-md rounded-md border border-border bg-surface p-sm active:opacity-70"
+          >
+            <View className="h-8 w-8 items-center justify-center rounded-full bg-brand/10">
+              <MonitorPlay size={16} color={brandColor} />
+            </View>
+            <View className="flex-1">
+              <Text className="font-semibold text-sm">Broadcast</Text>
+            </View>
+          </Pressable>
+
+          <Pressable 
+            onPress={() => router.push({ pathname: '/games/[gameId]/spectate', params: { gameId: item.id } })}
+            className="flex-row items-center gap-md rounded-md border border-border bg-surface p-sm active:opacity-70"
+          >
+            <View className="h-8 w-8 items-center justify-center rounded-full bg-brand/10">
+              <Eye size={16} color={brandColor} />
+            </View>
+            <View className="flex-1">
+              <Text className="font-semibold text-sm">Watch</Text>
+            </View>
+          </Pressable>
         </View>
       )}
     </View>
@@ -72,7 +98,7 @@ export function ScoresIndexScreen() {
 
   if (!isAuthLoading && !isAuthenticated) {
     return (
-      <Screen title="Scores">
+      <Screen title="Scores" withBack>
         <SignInPrompt message="Sign in to view and enter scores." />
       </Screen>
     )
@@ -83,7 +109,7 @@ export function ScoresIndexScreen() {
   const finalGames = games.filter((g) => g.status === 'FINAL' || g.status === 'DISPUTED')
 
   return (
-    <Screen title="Scores">
+    <Screen title="Scores" withBack>
       <PageFrame
         main={
           isError ? (

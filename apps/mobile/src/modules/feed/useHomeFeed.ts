@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useFeed, useGames, usePlayerLeaderboard, useRecentMedia, useTeamLeaderboard } from '@statman/sdk'
+import { useArticlesFeed } from '@/modules/articles/useArticlesFeed'
 import type { ShowcaseList } from '@/modules/leaderboards/showcaseTypes'
 import {
   HOME_AD_SLOTS,
@@ -25,6 +26,7 @@ export function useHomeFeed() {
   const teamLeaderboardQuery = useTeamLeaderboard({ sportSlug: HOME_SPORT_SLUG, stat: HOME_TEAM_STAT, limit: 6 })
   const gamesQuery = useGames()
   const recentMediaQuery = useRecentMedia(20)
+  const articlesFeed = useArticlesFeed()
 
   const feedItems = feedQuery.data?.pages.flatMap((p) => p.data) ?? []
   const playerEntries = playerLeaderboardQuery.data?.data ?? []
@@ -45,6 +47,11 @@ export function useHomeFeed() {
   }, [games])
 
   const liveGames = useMemo(() => games.filter((g) => g.status === 'LIVE').slice(0, 3), [games])
+  const scoreboardGames = useMemo(() => {
+    const live = games.filter((g) => g.status === 'LIVE')
+    const upcoming = games.filter((g) => g.status === 'SCHEDULED')
+    return [...live, ...upcoming].slice(0, 4)
+  }, [games])
   const recentGames = useMemo(
     () => games.filter((g) => g.id !== featuredGame?.id && g.status === 'FINAL').slice(0, 3),
     [featuredGame?.id, games]
@@ -92,6 +99,8 @@ export function useHomeFeed() {
   )
   const hasVideos = recentVideos.length > 0
 
+  const recentArticles = useMemo(() => articlesFeed.articles.slice(0, 4), [articlesFeed.articles])
+
   const ads = HOME_AD_SLOTS
 
   return {
@@ -108,6 +117,7 @@ export function useHomeFeed() {
     risingTeams,
     featuredGame,
     recentGames,
+    scoreboardGames,
     reboundShowcase,
     liveShowcase,
     communityActivity,
@@ -117,8 +127,9 @@ export function useHomeFeed() {
     pulseVideos,
     communityPulse,
     hasVideos,
+    recentArticles,
     layout: HOME_LAYOUT,
-    isLoading: feedQuery.isLoading || playerLeaderboardQuery.isLoading || teamLeaderboardQuery.isLoading || gamesQuery.isLoading || recentMediaQuery.isLoading,
-    isError: feedQuery.isError || playerLeaderboardQuery.isError || gamesQuery.isError || recentMediaQuery.isError,
+    isLoading: feedQuery.isLoading || playerLeaderboardQuery.isLoading || teamLeaderboardQuery.isLoading || gamesQuery.isLoading || recentMediaQuery.isLoading || articlesFeed.isLoading,
+    isError: feedQuery.isError || playerLeaderboardQuery.isError || gamesQuery.isError || recentMediaQuery.isError || articlesFeed.isError,
   }
 }
