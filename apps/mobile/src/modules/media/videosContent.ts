@@ -5,8 +5,8 @@ export const VIDEOS_SCREEN = {
 
 export const VIDEOS_COPY = {
   browse: {
-    title: 'Swipe the wire',
-    subtitle: 'Vertical browse through the latest athlete, team, and game film.',
+    title: 'Film',
+    subtitle: 'Swipe up for the next clip. Active clips play inline.',
   },
   empty: {
     title: 'No film yet',

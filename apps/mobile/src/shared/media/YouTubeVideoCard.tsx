@@ -1,20 +1,18 @@
 import type { ReactNode } from 'react'
 import { Pressable, View, type PressableProps } from 'react-native'
-import { Play } from 'lucide-react-native'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { cn } from '@/lib/utils'
+import { motion } from '@/lib/theme'
 import { Text } from '@/shared/ui/Text'
+import { FilmLabelBadge } from './FilmLabelBadge'
+import { PlayOverlay } from './PlayOverlay'
 import { SmartImage } from './SmartImage'
 import { youtubeThumbnailUrl } from './youtube'
+import type { YouTubeVideoVariant } from './videoVariants'
 
-export type YouTubeVideoVariant = 'grid' | 'tile' | 'hero' | 'rail' | 'banner'
+export type { YouTubeVideoVariant }
 
-const PLAY_SIZE: Record<YouTubeVideoVariant, number> = {
-  grid: 18,
-  tile: 24,
-  hero: 32,
-  rail: 22,
-  banner: 22,
-}
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
 export interface YouTubeVideoCardProps extends PressableProps {
   videoId: string
@@ -24,19 +22,6 @@ export interface YouTubeVideoCardProps extends PressableProps {
   variant: YouTubeVideoVariant
   className?: string
   footer?: ReactNode
-}
-
-function PlayOverlay({ variant }: { variant: YouTubeVideoVariant }) {
-  const size = PLAY_SIZE[variant]
-  const shell = variant === 'hero' ? 'h-16 w-16' : variant === 'grid' ? 'h-10 w-10' : 'h-12 w-12'
-  const icon = variant === 'hero' ? 28 : variant === 'grid' ? 16 : 22
-  return (
-    <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
-      <View className={cn('items-center justify-center rounded-full border border-white/30 bg-black/50', shell)}>
-        <Play size={icon} color="#FFFFFF" fill="#FFFFFF" />
-      </View>
-    </View>
-  )
 }
 
 function ThumbFrame({
@@ -72,24 +57,40 @@ export function YouTubeVideoCard({
   variant,
   className,
   footer,
+  onPressIn,
+  onPressOut,
   ...props
 }: YouTubeVideoCardProps) {
+  const scale = useSharedValue(1)
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
   const showMeta = Boolean(eyebrow || title || subtitle) && variant !== 'grid'
 
   return (
-    <Pressable className={cn('active:opacity-90', className)} {...props}>
+    <AnimatedPressable
+      className={cn(className)}
+      style={animatedStyle}
+      onPressIn={(e) => {
+        scale.value = withTiming(0.98, { duration: motion.cardPressMs })
+        onPressIn?.(e)
+      }}
+      onPressOut={(e) => {
+        scale.value = withTiming(1, { duration: motion.cardPressMs })
+        onPressOut?.(e)
+      }}
+      {...props}
+    >
       <View className="gap-xs">
         <ThumbFrame videoId={videoId} variant={variant} />
         {showMeta ? (
           <View className="gap-xs px-xs">
-            {eyebrow ? <Text variant="statLabel" className="text-sport-accent">{eyebrow}</Text> : null}
+            {eyebrow ? <FilmLabelBadge label={eyebrow} tone="accent" /> : null}
             {title ? <Text className="font-semibold" numberOfLines={variant === 'hero' ? 2 : 1}>{title}</Text> : null}
             {subtitle ? <Text variant="caption" numberOfLines={1}>{subtitle}</Text> : null}
           </View>
         ) : null}
         {footer}
       </View>
-    </Pressable>
+    </AnimatedPressable>
   )
 }
 

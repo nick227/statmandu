@@ -18,7 +18,6 @@ import { useHomeFeed } from '@/modules/feed/useHomeFeed'
 import { HOME_EMPTY_COPY, HOME_PLAYER_STAT, HOME_SCREEN, HOME_SPORT_SLUG } from '@/modules/feed/homeContent'
 import { ConnectedVideoCard } from '@/modules/media/ConnectedVideoCard'
 import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
-import { VideoRail } from '@/modules/media/VideoRail'
 import { RankingsSkeleton } from '@/modules/leaderboards/RankingsSkeleton'
 import { ChampionRibbon, PodiumStrip, ShowcaseMosaic } from '@/modules/leaderboards/RankingsShowcase'
 import { AthleteSpotlightCardLink, TeamSpotlightCardLink } from '@/modules/leaderboards/SpotlightCardLinks'
@@ -100,15 +99,6 @@ export function HomeFeedScreen() {
         </ContentSection>
       ) : null}
 
-      {home.hasVideos && home.latestVideos.length > 0 ? (
-        <ContentSection title={copy.videos.latest.title} subtitle={copy.videos.latest.subtitle}>
-          <VideoRail
-            items={home.latestVideos}
-            onItemPress={(index) => setViewerIndex(index + 1)}
-          />
-        </ContentSection>
-      ) : null}
-
       {home.risingAthletes.length > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-sm">
           {home.risingAthletes.map((entry) => (
@@ -153,16 +143,6 @@ export function HomeFeedScreen() {
             <GameSpotlightCardLink key={game.id} game={game} size="small" className={home.layout.railCardWidth} />
           ))}
         </ScrollView>
-      ) : null}
-
-      {home.moreVideos.length > 0 ? (
-        <ContentSection title={copy.videos.rail.title} subtitle={copy.videos.rail.subtitle}>
-          <VideoRail
-            items={home.moreVideos}
-            variant="tile"
-            onItemPress={(index) => setViewerIndex(index + 1 + home.latestVideos.length)}
-          />
-        </ContentSection>
       ) : null}
 
       {home.featuredTeam ? (

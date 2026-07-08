@@ -12,8 +12,11 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { X, Play, UserRound } from 'lucide-react-native'
+import { FilmLabelBadge } from './FilmLabelBadge'
 import type { MediaTargetType } from './mediaLabels'
+import { PlayOverlay } from './PlayOverlay'
 import { SmartImage } from './SmartImage'
+import { YouTubePlayer } from './YouTubePlayer'
 import { youtubeThumbnailUrl, youtubeWatchUrl } from './youtube'
 import { Text } from '@/shared/ui/Text'
 
@@ -50,6 +53,7 @@ export function FullScreenMediaViewer({
   const listRef = useRef<FlatList<FullScreenMediaItem>>(null)
   const [activeIndex, setActiveIndex] = useState(initialIndex)
   const [chromeVisible, setChromeVisible] = useState(true)
+  const [playingId, setPlayingId] = useState<string | null>(null)
 
   const translateY = useSharedValue(0)
   const dragProgress = useSharedValue(0)
@@ -60,6 +64,7 @@ export function FullScreenMediaViewer({
     if (!visible || items.length === 0) return
     setActiveIndex(clampedInitialIndex)
     setChromeVisible(true)
+    setPlayingId(null)
     translateY.value = 0
     dragProgress.value = 0
     requestAnimationFrame(() => {
@@ -68,22 +73,33 @@ export function FullScreenMediaViewer({
   }, [clampedInitialIndex, dragProgress, items.length, translateY, visible])
 
   function handleMomentumEnd(e: NativeSyntheticEvent<NativeScrollEvent>) {
-    setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / width))
+    const next = Math.round(e.nativeEvent.contentOffset.x / width)
+    setActiveIndex(next)
+    setPlayingId(null)
   }
 
   function handleClose() {
+    setPlayingId(null)
     translateY.value = 0
     dragProgress.value = 0
     onClose()
   }
 
+  function startPlayback(item: FullScreenMediaItem) {
+    setPlayingId(item.id)
+    setChromeVisible(true)
+  }
+
   const pan = Gesture.Pan()
+    .activeOffsetY(24)
+    .failOffsetX([-20, 20])
     .onUpdate((e) => {
-      if (e.translationY < 0) return
+      if (playingId || e.translationY < 0) return
       translateY.value = e.translationY
       dragProgress.value = Math.min(e.translationY / DISMISS_THRESHOLD, 1)
     })
     .onEnd((e) => {
+      if (playingId) return
       if (e.translationY > DISMISS_THRESHOLD || e.velocityY > 800) {
         translateY.value = withTiming(height, { duration: 180 })
         dragProgress.value = withTiming(1, { duration: 180 }, () => runOnJS(handleClose)())
@@ -113,6 +129,7 @@ export function FullScreenMediaViewer({
   const activeItem = items[activeIndex]
   const targetActionLabel = activeItem && getTargetActionLabel?.(activeItem)
   const canViewTarget = Boolean(activeItem?.targetType && activeItem.targetId && onViewTarget && targetActionLabel)
+  const isPlaying = Boolean(activeItem && playingId === activeItem.id)
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
@@ -125,6 +142,7 @@ export function FullScreenMediaViewer({
               keyExtractor={(item) => item.id}
               horizontal
               pagingEnabled
+              scrollEnabled={!isPlaying}
               initialScrollIndex={clampedInitialIndex}
               getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
               onScrollToIndexFailed={({ index }) => {
@@ -134,20 +152,32 @@ export function FullScreenMediaViewer({
               }}
               showsHorizontalScrollIndicator={false}
               onMomentumScrollEnd={handleMomentumEnd}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={{ width, height }}
-                  className="items-center justify-center"
-                  onPress={() => setChromeVisible((v) => !v)}
-                >
-                  <SmartImage uri={youtubeThumbnailUrl(item.youtubeVideoId)} className="h-full w-full" resizeMode="contain" />
-                  <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
-                    <View className="h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-black/50">
-                      <Play size={28} color="#FFFFFF" fill="#FFFFFF" />
-                    </View>
-                  </View>
-                </Pressable>
-              )}
+              renderItem={({ item }) => {
+                const itemPlaying = playingId === item.id
+                return (
+                  <Pressable
+                    style={{ width, height }}
+                    className="items-center justify-center bg-black"
+                    onPress={() => !itemPlaying && setChromeVisible((v) => !v)}
+                  >
+                    {itemPlaying ? (
+                      <YouTubePlayer videoId={item.youtubeVideoId} autoplay style={{ width, height: height * 0.55 }} />
+                    ) : (
+                      <>
+                        <SmartImage uri={youtubeThumbnailUrl(item.youtubeVideoId)} className="h-full w-full" resizeMode="contain" />
+                        <Pressable
+                          className="absolute inset-0 items-center justify-center"
+                          onPress={() => startPlayback(item)}
+                          accessibilityRole="button"
+                          accessibilityLabel="Play video"
+                        >
+                          <PlayOverlay variant="hero" />
+                        </Pressable>
+                      </>
+                    )}
+                  </Pressable>
+                )
+              }}
             />
 
             <Animated.View pointerEvents={chromeVisible ? 'auto' : 'none'} style={[{ position: 'absolute', top: insets.top + 12, left: 0, right: 0 }, chromeStyle]} className="flex-row items-center justify-between px-lg">
@@ -160,11 +190,7 @@ export function FullScreenMediaViewer({
             </Animated.View>
 
             <Animated.View pointerEvents={chromeVisible ? 'auto' : 'none'} style={[{ position: 'absolute', bottom: insets.bottom + 24, left: 0, right: 0 }, chromeStyle]} className="gap-md px-lg">
-              {activeItem?.filmLabel ? (
-                <View className="self-start rounded-pill border border-white/20 bg-black/40 px-sm py-xs">
-                  <Text variant="statLabel" className="text-white/90">{activeItem.filmLabel}</Text>
-                </View>
-              ) : null}
+              {activeItem?.filmLabel ? <FilmLabelBadge label={activeItem.filmLabel} tone="dark" /> : null}
               {activeItem?.title ? <Text className="font-semibold text-white">{activeItem.title}</Text> : null}
               {canViewTarget ? (
                 <Pressable
@@ -180,7 +206,7 @@ export function FullScreenMediaViewer({
                 className="flex-row items-center justify-center gap-sm rounded-md border border-white/20 bg-white/15 py-md"
               >
                 <Play size={16} color="#FFFFFF" fill="#FFFFFF" />
-                <Text className="font-semibold text-white">Watch on YouTube</Text>
+                <Text className="font-semibold text-white">Open in YouTube</Text>
               </Pressable>
             </Animated.View>
           </Animated.View>

@@ -8,7 +8,8 @@ import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { Button } from '@/shared/ui/Button'
 import { BackButton } from '@/shared/ui/BackButton'
-import { FullScreenMediaViewer } from '@/shared/media'
+import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
+import { toViewerItemsForTarget } from '@/modules/media/mediaViewerItem'
 import { Screen } from '@/shared/layout'
 import { useNativeColor, useSportTheme } from '@/lib/theme'
 import { EntityProfileShell } from '@/shared/layout/entity-profile/EntityProfileShell'
@@ -59,6 +60,7 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
   const sport = player.sport?.slug ?? 'basketball'
   const name = `${profile.firstName} ${profile.lastName}`
   const mediaItems = media.map((m) => ({ id: m.id, youtubeVideoId: m.youtubeVideoId, title: m.title }))
+  const viewerItems = toViewerItemsForTarget(mediaItems, 'PLAYER', player.id)
   const classYear = player.classYear
     ? player.classYear.toLowerCase().startsWith('class') ? player.classYear : `Class of ${player.classYear}`
     : null
@@ -175,9 +177,9 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
         ) : null}
       </EntityProfileShell>
 
-      <FullScreenMediaViewer
+      <ConnectedFullScreenMediaViewer
         visible={viewerIndex != null}
-        items={mediaItems}
+        items={viewerItems}
         initialIndex={viewerIndex ?? 0}
         onClose={() => setViewerIndex(null)}
       />

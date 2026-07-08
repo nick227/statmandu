@@ -6,7 +6,8 @@ import { Text } from '@/shared/ui/Text'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { BackButton } from '@/shared/ui/BackButton'
-import { FullScreenMediaViewer } from '@/shared/media'
+import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
+import { toViewerItemsForTarget } from '@/modules/media/mediaViewerItem'
 import { Screen } from '@/shared/layout'
 import { useSportTheme } from '@/lib/theme'
 import { EntityProfileShell } from '@/shared/layout/entity-profile/EntityProfileShell'
@@ -46,6 +47,7 @@ export function TeamProfileScreen({ teamId }: { teamId: string }) {
   const { currentSeasonStats, games, media, roster, setTab, stats, tab, tabs, team } = teamState
   const sport = team.sport?.slug ?? 'basketball'
   const mediaItems = media.map((m) => ({ id: m.id, youtubeVideoId: m.youtubeVideoId, title: m.title }))
+  const viewerItems = toViewerItemsForTarget(mediaItems, 'TEAM', team.id)
 
   return (
     <>
@@ -113,9 +115,9 @@ export function TeamProfileScreen({ teamId }: { teamId: string }) {
       {tab === 'Sources' ? <ConnectedSourcesPanel targetType="TEAM" targetId={team.id} /> : null}
     </EntityProfileShell>
 
-    <FullScreenMediaViewer
+    <ConnectedFullScreenMediaViewer
       visible={viewerIndex != null}
-      items={mediaItems}
+      items={viewerItems}
       initialIndex={viewerIndex ?? 0}
       onClose={() => setViewerIndex(null)}
     />

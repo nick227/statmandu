@@ -13,6 +13,7 @@ export function buildCommunityPulse(
   feed: FeedItem[],
   mock: HomeMockActivity[],
   videos: MediaAsset[],
+  videoIndexOffset = 0,
   every = 2
 ): CommunityPulseItem[] {
   const result: CommunityPulseItem[] = []
@@ -32,7 +33,7 @@ export function buildCommunityPulse(
 
     if ((i + 1) % every === 0 && videoCursor < videos.length) {
       const video = videos[videoCursor]!
-      result.push({ kind: 'video', id: video.id, video, videoIndex: videoCursor })
+      result.push({ kind: 'video', id: video.id, video, videoIndex: videoIndexOffset + videoCursor })
       videoCursor++
     }
   }

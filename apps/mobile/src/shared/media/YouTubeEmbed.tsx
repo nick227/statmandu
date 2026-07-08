@@ -1,19 +1,19 @@
-import { Linking, Pressable } from 'react-native'
+import { Pressable } from 'react-native'
 import { YouTubeVideoCard } from './YouTubeVideoCard'
-import { youtubeWatchUrl } from './youtube'
 
 export interface YouTubeEmbedProps {
   videoId: string
   className?: string
+  onPress?: () => void
 }
 
-export function YouTubeEmbed({ videoId, className }: YouTubeEmbedProps) {
+export function YouTubeEmbed({ videoId, className, onPress }: YouTubeEmbedProps) {
   return (
     <YouTubeVideoCard
       videoId={videoId}
       variant="tile"
       className={className}
-      onPress={() => Linking.openURL(youtubeWatchUrl(videoId))}
+      onPress={onPress}
     />
   )
 }

@@ -80,11 +80,9 @@ export function useHomeFeed() {
 
   const recentVideos = recentMediaQuery.data?.data ?? []
   const featuredVideo = recentVideos[0] ?? null
-  const latestVideos = useMemo(() => recentVideos.slice(1, 7), [recentVideos])
-  const moreVideos = useMemo(() => recentVideos.slice(7, 13), [recentVideos])
-  const pulseVideos = useMemo(() => recentVideos.slice(0, 6), [recentVideos])
+  const pulseVideos = useMemo(() => recentVideos.slice(1, 7), [recentVideos])
   const communityPulse = useMemo(
-    () => buildCommunityPulse(communityActivity, mockActivity, pulseVideos),
+    () => buildCommunityPulse(communityActivity, mockActivity, pulseVideos, 1),
     [communityActivity, mockActivity, pulseVideos]
   )
   const hasVideos = recentVideos.length > 0
@@ -111,8 +109,6 @@ export function useHomeFeed() {
     mockActivity,
     recentVideos,
     featuredVideo,
-    latestVideos,
-    moreVideos,
     pulseVideos,
     communityPulse,
     hasVideos,

@@ -7,7 +7,8 @@ import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { Button } from '@/shared/ui/Button'
 import { Sheet, SheetScrollView } from '@/shared/ui/Sheet'
-import { FullScreenMediaViewer } from '@/shared/media'
+import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
+import { toViewerItemsForTarget } from '@/modules/media/mediaViewerItem'
 import { youtubeThumbnailUrl } from '@/shared/media/youtube'
 import { EntityProfileTabs } from '@/shared/layout/entity-profile/EntityProfileTabs'
 import { GlassPanel, MediaChrome, MediaSurface } from '@/shared/layout'
@@ -56,6 +57,7 @@ export function GameDetailScreen({ gameId }: { gameId: string }) {
   const primaryMedia = media[0]
   const heroImageUri = primaryMedia?.youtubeVideoId ? youtubeThumbnailUrl(primaryMedia.youtubeVideoId) : null
   const mediaItems = media.map((m) => ({ id: m.id, youtubeVideoId: m.youtubeVideoId, title: m.title }))
+  const viewerItems = toViewerItemsForTarget(mediaItems, 'GAME', game.id)
   const scoreFor = (score?: number | null) => score ?? 0
   const scheduled = new Date(game.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
   const gameTitle = `${homeName} vs ${awayName}`
@@ -167,9 +169,9 @@ export function GameDetailScreen({ gameId }: { gameId: string }) {
       </Sheet>
     </MediaSurface>
 
-    <FullScreenMediaViewer
+    <ConnectedFullScreenMediaViewer
       visible={viewerIndex != null}
-      items={mediaItems}
+      items={viewerItems}
       initialIndex={viewerIndex ?? 0}
       onClose={() => setViewerIndex(null)}
     />
