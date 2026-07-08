@@ -4,10 +4,11 @@ import { Input } from '@/shared/ui/Input'
 import { Button } from '@/shared/ui/Button'
 import { Text } from '@/shared/ui/Text'
 import { Card, CardContent } from '@/shared/ui/Card'
-import { getActAsUserId, setActAsUserId } from '@/lib/adminHeaders'
+import { setActAsUserId } from '@/lib/adminHeaders'
+import { useActAsUserId } from '@/modules/admin/useActAsUserId'
 
 export function ConnectedActAsBar() {
-  const current = getActAsUserId()
+  const current = useActAsUserId()
   const [value, setValue] = useState(current ?? '')
   const isDirty = (current ?? '') !== value
 

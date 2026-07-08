@@ -21,6 +21,7 @@ export function AdminAthletesScreen() {
 
   const [note, setNote] = useState('')
   const [bulkText, setBulkText] = useState('')
+  const [parseError, setParseError] = useState<string | null>(null)
 
   if (!isAuthLoading && !isAdmin) {
     return (
@@ -32,9 +33,14 @@ export function AdminAthletesScreen() {
   }
 
   async function submitBulk() {
-    const items = parseBulkPlayersText(bulkText)
-    setNextAdminNote(note.trim() ? note.trim() : null)
-    await bulkCreate.mutateAsync({ items })
+    setParseError(null)
+    try {
+      const items = parseBulkPlayersText(bulkText)
+      setNextAdminNote(note.trim() ? note.trim() : null)
+      await bulkCreate.mutateAsync({ items })
+    } catch (e: any) {
+      setParseError(e?.message ?? 'Invalid bulk input')
+    }
   }
 
   return (
@@ -51,6 +57,7 @@ export function AdminAthletesScreen() {
           <Button isLoading={bulkCreate.isPending} disabled={!bulkText.trim()} onPress={submitBulk}>
             Create
           </Button>
+          {parseError ? <Text variant="caption" className="text-danger">{parseError}</Text> : null}
           {bulkCreate.data?.data?.errors?.length ? (
             <Text variant="caption">{bulkCreate.data.data.errors.length} error(s) returned.</Text>
           ) : null}

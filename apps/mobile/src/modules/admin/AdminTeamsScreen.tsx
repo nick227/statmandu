@@ -20,6 +20,7 @@ export function AdminTeamsScreen() {
   const [teamId, setTeamId] = useState('')
   const [note, setNote] = useState('')
   const [bulkText, setBulkText] = useState('')
+  const [parseError, setParseError] = useState<string | null>(null)
 
   const { teams, bulkAdd } = useAdminTeams(teamId)
 
@@ -33,18 +34,25 @@ export function AdminTeamsScreen() {
   }
 
   async function submitBulk() {
-    const items = bulkText
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const [playerId, seasonId, jerseyNumber] = line.split(',').map((p) => p.trim())
-        if (!playerId || !seasonId) throw new Error('Each line must be: playerId,seasonId[,jerseyNumber]')
-        return { playerId, seasonId, jerseyNumber: jerseyNumber ? Number(jerseyNumber) : undefined }
-      })
+    setParseError(null)
+    try {
+      const items = bulkText
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [playerId, seasonId, jerseyNumber] = line.split(',').map((p) => p.trim())
+          if (!playerId || !seasonId) throw new Error('Each line must be: playerId,seasonId[,jerseyNumber]')
+          const parsedJersey = jerseyNumber ? Number(jerseyNumber) : undefined
+          if (parsedJersey !== undefined && Number.isNaN(parsedJersey)) throw new Error('jerseyNumber must be a number')
+          return { playerId, seasonId, jerseyNumber: parsedJersey }
+        })
 
-    setNextAdminNote(note.trim() ? note.trim() : null)
-    await bulkAdd.mutateAsync({ items })
+      setNextAdminNote(note.trim() ? note.trim() : null)
+      await bulkAdd.mutateAsync({ items })
+    } catch (e: any) {
+      setParseError(e?.message ?? 'Invalid bulk input')
+    }
   }
 
   return (
@@ -62,6 +70,7 @@ export function AdminTeamsScreen() {
           <Button isLoading={bulkAdd.isPending} disabled={!teamId.trim() || !bulkText.trim()} onPress={submitBulk}>
             Add to roster
           </Button>
+          {parseError ? <Text variant="caption" className="text-danger">{parseError}</Text> : null}
           {bulkAdd.data?.data?.errors?.length ? (
             <Text variant="caption">{bulkAdd.data.data.errors.length} error(s) returned.</Text>
           ) : null}

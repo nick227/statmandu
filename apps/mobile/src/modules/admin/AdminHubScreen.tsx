@@ -11,6 +11,7 @@ import { Button } from '@/shared/ui/Button'
 import { useAuthGate } from '@/modules/auth/useAuthGate'
 import { ConnectedActAsBar } from '@/modules/admin/ConnectedActAsBar'
 import { useAdminHub } from '@/modules/admin/useAdminHub'
+import { useStatusNativeColor } from '@/lib/theme'
 
 function MetricRow({ label, value }: { label: string; value: number }) {
   return (
@@ -22,12 +23,13 @@ function MetricRow({ label, value }: { label: string; value: number }) {
 }
 
 function AdminLinkCard({ href, title, subtitle, icon: Icon }: { href: Href; title: string; subtitle: string; icon: any }) {
+  const color = useStatusNativeColor('brand')
   return (
     <Link href={href} asChild>
       <Card>
         <CardContent className="gap-xs">
           <View className="flex-row items-center gap-sm">
-            <Icon size={18} color="rgb(59 130 246)" />
+            <Icon size={18} color={color} />
             <Text className="font-semibold">{title}</Text>
           </View>
           <Text variant="caption">{subtitle}</Text>
@@ -40,6 +42,7 @@ function AdminLinkCard({ href, title, subtitle, icon: Icon }: { href: Href; titl
 export function AdminHubScreen() {
   const { isAdmin, isAuthLoading } = useAuthGate()
   const { metrics } = useAdminHub()
+  const verifiedColor = useStatusNativeColor('verified')
 
   if (!isAuthLoading && !isAdmin) {
     return (
@@ -59,7 +62,7 @@ export function AdminHubScreen() {
         <CardContent className="gap-sm">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-sm">
-              <ShieldCheck size={18} color="rgb(34 197 94)" />
+              <ShieldCheck size={18} color={verifiedColor} />
               <Text className="font-semibold">Visibility</Text>
             </View>
             <Badge tone="verified">Admin</Badge>

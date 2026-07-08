@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { ImagePlus, Layers, Save, Sparkles, UploadCloud } from 'lucide-react-native'
+import { ImagePlus, Layers, Shield, Sparkles, Star, UploadCloud } from 'lucide-react-native'
 import type { components } from '@statman/sdk'
 import {
   ApiError,
@@ -39,16 +39,18 @@ const CARD_TYPES: { value: CardType; label: string }[] = [
 ]
 
 const STYLE_PRESETS = [
-  { value: 'classic-foil', label: 'Classic Foil', border: 'border-brand', accent: 'bg-brand' },
-  { value: 'matchday', label: 'Matchday', border: 'border-verified', accent: 'bg-verified' },
-  { value: 'spotlight', label: 'Spotlight', border: 'border-live', accent: 'bg-live' },
-  { value: 'vintage-paper', label: 'Vintage Paper', border: 'border-imported', accent: 'bg-imported' },
+  { value: 'classic-foil', label: 'Classic Foil', primary: '#2563EB', secondary: '#E5E7EB', text: '#FFFFFF', plate: '#0F172A' },
+  { value: 'team-pride', label: 'Team Pride', primary: '#16A34A', secondary: '#FACC15', text: '#FFFFFF', plate: '#052E16' },
+  { value: 'action-chrome', label: 'Action Chrome', primary: '#DC2626', secondary: '#F8FAFC', text: '#FFFFFF', plate: '#111827' },
+  { value: 'heritage-stock', label: 'Heritage Stock', primary: '#B45309', secondary: '#FEF3C7', text: '#1F2937', plate: '#FFFBEB' },
+  { value: 'night-rivals', label: 'Night Rivals', primary: '#7C3AED', secondary: '#22D3EE', text: '#FFFFFF', plate: '#18181B' },
 ]
 
-const LAYOUTS = [
-  { value: 'hero-photo', label: 'Hero Photo' },
-  { value: 'split-stat', label: 'Split Stat' },
-  { value: 'poster-back', label: 'Poster Back' },
+const CARD_FRAMES = [
+  { value: 'team-badge', label: 'Team Badge', description: 'Crest, nameplate, team color bands' },
+  { value: 'action-chrome', label: 'Action Chrome', description: 'Full-bleed action image with premium trim' },
+  { value: 'stat-battle', label: 'Stat Battle', description: 'Ratings and matchup-style stat bars' },
+  { value: 'heritage-back', label: 'Heritage Back', description: 'Classic card front with a rich stat back' },
 ]
 
 function supportedContentType(value?: string): 'image/jpeg' | 'image/png' | 'image/webp' {
@@ -59,6 +61,29 @@ function supportedContentType(value?: string): 'image/jpeg' | 'image/png' | 'ima
 function athleteName(player?: Player | null) {
   const profile = player?.athleteProfile
   return profile ? `${profile.firstName} ${profile.lastName}` : 'Select athlete'
+}
+
+function teamName(player?: Player | null) {
+  return player?.currentTeam?.name ?? player?.sport?.name ?? 'Independent'
+}
+
+function teamInitials(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'SM'
+}
+
+function parseStatValue(stat: string) {
+  const match = stat.match(/\d+/)
+  return match ? Number(match[0]) : 0
+}
+
+function ratingFromStats(stats: string[]) {
+  const total = stats.reduce((sum, stat) => sum + parseStatValue(stat), 0)
+  return Math.max(68, Math.min(99, 72 + Math.round(total / 3)))
 }
 
 function apiErrorMessage(error: unknown) {
@@ -101,15 +126,22 @@ export function CardStudioScreen() {
   const [title, setTitle] = useState('Rising Star')
   const [cardType, setCardType] = useState<CardType>('PROFILE')
   const [stylePreset, setStylePreset] = useState(STYLE_PRESETS[0].value)
-  const [layoutPreset, setLayoutPreset] = useState(LAYOUTS[0].value)
+  const [framePreset, setFramePreset] = useState(CARD_FRAMES[0].value)
   const [statOne, setStatOne] = useState('24 PTS')
   const [statTwo, setStatTwo] = useState('8 REB')
   const [statThree, setStatThree] = useState('5 AST')
   const [promptHelper, setPromptHelper] = useState('Confident, collectible athlete card using the selected action photo and a clean premium border.')
+  const [backCopy, setBackCopy] = useState('A composed competitor with the tools to take over a game. Built from verified Statman profile data and reusable gallery media.')
+  const [setName, setSetName] = useState('Statman Debut')
+  const [cardNumber, setCardNumber] = useState('SM-001')
   const [release, setRelease] = useState<'draft' | 'unlimited' | 'limited' | 'one-of-one'>('draft')
   const [editionSize, setEditionSize] = useState('100')
   const [side, setSide] = useState<'front' | 'back'>('front')
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const selectedStyle = STYLE_PRESETS.find((style) => style.value === stylePreset) ?? STYLE_PRESETS[0]
+  const selectedFrame = CARD_FRAMES.find((frame) => frame.value === framePreset) ?? CARD_FRAMES[0]
+  const statTiles = [statOne, statTwo, statThree].filter(Boolean)
+  const overallRating = ratingFromStats(statTiles)
 
   async function pickAndUploadPhoto() {
     if (!athleteProfileId) {
@@ -154,12 +186,15 @@ export function CardStudioScreen() {
 
   const statsSnapshotJson = useMemo(() => ({
     cardStudio: {
-      layoutPreset,
+      framePreset,
+      setName,
+      cardNumber,
+      backCopy,
       promptHelper,
       photoAssetId: activeImage?.id ?? null,
       stats: [statOne, statTwo, statThree].filter(Boolean),
     },
-  }), [activeImage?.id, layoutPreset, promptHelper, statOne, statThree, statTwo])
+  }), [activeImage?.id, backCopy, cardNumber, framePreset, promptHelper, setName, statOne, statThree, statTwo])
 
   async function saveDraft() {
     if (!athleteProfileId) {
