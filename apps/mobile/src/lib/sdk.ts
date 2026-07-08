@@ -1,6 +1,7 @@
 import { Platform } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { createApiClient } from '@statman/sdk'
+import { consumeNextAdminNote, getActAsUserId } from '@/lib/adminHeaders'
 
 const TOKEN_KEY = 'statman.token'
 
@@ -27,7 +28,7 @@ export async function clearStoredToken() {
 }
 
 export function initApiClient(baseUrl: string) {
-  return createApiClient({
+  const client = createApiClient({
     baseUrl,
     // Only native platforms need the SecureStore/Bearer override — see
     // packages/sdk/src/client.ts's `getToken` override, added for exactly
@@ -35,4 +36,16 @@ export function initApiClient(baseUrl: string) {
     // default (credentials: 'include') active.
     getToken: isNative ? getStoredToken : undefined,
   })
+
+  client.use({
+    async onRequest({ request }) {
+      const actAs = getActAsUserId()
+      if (actAs) request.headers.set('X-Act-As-User-Id', actAs)
+      const note = consumeNextAdminNote()
+      if (note) request.headers.set('X-Admin-Note', note)
+      return request
+    },
+  })
+
+  return client
 }

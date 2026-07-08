@@ -34,6 +34,10 @@ export class EntityTargetService {
         return Boolean(await db.playerSeasonStat.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'TEAM_SEASON_STAT':
         return Boolean(await db.teamSeasonStat.findUnique({ where: { id: targetId }, select: { id: true } }))
+      case 'CARD_TEMPLATE':
+        return Boolean(await db.cardTemplate.findUnique({ where: { id: targetId }, select: { id: true } }))
+      case 'CARD_ISSUE':
+        return Boolean(await db.cardIssue.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'PROFILE_FIELD':
         throw { statusCode: 400, message: 'PROFILE_FIELD targets require field-level context and are not supported here' }
       default:

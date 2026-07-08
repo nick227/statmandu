@@ -30,6 +30,9 @@ tags:
   - name: disputes
   - name: claims
   - name: leaderboards
+  - name: admin
+  - name: cards
+  - name: search
 
 components:
   securitySchemes:
@@ -120,6 +123,13 @@ components:
     TeamLeaderboardEntry:
       $ref: './components/schemas/games.yaml#/TeamLeaderboardEntry'
 
+    SearchResultType:
+      $ref: './components/schemas/search.yaml#/SearchResultType'
+    SearchResultItem:
+      $ref: './components/schemas/search.yaml#/SearchResultItem'
+    PaginatedSearchResults:
+      $ref: './components/schemas/search.yaml#/PaginatedSearchResults'
+
     MediaAsset:
       $ref: './components/schemas/social.yaml#/MediaAsset'
     ImageAsset:
@@ -161,6 +171,36 @@ components:
       $ref: './components/schemas/verification.yaml#/ReviewClaimInput'
     VerifyPlayerInput:
       $ref: './components/schemas/verification.yaml#/VerifyPlayerInput'
+
+    AdminMetrics:
+      $ref: './components/schemas/admin.yaml#/AdminMetrics'
+    BulkCreatePlayersInput:
+      $ref: './components/schemas/admin.yaml#/BulkCreatePlayersInput'
+    BulkCreatePlayersResult:
+      $ref: './components/schemas/admin.yaml#/BulkCreatePlayersResult'
+    BulkAddRosterMembersInput:
+      $ref: './components/schemas/admin.yaml#/BulkAddRosterMembersInput'
+    BulkAddRosterMembersResult:
+      $ref: './components/schemas/admin.yaml#/BulkAddRosterMembersResult'
+    CreateFeedItemInput:
+      $ref: './components/schemas/admin.yaml#/CreateFeedItemInput'
+    AdminAuditLogEntry:
+      $ref: './components/schemas/admin.yaml#/AdminAuditLogEntry'
+    PaginatedAdminAuditLog:
+      $ref: './components/schemas/admin.yaml#/PaginatedAdminAuditLog'
+
+    Card:
+      $ref: './components/schemas/cards.yaml#/Card'
+    CardIssue:
+      $ref: './components/schemas/cards.yaml#/CardIssue'
+    CreateCardInput:
+      $ref: './components/schemas/cards.yaml#/CreateCardInput'
+    UpdateCardInput:
+      $ref: './components/schemas/cards.yaml#/UpdateCardInput'
+    PublishCardInput:
+      $ref: './components/schemas/cards.yaml#/PublishCardInput'
+    MyCard:
+      $ref: './components/schemas/cards.yaml#/MyCard'
 
 paths:
   /auth/register:
@@ -242,6 +282,9 @@ paths:
   /leaderboards/teams:
     $ref: './paths/leaderboards.yaml#/teams'
 
+  /search:
+    $ref: './paths/search.yaml#/collection'
+
   /media:
     $ref: './paths/media.yaml#/collection'
   /media/recent:
@@ -278,3 +321,35 @@ paths:
     $ref: './paths/claims.yaml#/collection'
   /claims/{claimId}:
     $ref: './paths/claims.yaml#/item'
+
+  /admin/metrics:
+    $ref: './paths/admin.yaml#/metrics'
+  /admin/players/bulk:
+    $ref: './paths/admin.yaml#/bulkCreatePlayers'
+  /admin/teams/{teamId}/roster/bulk:
+    $ref: './paths/admin.yaml#/bulkAddRosterMembers'
+  /admin/disputes:
+    $ref: './paths/admin.yaml#/adminDisputes'
+  /admin/feed-items:
+    $ref: './paths/admin.yaml#/createFeedItem'
+  /admin/audit-log:
+    $ref: './paths/admin.yaml#/auditLog'
+
+  /cards:
+    $ref: './paths/cards.yaml#/collection'
+  /cards/recent:
+    $ref: './paths/cards.yaml#/recent'
+  /cards/{cardId}:
+    $ref: './paths/cards.yaml#/item'
+  /cards/{cardId}/generate:
+    $ref: './paths/cards.yaml#/generate'
+  /cards/{cardId}/publish:
+    $ref: './paths/cards.yaml#/publish'
+  /cards/{cardId}/claim:
+    $ref: './paths/cards.yaml#/claim'
+  /athlete-profiles/{athleteProfileId}/cards:
+    $ref: './paths/cards.yaml#/athleteCards'
+  /me/cards:
+    $ref: './paths/cards.yaml#/mine'
+  /card-issues/{issueId}/downloaded:
+    $ref: './paths/cards.yaml#/downloaded'

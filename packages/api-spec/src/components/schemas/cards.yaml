@@ -1,0 +1,190 @@
+CardType:
+  type: string
+  enum: [PROFILE, BIG_GAME, MILESTONE, SEASON, HIGHLIGHT]
+
+CardTemplateStatus:
+  type: string
+  enum: [DRAFT, GENERATING, READY, PUBLISHED, ARCHIVED, FAILED]
+
+CardVisibility:
+  type: string
+  enum: [PRIVATE, PUBLIC]
+
+CardEditionMode:
+  type: string
+  enum: [UNLIMITED, LIMITED, ONE_OF_ONE]
+
+CardIssueStatus:
+  type: string
+  enum: [CLAIMED, DOWNLOADED, REVOKED]
+
+CardAthleteSummary:
+  type: object
+  required: [id, slug, firstName, lastName]
+  properties:
+    id: { type: string }
+    slug: { type: string }
+    firstName: { type: string }
+    lastName: { type: string }
+    avatarUrl: { type: ['string', 'null'] }
+
+CardTeamSummary:
+  type: object
+  required: [id, slug, name]
+  properties:
+    id: { type: string }
+    slug: { type: string }
+    name: { type: string }
+    logoUrl: { type: ['string', 'null'] }
+
+CardGameTeamSummary:
+  allOf:
+    - $ref: '#/CardTeamSummary'
+    - type: object
+      required: [isHome]
+      properties:
+        isHome: { type: boolean }
+        finalScore: { type: ['integer', 'null'] }
+
+CardGameSummary:
+  type: object
+  required: [id, scheduledAt, status, teams]
+  properties:
+    id: { type: string }
+    scheduledAt: { type: string, format: date-time }
+    status: { type: string }
+    teams:
+      type: array
+      items: { $ref: '#/CardGameTeamSummary' }
+
+CardImageSummary:
+  type: object
+  required: [id, url]
+  properties:
+    id: { type: string }
+    url: { type: string }
+    thumbUrl: { type: string }
+
+CardIssue:
+  type: object
+  required: [id, cardTemplateId, issueHash, status, createdAt]
+  properties:
+    id: { type: string }
+    cardTemplateId: { type: string }
+    issueNumber: { type: ['integer', 'null'] }
+    ownerUserId: { type: ['string', 'null'] }
+    claimedByUserId: { type: ['string', 'null'] }
+    claimedAt: { type: ['string', 'null'], format: date-time }
+    downloadedAt: { type: ['string', 'null'], format: date-time }
+    issueHash: { type: string }
+    status: { $ref: '#/CardIssueStatus' }
+    createdAt: { type: string, format: date-time }
+
+Card:
+  type: object
+  required:
+    - id
+    - athleteProfileId
+    - createdByUserId
+    - title
+    - cardType
+    - stylePreset
+    - status
+    - visibility
+    - editionMode
+    - issuedCount
+    - statsSnapshotJson
+    - createdAt
+    - updatedAt
+    - currentUserHasClaimed
+  properties:
+    id: { type: string }
+    athleteProfileId: { type: string }
+    teamId: { type: ['string', 'null'] }
+    gameId: { type: ['string', 'null'] }
+    createdByUserId: { type: string }
+    title: { type: string }
+    cardType: { $ref: '#/CardType' }
+    stylePreset: { type: string }
+    status: { $ref: '#/CardTemplateStatus' }
+    visibility: { $ref: '#/CardVisibility' }
+    editionMode: { $ref: '#/CardEditionMode' }
+    editionSize: { type: ['integer', 'null'] }
+    issuedCount: { type: integer }
+    frontImageAssetId: { type: ['string', 'null'] }
+    sourceImageAssetId: { type: ['string', 'null'] }
+    statsSnapshotJson: true
+    originHash: { type: ['string', 'null'] }
+    createdAt: { type: string, format: date-time }
+    updatedAt: { type: string, format: date-time }
+    publishedAt: { type: ['string', 'null'], format: date-time }
+    athlete:
+      oneOf:
+        - $ref: '#/CardAthleteSummary'
+        - type: 'null'
+    team:
+      oneOf:
+        - $ref: '#/CardTeamSummary'
+        - type: 'null'
+    game:
+      oneOf:
+        - $ref: '#/CardGameSummary'
+        - type: 'null'
+    frontImage:
+      oneOf:
+        - $ref: '#/CardImageSummary'
+        - type: 'null'
+    sourceImage:
+      oneOf:
+        - $ref: '#/CardImageSummary'
+        - type: 'null'
+    currentUserHasClaimed: { type: boolean }
+    currentUserIssue:
+      oneOf:
+        - $ref: '#/CardIssue'
+        - type: 'null'
+
+CreateCardInput:
+  type: object
+  required: [athleteProfileId, title, cardType, stylePreset]
+  properties:
+    athleteProfileId: { type: string }
+    teamId: { type: ['string', 'null'] }
+    gameId: { type: ['string', 'null'] }
+    title: { type: string, minLength: 1, maxLength: 160 }
+    cardType: { $ref: '#/CardType' }
+    stylePreset: { type: string, minLength: 1, maxLength: 80 }
+    editionMode: { $ref: '#/CardEditionMode' }
+    editionSize: { type: ['integer', 'null'], minimum: 1 }
+    sourceImageAssetId: { type: ['string', 'null'] }
+    statsSnapshotJson: true
+
+UpdateCardInput:
+  type: object
+  properties:
+    athleteProfileId: { type: string }
+    teamId: { type: ['string', 'null'] }
+    gameId: { type: ['string', 'null'] }
+    title: { type: string, minLength: 1, maxLength: 160 }
+    cardType: { $ref: '#/CardType' }
+    stylePreset: { type: string, minLength: 1, maxLength: 80 }
+    status: { $ref: '#/CardTemplateStatus' }
+    visibility: { $ref: '#/CardVisibility' }
+    editionMode: { $ref: '#/CardEditionMode' }
+    editionSize: { type: ['integer', 'null'], minimum: 1 }
+    sourceImageAssetId: { type: ['string', 'null'] }
+    statsSnapshotJson: true
+
+PublishCardInput:
+  type: object
+  properties:
+    visibility: { $ref: '#/CardVisibility' }
+    editionMode: { $ref: '#/CardEditionMode' }
+    editionSize: { type: ['integer', 'null'], minimum: 1 }
+
+MyCard:
+  type: object
+  required: [issue, card]
+  properties:
+    issue: { $ref: '#/CardIssue' }
+    card: { $ref: '#/Card' }

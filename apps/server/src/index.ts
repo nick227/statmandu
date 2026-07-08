@@ -9,11 +9,20 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import * as handlers from './handlers'
 import * as security from './plugins/security'
+import { db } from '@statman/db'
+
+import multipart from '@fastify/multipart'
 
 const server = Fastify({ logger: true })
 
 const specPath = resolve(__dirname, '../../../packages/api-spec/openapi.yaml')
-const spec = load(readFileSync(specPath, 'utf-8')) as object
+const spec = load(readFileSync(specPath, 'utf-8')) as any
+
+function specForGlue() {
+  const glueSpec = structuredClone(spec)
+  delete glueSpec.paths?.['/images/upload']
+  return glueSpec
+}
 
 async function main() {
   // CORS — must be first so preflight OPTIONS requests are handled before routing
@@ -33,6 +42,14 @@ async function main() {
 
   // cookies — must register before glue so request.cookies is populated
   await server.register(cookie)
+
+  // multipart — required to parse file uploads automatically into request.body
+  await server.register(multipart, {
+    attachFieldsToBody: true,
+    limits: {
+      fileSize: Number(process.env.IMAGE_UPLOAD_MAX_BYTES ?? 5 * 1024 * 1024),
+    },
+  })
 
   // live swagger UI at /docs in dev
   await server.register(swagger, { openapi: spec })
@@ -56,13 +73,45 @@ async function main() {
     return reply.status(500).send({ error: 'Internal server error' })
   })
 
-  // spec-driven routing — operationId → handler export, security scheme → handler
+  server.post('/images/upload', { preHandler: security.bearerAuth }, handlers.uploadImage)
+
+  // spec-driven routing — operationId → handler export, security scheme → handler.
+  // Multipart upload is registered manually above so Fastify can parse the file
+  // before business logic; it remains documented in the public OpenAPI spec.
   await server.register(openapiGlue, {
-    specification: specPath,
+    specification: specForGlue(),
     serviceHandlers: handlers,
     securityHandlers: security,
     noAdditional: true,
   } as any)
+
+  server.addHook('onResponse', async (request, reply) => {
+    const req: any = request
+    const method = request.method?.toUpperCase?.() ?? ''
+    if (!['POST', 'PATCH', 'DELETE'].includes(method)) return
+    if (!req.actorUser || req.actorUser.role !== 'ADMIN') return
+
+    const noteHeader = request.headers['x-admin-note']
+    const note = typeof noteHeader === 'string' && noteHeader.trim() ? noteHeader.trim() : undefined
+    const subjectUserId = req.subjectUser?.id ?? null
+
+    // Best-effort logging; never block the request on audit persistence.
+    try {
+      await db.adminAuditLog.create({
+        data: {
+          actorUserId: req.actorUser.id,
+          subjectUserId,
+          action: 'ADMIN_MUTATION',
+          method,
+          path: request.url,
+          note,
+          requestId: request.id,
+        },
+      })
+    } catch {
+      // swallow
+    }
+  })
 
   // health check — not in spec, always public
   server.get('/health', async () => ({ status: 'ok' }))

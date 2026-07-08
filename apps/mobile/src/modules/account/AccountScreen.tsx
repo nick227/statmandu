@@ -1,6 +1,6 @@
 import { Pressable, View } from 'react-native'
 import type { ComponentType, ReactNode } from 'react'
-import { Link, useRouter } from 'expo-router'
+import { Link, useRouter, type Href } from 'expo-router'
 import { Activity, Radio, ShieldCheck, Trophy, UserRound } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
 import { Avatar } from '@/shared/ui/Avatar'
@@ -146,6 +146,17 @@ export function AccountScreen() {
       {isAdmin ? (
         <View className="gap-sm">
           <Text className="font-semibold">Management</Text>
+          <Link href={'/admin' as Href} asChild>
+            <LinkedHubCard>
+              <CardContent className="gap-xs">
+                <View className="flex-row items-center gap-sm">
+                  <HubIcon icon={ShieldCheck} tone="verified" />
+                  <Text className="font-semibold">Admin hub</Text>
+                </View>
+                <Text variant="caption">Onboarding, bulk entry, visibility, and audit log.</Text>
+              </CardContent>
+            </LinkedHubCard>
+          </Link>
           <Link href="/claims" asChild>
             <LinkedHubCard>
               <CardContent className="gap-xs">

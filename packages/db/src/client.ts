@@ -12,6 +12,13 @@ export type {
   ImageStorageProvider,
   ReferenceSourceType,
   SourceStatus,
+  CardType,
+  CardTemplateStatus,
+  CardVisibility,
+  CardEditionMode,
+  CardIssueStatus,
+  CardGenerationProvider,
+  CardGenerationStatus,
 } from '@prisma/client'
 
 declare global {

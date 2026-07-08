@@ -23,12 +23,26 @@ export function useUploadImage() {
       targetId: string
       usage: string
       contentType: 'image/jpeg' | 'image/png' | 'image/webp'
-      dataBase64: string
+      file: { uri: string; name: string; type: string }
       originalFilename?: string
       width?: number
       height?: number
     }) => {
-      const { data, error, response } = await getApiClient().POST('/images/upload', { body: body as any })
+      const formData = new FormData()
+      formData.append('targetType', body.targetType)
+      formData.append('targetId', body.targetId)
+      formData.append('usage', body.usage)
+      formData.append('contentType', body.contentType)
+      formData.append('file', body.file as any)
+      if (body.originalFilename) formData.append('originalFilename', body.originalFilename)
+      if (body.width) formData.append('width', body.width.toString())
+      if (body.height) formData.append('height', body.height.toString())
+
+      const { data, error, response } = await getApiClient().POST('/images/upload', {
+        body: formData as any,
+        // @ts-ignore: React Native fetch handles multipart/form-data boundary automatically when body is FormData
+        bodySerializer: (b) => b,
+      })
       if (error) throw new ApiError(response.status, (error as any).error)
       return data!
     },

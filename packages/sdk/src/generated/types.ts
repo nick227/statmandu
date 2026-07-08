@@ -621,6 +621,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Centralized fuzzy search across players, teams, and games */
+        get: operations["search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media": {
         parameters: {
             query?: never;
@@ -878,6 +895,262 @@ export interface paths {
         head?: never;
         /** Approve or reject a profile claim (admin only) */
         patch: operations["reviewClaim"];
+        trace?: never;
+    };
+    "/admin/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin hub metrics */
+        get: operations["getAdminMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/players/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk create players (admin) */
+        post: operations["bulkCreatePlayers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/teams/{teamId}/roster/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk add roster members to a team (admin) */
+        post: operations["bulkAddRosterMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/disputes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List disputes across the platform (admin) */
+        get: operations["adminListDisputes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/feed-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a feed item (admin) */
+        post: operations["adminCreateFeedItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Paginated admin audit log */
+        get: operations["adminListAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a draft Statman Card */
+        post: operations["createCard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recent public Statman Cards */
+        get: operations["listRecentPublicCards"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards/{cardId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a Statman Card */
+        get: operations["getCard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a draft Statman Card */
+        patch: operations["updateCard"];
+        trace?: never;
+    };
+    "/cards/{cardId}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate a card front with the configured provider */
+        post: operations["generateCard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards/{cardId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a Statman Card */
+        post: operations["publishCard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards/{cardId}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim an issued copy of a public Statman Card */
+        post: operations["claimCard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/athlete-profiles/{athleteProfileId}/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List public Statman Cards for an athlete profile */
+        get: operations["listCardsForAthlete"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List cards claimed by the current user */
+        get: operations["listMyCards"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/card-issues/{issueId}/downloaded": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a claimed card issue downloaded */
+        post: operations["markCardDownloaded"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
@@ -1170,6 +1443,20 @@ export interface components {
             team: components["schemas"]["Team"];
             seasonStat: components["schemas"]["TeamSeasonStat"];
         };
+        /** @enum {string} */
+        SearchResultType: "PLAYER" | "TEAM" | "GAME";
+        SearchResultItem: {
+            type: components["schemas"]["SearchResultType"];
+            id: string;
+            title: string;
+            subtitle: string | null;
+            imageUrl: string | null;
+            score: number;
+        };
+        PaginatedSearchResults: {
+            data: components["schemas"]["SearchResultItem"][];
+            meta: components["schemas"]["PaginatedMeta"];
+        };
         MediaAsset: {
             id: string;
             /** @enum {string} */
@@ -1204,7 +1491,8 @@ export interface components {
             usage: components["schemas"]["ImageAssetUsage"];
             /** @enum {string} */
             contentType: "image/jpeg" | "image/png" | "image/webp";
-            dataBase64: string;
+            /** Format: binary */
+            file: string;
             originalFilename?: string;
             width?: number;
             height?: number;
@@ -1247,7 +1535,7 @@ export interface components {
         FeedItem: {
             id: string;
             /** @enum {string} */
-            type: "GAME_FINAL" | "STAT_MILESTONE" | "MEDIA_ADDED" | "PLAYER_JOINED_TEAM" | "PROFILE_CLAIMED" | "DISPUTE_RESOLVED";
+            type: "GAME_FINAL" | "STAT_MILESTONE" | "MEDIA_ADDED" | "PLAYER_JOINED_TEAM" | "PROFILE_CLAIMED" | "DISPUTE_RESOLVED" | "CARD_PUBLISHED" | "CARD_CLAIMED" | "CARD_DOWNLOADED";
             targetType: components["schemas"]["EntityType"];
             targetId: string;
             summary: string;
@@ -1314,6 +1602,155 @@ export interface components {
         };
         VerifyPlayerInput: {
             sourceStatus: components["schemas"]["SourceStatus"];
+        };
+        AdminMetrics: {
+            playersCount: number;
+            teamsCount: number;
+            gamesCount: number;
+            pendingClaimsCount: number;
+            openDisputesCount: number;
+            liveGamesCount: number;
+            scheduledGamesCount: number;
+        };
+        BulkCreatePlayersInput: {
+            items: {
+                firstName: string;
+                lastName: string;
+                sportSlug: string;
+                hometown?: string;
+                position?: components["schemas"]["PlayerPosition"];
+                classYear?: string;
+                jerseyNumber?: number;
+                heightInches?: number;
+            }[];
+        };
+        BulkCreatePlayersResult: {
+            created: components["schemas"]["Player"][];
+            errors: components["schemas"]["BulkResultError"][];
+        };
+        BulkAddRosterMembersInput: {
+            items: {
+                playerId: string;
+                seasonId: string;
+                jerseyNumber?: number;
+            }[];
+        };
+        BulkAddRosterMembersResult: {
+            created: components["schemas"]["RosterMembership"][];
+            errors: components["schemas"]["BulkResultError"][];
+        };
+        CreateFeedItemInput: {
+            /** @enum {string} */
+            type: "GAME_FINAL" | "STAT_MILESTONE" | "MEDIA_ADDED" | "PLAYER_JOINED_TEAM" | "PROFILE_CLAIMED" | "DISPUTE_RESOLVED" | "CARD_PUBLISHED" | "CARD_CLAIMED" | "CARD_DOWNLOADED";
+            targetType: components["schemas"]["EntityType"];
+            targetId: string;
+            summary: string;
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        AdminAuditLogEntry: {
+            id: string;
+            actorUserId: string;
+            subjectUserId?: string | null;
+            action: components["schemas"]["AdminAuditAction"];
+            targetType?: components["schemas"]["EntityType"] | null;
+            targetId?: string | null;
+            /** @enum {string} */
+            method: "POST" | "PATCH" | "DELETE";
+            path: string;
+            note?: string | null;
+            diffJson?: {
+                [key: string]: unknown;
+            };
+            requestId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        PaginatedAdminAuditLog: {
+            data: components["schemas"]["AdminAuditLogEntry"][];
+            meta: components["schemas"]["PaginatedMeta"];
+        };
+        Card: {
+            id: string;
+            athleteProfileId: string;
+            teamId?: string | null;
+            gameId?: string | null;
+            createdByUserId: string;
+            title: string;
+            cardType: components["schemas"]["CardType"];
+            stylePreset: string;
+            status: components["schemas"]["CardTemplateStatus"];
+            visibility: components["schemas"]["CardVisibility"];
+            editionMode: components["schemas"]["CardEditionMode"];
+            editionSize?: number | null;
+            issuedCount: number;
+            frontImageAssetId?: string | null;
+            sourceImageAssetId?: string | null;
+            statsSnapshotJson: unknown;
+            originHash?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            athlete?: components["schemas"]["CardAthleteSummary"] | null;
+            team?: components["schemas"]["CardTeamSummary"] | null;
+            game?: components["schemas"]["CardGameSummary"] | null;
+            frontImage?: components["schemas"]["CardImageSummary"] | null;
+            sourceImage?: components["schemas"]["CardImageSummary"] | null;
+            currentUserHasClaimed: boolean;
+            currentUserIssue?: components["schemas"]["CardIssue"] | null;
+        };
+        CardIssue: {
+            id: string;
+            cardTemplateId: string;
+            issueNumber?: number | null;
+            ownerUserId?: string | null;
+            claimedByUserId?: string | null;
+            /** Format: date-time */
+            claimedAt?: string | null;
+            /** Format: date-time */
+            downloadedAt?: string | null;
+            issueHash: string;
+            status: components["schemas"]["CardIssueStatus"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CreateCardInput: {
+            athleteProfileId: string;
+            teamId?: string | null;
+            gameId?: string | null;
+            title: string;
+            cardType: components["schemas"]["CardType"];
+            stylePreset: string;
+            editionMode?: components["schemas"]["CardEditionMode"];
+            editionSize?: number | null;
+            sourceImageAssetId?: string | null;
+            statsSnapshotJson?: unknown;
+        };
+        UpdateCardInput: {
+            athleteProfileId?: string;
+            teamId?: string | null;
+            gameId?: string | null;
+            title?: string;
+            cardType?: components["schemas"]["CardType"];
+            stylePreset?: string;
+            status?: components["schemas"]["CardTemplateStatus"];
+            visibility?: components["schemas"]["CardVisibility"];
+            editionMode?: components["schemas"]["CardEditionMode"];
+            editionSize?: number | null;
+            sourceImageAssetId?: string | null;
+            statsSnapshotJson?: unknown;
+        };
+        PublishCardInput: {
+            visibility?: components["schemas"]["CardVisibility"];
+            editionMode?: components["schemas"]["CardEditionMode"];
+            editionSize?: number | null;
+        };
+        MyCard: {
+            issue: components["schemas"]["CardIssue"];
+            card: components["schemas"]["Card"];
         };
         MeAthleteProfileCapability: {
             athleteProfileId: string;
@@ -1389,7 +1826,7 @@ export interface components {
          * @description Shared polymorphic target vocabulary (mirrors the Prisma EntityType enum).
          * @enum {string}
          */
-        EntityType: "PLAYER" | "TEAM" | "GAME" | "FEED_ITEM" | "ATHLETE_PROFILE" | "GAME_STAT_LINE" | "GAME_EVENT" | "PROFILE_FIELD" | "SOURCE_REFERENCE" | "PLAYER_SEASON_STAT" | "TEAM_SEASON_STAT";
+        EntityType: "PLAYER" | "TEAM" | "GAME" | "FEED_ITEM" | "ATHLETE_PROFILE" | "GAME_STAT_LINE" | "GAME_EVENT" | "PROFILE_FIELD" | "SOURCE_REFERENCE" | "PLAYER_SEASON_STAT" | "TEAM_SEASON_STAT" | "CARD_TEMPLATE" | "CARD_ISSUE";
         /** @enum {string} */
         ImageAssetUsage: "AVATAR" | "LOGO" | "HERO" | "EVIDENCE" | "GALLERY";
         /** @enum {string} */
@@ -1411,6 +1848,51 @@ export interface components {
         ReferenceSourceType: "VERIFIED_TEAM_ACCOUNT" | "TEAM_MANAGER" | "OFFICIAL_SCORER" | "PLAYER_REPORT" | "SPECTATOR_REPORT" | "MULTI_SPECTATOR_REPORT" | "TEAM_WEBSITE" | "LEAGUE_WEBSITE" | "MAXPREPS" | "HUDL" | "YOUTUBE" | "NEWS_ARTICLE" | "BOXSCORE_PDF" | "SCOREBOOK_PHOTO" | "PUBLIC_SCRAPE" | "OTHER";
         /** @enum {string} */
         DisputeStatus: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+        BulkResultError: {
+            index: number;
+            message: string;
+        };
+        /** @enum {string} */
+        AdminAuditAction: "ADMIN_IMPERSONATE_SET" | "ADMIN_IMPERSONATE_CLEAR" | "ADMIN_BULK_CREATE_PLAYERS" | "ADMIN_BULK_ADD_ROSTER" | "ADMIN_CREATE_FEED_ITEM" | "ADMIN_MUTATION";
+        /** @enum {string} */
+        CardType: "PROFILE" | "BIG_GAME" | "MILESTONE" | "SEASON" | "HIGHLIGHT";
+        /** @enum {string} */
+        CardEditionMode: "UNLIMITED" | "LIMITED" | "ONE_OF_ONE";
+        /** @enum {string} */
+        CardTemplateStatus: "DRAFT" | "GENERATING" | "READY" | "PUBLISHED" | "ARCHIVED" | "FAILED";
+        /** @enum {string} */
+        CardVisibility: "PRIVATE" | "PUBLIC";
+        CardAthleteSummary: {
+            id: string;
+            slug: string;
+            firstName: string;
+            lastName: string;
+            avatarUrl?: string | null;
+        };
+        CardTeamSummary: {
+            id: string;
+            slug: string;
+            name: string;
+            logoUrl?: string | null;
+        };
+        CardGameTeamSummary: components["schemas"]["CardTeamSummary"] & {
+            isHome: boolean;
+            finalScore?: number | null;
+        };
+        CardGameSummary: {
+            id: string;
+            /** Format: date-time */
+            scheduledAt: string;
+            status: string;
+            teams: components["schemas"]["CardGameTeamSummary"][];
+        };
+        CardImageSummary: {
+            id: string;
+            url: string;
+            thumbUrl?: string;
+        };
+        /** @enum {string} */
+        CardIssueStatus: "CLAIMED" | "DOWNLOADED" | "REVOKED";
     };
     responses: {
         /** @description Not authenticated */
@@ -2717,6 +3199,43 @@ export interface operations {
             };
         };
     };
+    search: {
+        parameters: {
+            query: {
+                /** @description Search text. Matched fuzzily (typo-tolerant), not an exact substring. */
+                q: string;
+                /** @description Comma-separated SearchResultType values to restrict results to (e.g. "PLAYER,TEAM"). Defaults to all types. */
+                types?: string;
+                /** @description Opaque cursor returned by the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated, relevance-ranked search results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSearchResults"];
+                };
+            };
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listMedia: {
         parameters: {
             query: {
@@ -2855,7 +3374,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UploadImageInput"];
+                "multipart/form-data": components["schemas"]["UploadImageInput"];
             };
         };
         responses: {
@@ -3339,6 +3858,521 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    getAdminMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Admin metrics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AdminMetrics"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Admin only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    bulkCreatePlayers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkCreatePlayersInput"];
+            };
+        };
+        responses: {
+            /** @description Bulk create result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BulkCreatePlayersResult"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Admin only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    bulkAddRosterMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkAddRosterMembersInput"];
+            };
+        };
+        responses: {
+            /** @description Bulk roster result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BulkAddRosterMembersResult"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Admin only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListDisputes: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["DisputeStatus"];
+                targetType?: components["schemas"]["EntityType"];
+                targetId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Disputes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Dispute"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Admin only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminCreateFeedItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFeedItemInput"];
+            };
+        };
+        responses: {
+            /** @description Feed item created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["FeedItem"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Admin only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListAuditLog: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor returned by the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                actorUserId?: string;
+                subjectUserId?: string;
+                targetType?: components["schemas"]["EntityType"];
+                targetId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated admin audit log */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminAuditLog"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Admin only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCardInput"];
+            };
+        };
+        responses: {
+            /** @description Draft card created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Card"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listRecentPublicCards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent public cards */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Card"][];
+                    };
+                };
+            };
+        };
+    };
+    getCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Card */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Card"];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCardInput"];
+            };
+        };
+        responses: {
+            /** @description Card updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Card"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    generateCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Generated card */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Card"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    publishCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PublishCardInput"];
+            };
+        };
+        responses: {
+            /** @description Published card */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Card"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    claimCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Card issue claimed */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardIssue"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listCardsForAthlete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                athleteProfileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Athlete cards */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Card"][];
+                    };
+                };
+            };
+        };
+    };
+    listMyCards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Claimed cards */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["MyCard"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    markCardDownloaded: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                issueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Card issue marked downloaded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardIssue"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
 }

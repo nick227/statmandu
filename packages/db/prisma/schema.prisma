@@ -29,18 +29,23 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  profile          Profile?
-  sessions         Session[]
-  claimedProfile   AthleteProfile?  @relation("ClaimedProfile")
-  gameReporters    GameReporter[]
-  follows          Follow[]
-  reactions        Reaction[]
-  disputesFiled    Dispute[]        @relation("DisputeSubmitter")
-  disputesResolved Dispute[]        @relation("DisputeResolver")
-  claimsRequested  Claim[]          @relation("ClaimRequester")
-  claimsReviewed   Claim[]          @relation("ClaimReviewer")
-  mediaAssets      MediaAsset[]
-  imageAssets      ImageAsset[]
+  profile           Profile?
+  sessions          Session[]
+  claimedProfile    AthleteProfile? @relation("ClaimedProfile")
+  gameReporters     GameReporter[]
+  follows           Follow[]
+  reactions         Reaction[]
+  disputesFiled     Dispute[]       @relation("DisputeSubmitter")
+  disputesResolved  Dispute[]       @relation("DisputeResolver")
+  claimsRequested   Claim[]         @relation("ClaimRequester")
+  claimsReviewed    Claim[]         @relation("ClaimReviewer")
+  mediaAssets       MediaAsset[]
+  imageAssets       ImageAsset[]
+  cardTemplates     CardTemplate[]  @relation("CreatedCardTemplates")
+  ownedCardIssues   CardIssue[]     @relation("OwnedCardIssues")
+  claimedCardIssues CardIssue[]     @relation("ClaimedCardIssues")
+  adminActions      AdminAuditLog[] @relation("AdminActionActor")
+  adminActionsAs    AdminAuditLog[] @relation("AdminActionSubject")
 
   @@index([createdAt])
 }
@@ -104,6 +109,8 @@ enum EntityType {
   SOURCE_REFERENCE
   PLAYER_SEASON_STAT
   TEAM_SEASON_STAT
+  CARD_TEMPLATE
+  CARD_ISSUE
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -162,7 +169,7 @@ model Season {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  league            League              @relation(fields: [leagueId], references: [id])
+  league            League             @relation(fields: [leagueId], references: [id])
   games             Game[]
   rosterMemberships RosterMembership[]
   playerSeasonStats PlayerSeasonStat[]
@@ -183,13 +190,14 @@ model Team {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sport             Sport               @relation(fields: [sportId], references: [id])
-  league            League              @relation(fields: [leagueId], references: [id])
-  school            School?             @relation(fields: [schoolId], references: [id])
+  sport             Sport              @relation(fields: [sportId], references: [id])
+  league            League             @relation(fields: [leagueId], references: [id])
+  school            School?            @relation(fields: [schoolId], references: [id])
   rosterMemberships RosterMembership[]
   gameTeams         GameTeam[]
   seasonStats       TeamSeasonStat[]
   gameReporters     GameReporter[]
+  cardTemplates     CardTemplate[]
 
   @@index([sportId])
   @@index([leagueId])
@@ -204,22 +212,23 @@ model Team {
 // ─────────────────────────────────────────────────────────────────────────
 
 model AthleteProfile {
-  id             String       @id @default(cuid())
-  slug           String       @unique
-  firstName      String
-  lastName       String
-  bio            String?
-  hometown       String?
-  avatarUrl      String?
-  sourceStatus   SourceStatus @default(PLAYER_REPORTED)
-  claimedByUserId String?     @unique
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  deletedAt      DateTime?
+  id              String       @id @default(cuid())
+  slug            String       @unique
+  firstName       String
+  lastName        String
+  bio             String?
+  hometown        String?
+  avatarUrl       String?
+  sourceStatus    SourceStatus @default(PLAYER_REPORTED)
+  claimedByUserId String?      @unique
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
 
-  claimedByUser User?    @relation("ClaimedProfile", fields: [claimedByUserId], references: [id])
+  claimedByUser User?          @relation("ClaimedProfile", fields: [claimedByUserId], references: [id])
   players       Player[]
   claims        Claim[]
+  cardTemplates CardTemplate[]
 
   @@index([createdAt])
 }
@@ -256,19 +265,19 @@ enum PlayerStatus {
 }
 
 model Player {
-  id               String         @id @default(cuid())
+  id               String          @id @default(cuid())
   athleteProfileId String
   sportId          String
   position         PlayerPosition?
   classYear        String?
   jerseyNumber     Int?
   heightInches     Int?
-  status           PlayerStatus   @default(ACTIVE)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  status           PlayerStatus    @default(ACTIVE)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-  athleteProfile    AthleteProfile      @relation(fields: [athleteProfileId], references: [id])
-  sport             Sport               @relation(fields: [sportId], references: [id])
+  athleteProfile    AthleteProfile     @relation(fields: [athleteProfileId], references: [id])
+  sport             Sport              @relation(fields: [sportId], references: [id])
   rosterMemberships RosterMembership[]
   seasonStats       PlayerSeasonStat[]
   gameStatLines     GameStatLine[]
@@ -324,15 +333,16 @@ model Game {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  sport            Sport             @relation(fields: [sportId], references: [id])
-  league           League?           @relation(fields: [leagueId], references: [id])
-  season           Season?           @relation(fields: [seasonId], references: [id])
-  gameTeams        GameTeam[]
-  reporters        GameReporter[]
-  events           GameEvent[]
-  consensusGroups  GameConsensusGroup[]
-  statLines        GameStatLine[]
-  gameReactions    GameReaction[]
+  sport           Sport                @relation(fields: [sportId], references: [id])
+  league          League?              @relation(fields: [leagueId], references: [id])
+  season          Season?              @relation(fields: [seasonId], references: [id])
+  gameTeams       GameTeam[]
+  reporters       GameReporter[]
+  events          GameEvent[]
+  consensusGroups GameConsensusGroup[]
+  statLines       GameStatLine[]
+  gameReactions   GameReaction[]
+  cardTemplates   CardTemplate[]
 
   @@index([sportId])
   @@index([scheduledAt])
@@ -340,7 +350,7 @@ model Game {
 }
 
 model GameTeam {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   gameId     String
   teamId     String
   isHome     Boolean
@@ -580,16 +590,16 @@ enum ImageStorageProvider {
 }
 
 model MediaAsset {
-  id              String         @id @default(cuid())
-  type            MediaAssetType @default(YOUTUBE)
-  youtubeVideoId  String
-  title           String?
-  targetType      EntityType
-  targetId        String
+  id               String         @id @default(cuid())
+  type             MediaAssetType @default(YOUTUBE)
+  youtubeVideoId   String
+  title            String?
+  targetType       EntityType
+  targetId         String
   uploadedByUserId String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  deletedAt       DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?
 
   uploadedByUser User? @relation(fields: [uploadedByUserId], references: [id])
 
@@ -613,10 +623,135 @@ model ImageAsset {
   createdAt        DateTime             @default(now())
   deletedAt        DateTime?
 
-  uploadedByUser User? @relation(fields: [uploadedByUserId], references: [id])
+  uploadedByUser User?          @relation(fields: [uploadedByUserId], references: [id])
+  cardFrontOf    CardTemplate[] @relation("CardFrontImage")
+  cardSourceOf   CardTemplate[] @relation("CardSourceImage")
 
   @@index([targetType, targetId, usage])
   @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Statman Cards — internally editioned athlete trading cards
+// ─────────────────────────────────────────────────────────────────────────
+
+enum CardType {
+  PROFILE
+  BIG_GAME
+  MILESTONE
+  SEASON
+  HIGHLIGHT
+}
+
+enum CardTemplateStatus {
+  DRAFT
+  GENERATING
+  READY
+  PUBLISHED
+  ARCHIVED
+  FAILED
+}
+
+enum CardVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum CardEditionMode {
+  UNLIMITED
+  LIMITED
+  ONE_OF_ONE
+}
+
+enum CardIssueStatus {
+  CLAIMED
+  DOWNLOADED
+  REVOKED
+}
+
+enum CardGenerationProvider {
+  STUB
+}
+
+enum CardGenerationStatus {
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+model CardTemplate {
+  id                 String             @id @default(cuid())
+  athleteProfileId   String
+  teamId             String?
+  gameId             String?
+  createdByUserId    String
+  title              String
+  cardType           CardType
+  stylePreset        String
+  status             CardTemplateStatus @default(DRAFT)
+  visibility         CardVisibility     @default(PRIVATE)
+  editionMode        CardEditionMode    @default(UNLIMITED)
+  editionSize        Int?
+  issuedCount        Int                @default(0)
+  frontImageAssetId  String?
+  sourceImageAssetId String?
+  statsSnapshotJson  Json
+  originHash         String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  publishedAt        DateTime?
+
+  athleteProfile   AthleteProfile      @relation(fields: [athleteProfileId], references: [id])
+  team             Team?               @relation(fields: [teamId], references: [id])
+  game             Game?               @relation(fields: [gameId], references: [id])
+  createdByUser    User                @relation("CreatedCardTemplates", fields: [createdByUserId], references: [id])
+  frontImageAsset  ImageAsset?         @relation("CardFrontImage", fields: [frontImageAssetId], references: [id])
+  sourceImageAsset ImageAsset?         @relation("CardSourceImage", fields: [sourceImageAssetId], references: [id])
+  issues           CardIssue[]
+  generationJobs   CardGenerationJob[]
+
+  @@index([athleteProfileId, status])
+  @@index([visibility, status, publishedAt])
+  @@index([createdByUserId])
+}
+
+model CardIssue {
+  id              String          @id @default(cuid())
+  cardTemplateId  String
+  issueNumber     Int?
+  ownerUserId     String?
+  claimedByUserId String?
+  claimedAt       DateTime?
+  downloadedAt    DateTime?
+  issueHash       String
+  status          CardIssueStatus @default(CLAIMED)
+  createdAt       DateTime        @default(now())
+
+  cardTemplate  CardTemplate @relation(fields: [cardTemplateId], references: [id])
+  ownerUser     User?        @relation("OwnedCardIssues", fields: [ownerUserId], references: [id])
+  claimedByUser User?        @relation("ClaimedCardIssues", fields: [claimedByUserId], references: [id])
+
+  @@unique([cardTemplateId, issueNumber])
+  @@unique([issueHash])
+  @@index([claimedByUserId, createdAt])
+}
+
+model CardGenerationJob {
+  id             String                 @id @default(cuid())
+  cardTemplateId String
+  provider       CardGenerationProvider @default(STUB)
+  status         CardGenerationStatus   @default(QUEUED)
+  inputJson      Json
+  outputJson     Json?
+  error          String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  cardTemplate CardTemplate @relation(fields: [cardTemplateId], references: [id])
+
+  @@index([cardTemplateId, createdAt])
+  @@index([status])
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -748,11 +883,11 @@ model Reaction {
 
 // Ephemeral reactions specifically for live game broadcasts (spamming allowed, no user auth required)
 model GameReaction {
-  id         String       @id @default(cuid())
-  gameId     String
-  deviceId   String
-  type       ReactionType
-  createdAt  DateTime     @default(now())
+  id        String       @id @default(cuid())
+  gameId    String
+  deviceId  String
+  type      ReactionType
+  createdAt DateTime     @default(now())
 
   game Game @relation(fields: [gameId], references: [id])
 
@@ -766,6 +901,9 @@ enum FeedItemType {
   PLAYER_JOINED_TEAM
   PROFILE_CLAIMED
   DISPUTE_RESOLVED
+  CARD_PUBLISHED
+  CARD_CLAIMED
+  CARD_DOWNLOADED
 }
 
 model FeedItem {
@@ -778,5 +916,41 @@ model FeedItem {
   createdAt  DateTime     @default(now())
 
   @@index([occurredAt])
+  @@index([targetType, targetId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Admin audit log — accountability for privileged mutations and impersonation
+// ─────────────────────────────────────────────────────────────────────────
+
+enum AdminAuditAction {
+  ADMIN_IMPERSONATE_SET
+  ADMIN_IMPERSONATE_CLEAR
+  ADMIN_BULK_CREATE_PLAYERS
+  ADMIN_BULK_ADD_ROSTER
+  ADMIN_CREATE_FEED_ITEM
+  ADMIN_MUTATION
+}
+
+model AdminAuditLog {
+  id            String           @id @default(cuid())
+  actorUserId   String
+  subjectUserId String?
+  action        AdminAuditAction @default(ADMIN_MUTATION)
+  method        String
+  path          String
+  targetType    EntityType?
+  targetId      String?
+  note          String?
+  diffJson      Json?
+  requestId     String?
+  createdAt     DateTime         @default(now())
+
+  actorUser   User  @relation("AdminActionActor", fields: [actorUserId], references: [id])
+  subjectUser User? @relation("AdminActionSubject", fields: [subjectUserId], references: [id])
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([subjectUserId, createdAt])
   @@index([targetType, targetId])
 }

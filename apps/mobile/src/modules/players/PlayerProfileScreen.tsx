@@ -93,7 +93,16 @@ function ProfileDetailsEditor({
         <Text className="font-semibold">Profile details</Text>
         <Text variant="caption">Quick edits update the public profile after you save.</Text>
       </View>
-      <ConnectedImageUploadButton targetType="PLAYER" targetId={player.id} usage="AVATAR" label="Upload Profile Image" />
+      <ConnectedImageUploadButton
+        targetType="PLAYER"
+        targetId={player.id}
+        usage="AVATAR"
+        label={profile.avatarUrl ? 'Replace Profile Image' : 'Upload Profile Image'}
+        title="Public image"
+        helperText="Tap to choose a profile image. Changes refresh the profile preview after upload."
+        currentImageUri={profile.avatarUrl}
+        mode="tile"
+      />
       <Textarea placeholder="Bio" value={bio} onChangeText={setBio} />
       <Input placeholder="Hometown" value={hometown} onChangeText={setHometown} />
       <View className="gap-xs">

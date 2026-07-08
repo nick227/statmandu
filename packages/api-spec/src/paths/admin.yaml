@@ -1,0 +1,212 @@
+metrics:
+  get:
+    operationId: getAdminMetrics
+    summary: Admin hub metrics
+    security: [{ adminAuth: [] }]
+    tags: [admin]
+    responses:
+      '200':
+        description: Admin metrics
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/admin.yaml#/AdminMetrics' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Admin only
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+bulkCreatePlayers:
+  post:
+    operationId: bulkCreatePlayers
+    summary: Bulk create players (admin)
+    security: [{ adminAuth: [] }]
+    tags: [admin]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/admin.yaml#/BulkCreatePlayersInput' }
+    responses:
+      '200':
+        description: Bulk create result
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/admin.yaml#/BulkCreatePlayersResult' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Admin only
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+bulkAddRosterMembers:
+  post:
+    operationId: bulkAddRosterMembers
+    summary: Bulk add roster members to a team (admin)
+    security: [{ adminAuth: [] }]
+    tags: [admin]
+    parameters:
+      - in: path
+        name: teamId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/admin.yaml#/BulkAddRosterMembersInput' }
+    responses:
+      '200':
+        description: Bulk roster result
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/admin.yaml#/BulkAddRosterMembersResult' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Admin only
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+adminDisputes:
+  get:
+    operationId: adminListDisputes
+    summary: List disputes across the platform (admin)
+    security: [{ adminAuth: [] }]
+    tags: [admin]
+    parameters:
+      - in: query
+        name: status
+        schema: { $ref: '../components/schemas/verification.yaml#/DisputeStatus' }
+      - in: query
+        name: targetType
+        schema: { $ref: '../components/schemas/common.yaml#/EntityType' }
+      - in: query
+        name: targetId
+        schema: { type: string }
+    responses:
+      '200':
+        description: Disputes
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/verification.yaml#/Dispute' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Admin only
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+createFeedItem:
+  post:
+    operationId: adminCreateFeedItem
+    summary: Create a feed item (admin)
+    security: [{ adminAuth: [] }]
+    tags: [admin]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/admin.yaml#/CreateFeedItemInput' }
+    responses:
+      '201':
+        description: Feed item created
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/social.yaml#/FeedItem' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Admin only
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+auditLog:
+  get:
+    operationId: adminListAuditLog
+    summary: Paginated admin audit log
+    security: [{ adminAuth: [] }]
+    tags: [admin]
+    parameters:
+      - $ref: '../components/parameters/common.yaml#/Cursor'
+      - $ref: '../components/parameters/common.yaml#/Limit'
+      - in: query
+        name: actorUserId
+        schema: { type: string }
+      - in: query
+        name: subjectUserId
+        schema: { type: string }
+      - in: query
+        name: targetType
+        schema: { $ref: '../components/schemas/common.yaml#/EntityType' }
+      - in: query
+        name: targetId
+        schema: { type: string }
+    responses:
+      '200':
+        description: Paginated admin audit log
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/admin.yaml#/PaginatedAdminAuditLog' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Admin only
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+

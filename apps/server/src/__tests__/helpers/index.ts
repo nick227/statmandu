@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, afterAll } from 'vitest'
 import Fastify, { type FastifyInstance } from 'fastify'
 import cookie from '@fastify/cookie'
+import multipart from '@fastify/multipart'
 import openapiGlue from 'fastify-openapi-glue'
 import SwaggerParser from '@apidevtools/swagger-parser'
 import Ajv from 'ajv'
@@ -52,6 +53,12 @@ export function buildTestApp() {
     await app.register(cookie, {
       secret: process.env.COOKIE_SECRET ?? 'test-cookie-secret-at-least-32-characters',
     })
+    await app.register(multipart, {
+      attachFieldsToBody: true,
+      limits: {
+        fileSize: Number(process.env.IMAGE_UPLOAD_MAX_BYTES ?? 5 * 1024 * 1024),
+      },
+    })
 
     // Mirror the production error handler (apps/server/src/index.ts) so tests
     // exercise the same Prisma-error → HTTP-status mapping as the real server.
@@ -72,10 +79,7 @@ export function buildTestApp() {
       return reply.status(500).send({ error: 'Internal server error' })
     })
 
-    await app.register(openapiGlue, {
-      specification: specPath,
-      serviceHandlers: handlers,
-      securityHandlers: {
+    const securityHandlers = {
         // Test auth: accept "Bearer <userId>" directly — no session lookup or bcrypt.
         // Tests are not testing the auth transport; they're testing business logic.
         async bearerAuth(request: any) {
@@ -95,7 +99,17 @@ export function buildTestApp() {
           })
           if (request.user.role !== 'ADMIN') throw { statusCode: 403, message: 'Forbidden' }
         },
-      },
+      }
+
+    app.post('/images/upload', { preHandler: securityHandlers.bearerAuth }, handlers.uploadImage)
+
+    const glueSpec = structuredClone(await getSpec())
+    delete glueSpec.paths?.['/images/upload']
+
+    await app.register(openapiGlue, {
+      specification: glueSpec,
+      serviceHandlers: handlers,
+      securityHandlers,
       noAdditional: true,
     } as any)
     await app.ready()

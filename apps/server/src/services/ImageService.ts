@@ -21,7 +21,7 @@ export class ImageService {
     targetId: string
     usage: ImageAssetUsage
     contentType: string
-    dataBase64: string
+    fileBuffer: Buffer
     originalFilename?: string
     width?: number
     height?: number
@@ -30,7 +30,7 @@ export class ImageService {
     await targetService.requireTarget(data.targetType, data.targetId)
     await this.requireUploadPermission(userId, isAdmin, data.targetType, data.targetId, data.usage)
 
-    const buffer = Buffer.from(data.dataBase64, 'base64')
+    const buffer = data.fileBuffer
     if (buffer.byteLength === 0) throw { statusCode: 400, message: 'Image payload is empty' }
     if (buffer.byteLength > MAX_IMAGE_BYTES) throw { statusCode: 413, message: 'Image is too large' }
 

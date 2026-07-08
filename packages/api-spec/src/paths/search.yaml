@@ -1,0 +1,29 @@
+collection:
+  get:
+    operationId: search
+    summary: Centralized fuzzy search across players, teams, and games
+    security: []
+    tags: [search]
+    parameters:
+      - in: query
+        name: q
+        required: true
+        schema: { type: string, minLength: 1, maxLength: 200 }
+        description: Search text. Matched fuzzily (typo-tolerant), not an exact substring.
+      - in: query
+        name: types
+        schema: { type: string }
+        description: Comma-separated SearchResultType values to restrict results to (e.g. "PLAYER,TEAM"). Defaults to all types.
+      - $ref: '../components/parameters/common.yaml#/Cursor'
+      - $ref: '../components/parameters/common.yaml#/Limit'
+    responses:
+      '200':
+        description: Paginated, relevance-ranked search results
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/search.yaml#/PaginatedSearchResults' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }

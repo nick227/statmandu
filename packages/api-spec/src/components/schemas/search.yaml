@@ -1,0 +1,23 @@
+SearchResultType:
+  type: string
+  enum: [PLAYER, TEAM, GAME]
+
+SearchResultItem:
+  type: object
+  required: [type, id, title, subtitle, imageUrl, score]
+  properties:
+    type: { $ref: '#/SearchResultType' }
+    id: { type: string }
+    title: { type: string }
+    subtitle: { type: ['string', 'null'] }
+    imageUrl: { type: ['string', 'null'] }
+    score: { type: number }
+
+PaginatedSearchResults:
+  type: object
+  required: [data, meta]
+  properties:
+    data:
+      type: array
+      items: { $ref: '#/SearchResultItem' }
+    meta: { $ref: './common.yaml#/PaginatedMeta' }

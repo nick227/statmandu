@@ -1,0 +1,232 @@
+collection:
+  post:
+    operationId: createCard
+    summary: Create a draft Statman Card
+    tags: [cards]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/cards.yaml#/CreateCardInput' }
+    responses:
+      '201':
+        description: Draft card created
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/cards.yaml#/Card' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+recent:
+  get:
+    operationId: listRecentPublicCards
+    summary: List recent public Statman Cards
+    security: []
+    tags: [cards]
+    responses:
+      '200':
+        description: Recent public cards
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/cards.yaml#/Card' }
+
+item:
+  get:
+    operationId: getCard
+    summary: Get a Statman Card
+    security: []
+    tags: [cards]
+    parameters:
+      - in: path
+        name: cardId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Card
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/cards.yaml#/Card' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+  patch:
+    operationId: updateCard
+    summary: Update a draft Statman Card
+    tags: [cards]
+    parameters:
+      - in: path
+        name: cardId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/cards.yaml#/UpdateCardInput' }
+    responses:
+      '200':
+        description: Card updated
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/cards.yaml#/Card' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+generate:
+  post:
+    operationId: generateCard
+    summary: Generate a card front with the configured provider
+    tags: [cards]
+    parameters:
+      - in: path
+        name: cardId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Generated card
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/cards.yaml#/Card' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+publish:
+  post:
+    operationId: publishCard
+    summary: Publish a Statman Card
+    tags: [cards]
+    parameters:
+      - in: path
+        name: cardId
+        required: true
+        schema: { type: string }
+    requestBody:
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/cards.yaml#/PublishCardInput' }
+    responses:
+      '200':
+        description: Published card
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/cards.yaml#/Card' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+claim:
+  post:
+    operationId: claimCard
+    summary: Claim an issued copy of a public Statman Card
+    tags: [cards]
+    parameters:
+      - in: path
+        name: cardId
+        required: true
+        schema: { type: string }
+    responses:
+      '201':
+        description: Card issue claimed
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/cards.yaml#/CardIssue' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+athleteCards:
+  get:
+    operationId: listCardsForAthlete
+    summary: List public Statman Cards for an athlete profile
+    security: []
+    tags: [cards]
+    parameters:
+      - in: path
+        name: athleteProfileId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Athlete cards
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/cards.yaml#/Card' }
+
+mine:
+  get:
+    operationId: listMyCards
+    summary: List cards claimed by the current user
+    tags: [cards]
+    responses:
+      '200':
+        description: Claimed cards
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/cards.yaml#/MyCard' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
+downloaded:
+  post:
+    operationId: markCardDownloaded
+    summary: Mark a claimed card issue downloaded
+    tags: [cards]
+    parameters:
+      - in: path
+        name: issueId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Card issue marked downloaded
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/cards.yaml#/CardIssue' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'

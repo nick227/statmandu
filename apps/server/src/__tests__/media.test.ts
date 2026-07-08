@@ -8,6 +8,28 @@ process.env.IMAGE_STORAGE_DIR = '/tmp/statman-test-images'
 
 const app = buildTestApp()
 
+function imageUploadBody(fields: Record<string, string>, file = Buffer.from('png-data')) {
+  const boundary = `statman-${Date.now()}`
+  const chunks: Buffer[] = []
+  const append = (value: string | Buffer) => chunks.push(Buffer.isBuffer(value) ? value : Buffer.from(value))
+
+  for (const [name, value] of Object.entries(fields)) {
+    append(`--${boundary}\r\n`)
+    append(`Content-Disposition: form-data; name="${name}"\r\n\r\n`)
+    append(`${value}\r\n`)
+  }
+  append(`--${boundary}\r\n`)
+  append('Content-Disposition: form-data; name="file"; filename="avatar.png"\r\n')
+  append('Content-Type: image/png\r\n\r\n')
+  append(file)
+  append(`\r\n--${boundary}--\r\n`)
+
+  return {
+    headers: { 'content-type': `multipart/form-data; boundary=${boundary}` },
+    payload: Buffer.concat(chunks),
+  }
+}
+
 async function seedPlayer() {
   const sport = await db.sport.create({ data: { slug: 'basketball', name: 'Basketball' } })
   const athleteProfile = await db.athleteProfile.create({
@@ -108,20 +130,20 @@ describe('images', () => {
       data: { claimedByUserId: testUserId },
     })
 
+    const upload = imageUploadBody({
+      targetType: 'PLAYER',
+      targetId: player.id,
+      usage: 'AVATAR',
+      contentType: 'image/png',
+      originalFilename: 'avatar.png',
+      width: '1',
+      height: '1',
+    })
     const res = await app.inject({
       method: 'POST',
       url: '/images/upload',
-      headers: asAuth(testUserId),
-      payload: {
-        targetType: 'PLAYER',
-        targetId: player.id,
-        usage: 'AVATAR',
-        contentType: 'image/png',
-        dataBase64: Buffer.from('png-data').toString('base64'),
-        originalFilename: 'avatar.png',
-        width: 1,
-        height: 1,
-      },
+      headers: { ...asAuth(testUserId), ...upload.headers },
+      payload: upload.payload,
     })
 
     expect(res.statusCode).toBe(201)
@@ -136,17 +158,17 @@ describe('images', () => {
   it('forbids avatar uploads from a non-owner', async () => {
     const player = await seedPlayer()
 
+    const upload = imageUploadBody({
+      targetType: 'PLAYER',
+      targetId: player.id,
+      usage: 'AVATAR',
+      contentType: 'image/png',
+    })
     const res = await app.inject({
       method: 'POST',
       url: '/images/upload',
-      headers: asAuth(testUserId),
-      payload: {
-        targetType: 'PLAYER',
-        targetId: player.id,
-        usage: 'AVATAR',
-        contentType: 'image/png',
-        dataBase64: Buffer.from('png-data').toString('base64'),
-      },
+      headers: { ...asAuth(testUserId), ...upload.headers },
+      payload: upload.payload,
     })
 
     expect(res.statusCode).toBe(403)

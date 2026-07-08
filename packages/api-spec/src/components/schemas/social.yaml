@@ -39,13 +39,13 @@ ImageAsset:
 
 UploadImageInput:
   type: object
-  required: [targetType, targetId, usage, contentType, dataBase64]
+  required: [targetType, targetId, usage, contentType, file]
   properties:
     targetType: { $ref: './common.yaml#/EntityType' }
     targetId: { type: string }
     usage: { $ref: '#/ImageAssetUsage' }
     contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
-    dataBase64: { type: string }
+    file: { type: string, format: binary }
     originalFilename: { type: string, maxLength: 200 }
     width: { type: integer, minimum: 1 }
     height: { type: integer, minimum: 1 }
@@ -113,7 +113,7 @@ FeedItem:
     id: { type: string }
     type:
       type: string
-      enum: [GAME_FINAL, STAT_MILESTONE, MEDIA_ADDED, PLAYER_JOINED_TEAM, PROFILE_CLAIMED, DISPUTE_RESOLVED]
+      enum: [GAME_FINAL, STAT_MILESTONE, MEDIA_ADDED, PLAYER_JOINED_TEAM, PROFILE_CLAIMED, DISPUTE_RESOLVED, CARD_PUBLISHED, CARD_CLAIMED, CARD_DOWNLOADED]
     targetType: { $ref: './common.yaml#/EntityType' }
     targetId: { type: string }
     summary: { type: string }

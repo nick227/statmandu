@@ -42,7 +42,7 @@ upload:
     requestBody:
       required: true
       content:
-        application/json:
+        multipart/form-data:
           schema: { $ref: '../components/schemas/social.yaml#/UploadImageInput' }
     responses:
       '201':

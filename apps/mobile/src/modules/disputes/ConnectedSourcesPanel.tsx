@@ -94,6 +94,9 @@ export function ConnectedSourcesPanel({ targetType, targetId, className }: Conne
                 targetId={targetId}
                 usage="EVIDENCE"
                 label="Upload Evidence Image"
+                title="Evidence photo"
+                helperText="Attach a scorebook, roster, or other source image."
+                mode="tile"
                 allowsEditing={false}
               />
             ) : (

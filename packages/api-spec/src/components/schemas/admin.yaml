@@ -1,0 +1,128 @@
+AdminMetrics:
+  type: object
+  required: [playersCount, teamsCount, gamesCount, pendingClaimsCount, openDisputesCount, liveGamesCount, scheduledGamesCount]
+  properties:
+    playersCount: { type: integer }
+    teamsCount: { type: integer }
+    gamesCount: { type: integer }
+    pendingClaimsCount: { type: integer }
+    openDisputesCount: { type: integer }
+    liveGamesCount: { type: integer }
+    scheduledGamesCount: { type: integer }
+
+BulkResultError:
+  type: object
+  required: [index, message]
+  properties:
+    index: { type: integer, minimum: 0 }
+    message: { type: string }
+
+BulkCreatePlayersInput:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      minItems: 1
+      maxItems: 500
+      items:
+        type: object
+        required: [firstName, lastName, sportSlug]
+        properties:
+          firstName: { type: string, minLength: 1, maxLength: 50 }
+          lastName: { type: string, minLength: 1, maxLength: 50 }
+          sportSlug: { type: string }
+          hometown: { type: string, maxLength: 100 }
+          position: { $ref: './players.yaml#/PlayerPosition' }
+          classYear: { type: string, maxLength: 20 }
+          jerseyNumber: { type: integer, minimum: 0, maximum: 99 }
+          heightInches: { type: integer, minimum: 40, maximum: 100 }
+
+BulkCreatePlayersResult:
+  type: object
+  required: [created, errors]
+  properties:
+    created:
+      type: array
+      items: { $ref: './players.yaml#/Player' }
+    errors:
+      type: array
+      items: { $ref: '#/BulkResultError' }
+
+BulkAddRosterMembersInput:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      minItems: 1
+      maxItems: 500
+      items:
+        type: object
+        required: [playerId, seasonId]
+        properties:
+          playerId: { type: string }
+          seasonId: { type: string }
+          jerseyNumber: { type: integer, minimum: 0, maximum: 99 }
+
+BulkAddRosterMembersResult:
+  type: object
+  required: [created, errors]
+  properties:
+    created:
+      type: array
+      items: { $ref: './players.yaml#/RosterMembership' }
+    errors:
+      type: array
+      items: { $ref: '#/BulkResultError' }
+
+CreateFeedItemInput:
+  type: object
+  required: [type, targetType, targetId, summary, occurredAt]
+  properties:
+    type:
+      type: string
+      enum: [GAME_FINAL, STAT_MILESTONE, MEDIA_ADDED, PLAYER_JOINED_TEAM, PROFILE_CLAIMED, DISPUTE_RESOLVED, CARD_PUBLISHED, CARD_CLAIMED, CARD_DOWNLOADED]
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+    summary: { type: string, minLength: 1, maxLength: 500 }
+    occurredAt: { type: string, format: date-time }
+
+AdminAuditAction:
+  type: string
+  enum:
+    - ADMIN_IMPERSONATE_SET
+    - ADMIN_IMPERSONATE_CLEAR
+    - ADMIN_BULK_CREATE_PLAYERS
+    - ADMIN_BULK_ADD_ROSTER
+    - ADMIN_CREATE_FEED_ITEM
+    - ADMIN_MUTATION
+
+AdminAuditLogEntry:
+  type: object
+  required: [id, actorUserId, action, method, path, createdAt]
+  properties:
+    id: { type: string }
+    actorUserId: { type: string }
+    subjectUserId: { type: ['string', 'null'] }
+    action: { $ref: '#/AdminAuditAction' }
+    targetType: { oneOf: [{ $ref: './common.yaml#/EntityType' }, { type: 'null' }] }
+    targetId: { type: ['string', 'null'] }
+    method: { type: string, enum: [POST, PATCH, DELETE] }
+    path: { type: string }
+    note: { type: ['string', 'null'] }
+    diffJson:
+      type: object
+      additionalProperties: true
+    requestId: { type: ['string', 'null'] }
+    createdAt: { type: string, format: date-time }
+
+PaginatedAdminAuditLog:
+  type: object
+  required: [data, meta]
+  properties:
+    data:
+      type: array
+      items: { $ref: '#/AdminAuditLogEntry' }
+    meta: { $ref: './common.yaml#/PaginatedMeta' }
+

@@ -25,6 +25,9 @@
 - `TeamSeasonStat`
 - `MediaAsset`
 - `ImageAsset`
+- `CardTemplate`
+- `CardIssue`
+- `CardGenerationJob`
 - `SourceReference`
 - `Dispute`
 - `Claim`
@@ -32,6 +35,7 @@
 - `Reaction`
 - `GameReaction`
 - `FeedItem`
+- `AdminAuditLog`
 
 ## Enums
 
@@ -48,8 +52,16 @@
 - `MediaAssetType`
 - `ImageAssetUsage`
 - `ImageStorageProvider`
+- `CardType`
+- `CardTemplateStatus`
+- `CardVisibility`
+- `CardEditionMode`
+- `CardIssueStatus`
+- `CardGenerationProvider`
+- `CardGenerationStatus`
 - `ReferenceSourceType`
 - `DisputeStatus`
 - `ClaimStatus`
 - `ReactionType`
 - `FeedItemType`
+- `AdminAuditAction`

@@ -95,6 +95,12 @@
 | `GET /leaderboards/players` | Rank players by a sport stat | Public | `200` |
 | `GET /leaderboards/teams` | Rank teams by a sport stat | Public | `200` |
 
+## Search
+
+| Endpoint | Description | Auth | Success |
+|---|---|---|---|
+| `GET /search` | Centralized fuzzy search across players, teams, and games | Public | `200` |
+
 ## Media
 
 | Endpoint | Description | Auth | Success |
@@ -141,3 +147,29 @@
 | `GET /disputes` | List disputes for a target (disputed stats are public) | Public | `200` |
 | `POST /disputes` | Submit a public correction/dispute | Auth required | `201` |
 | `PATCH /disputes/{disputeId}` | Resolve or reject a dispute (admin only) | Auth required | `200` |
+
+## Admin
+
+| Endpoint | Description | Auth | Success |
+|---|---|---|---|
+| `GET /admin/metrics` | Admin hub metrics | Auth required | `200` |
+| `POST /admin/players/bulk` | Bulk create players (admin) | Auth required | `200` |
+| `POST /admin/teams/{teamId}/roster/bulk` | Bulk add roster members to a team (admin) | Auth required | `200` |
+| `GET /admin/disputes` | List disputes across the platform (admin) | Auth required | `200` |
+| `POST /admin/feed-items` | Create a feed item (admin) | Auth required | `201` |
+| `GET /admin/audit-log` | Paginated admin audit log | Auth required | `200` |
+
+## Cards
+
+| Endpoint | Description | Auth | Success |
+|---|---|---|---|
+| `POST /cards` | Create a draft Statman Card | Auth required | `201` |
+| `GET /cards/recent` | List recent public Statman Cards | Public | `200` |
+| `GET /cards/{cardId}` | Get a Statman Card | Public | `200` |
+| `PATCH /cards/{cardId}` | Update a draft Statman Card | Auth required | `200` |
+| `POST /cards/{cardId}/generate` | Generate a card front with the configured provider | Auth required | `200` |
+| `POST /cards/{cardId}/publish` | Publish a Statman Card | Auth required | `200` |
+| `POST /cards/{cardId}/claim` | Claim an issued copy of a public Statman Card | Auth required | `201` |
+| `GET /athlete-profiles/{athleteProfileId}/cards` | List public Statman Cards for an athlete profile | Public | `200` |
+| `GET /me/cards` | List cards claimed by the current user | Auth required | `200` |
+| `POST /card-issues/{issueId}/downloaded` | Mark a claimed card issue downloaded | Auth required | `200` |

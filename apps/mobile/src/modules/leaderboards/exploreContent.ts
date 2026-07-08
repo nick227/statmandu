@@ -12,8 +12,8 @@ export type ExploreSportSlug = (typeof EXPLORE_SPORTS)[number]
 export const EXPLORE_COPY = {
   screenTitle: 'Explore',
   search: {
-    placeholder: 'Search players by name...',
-    loadingLabel: 'Searching players',
+    placeholder: 'Search players, teams, games...',
+    loadingLabel: 'Searching',
   },
   sections: {
     rankings: {
@@ -52,7 +52,7 @@ export const EXPLORE_COPY = {
     },
     searchResults: {
       title: 'Search results',
-      subtitle: 'Players matching your query.',
+      subtitle: 'Players, teams, and games matching your query.',
     },
     videos: {
       champion: {
@@ -70,7 +70,7 @@ export const EXPLORE_COPY = {
     verifiedOnly: 'Verified only',
   },
   errors: {
-    search: 'Player search could not be loaded.',
+    search: 'Search could not be loaded.',
     rankings: 'Rankings could not be loaded.',
   },
   empty: {
@@ -93,8 +93,8 @@ export const EXPLORE_COPY = {
       description: 'More ranked teams will appear as the season progresses.',
     },
     search: {
-      title: 'No players found',
-      description: 'Try a different name or browse the rankings above.',
+      title: 'No results found',
+      description: 'Try a different search or browse the rankings above.',
     },
   },
   linkLabels: {
