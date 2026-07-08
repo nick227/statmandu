@@ -5,6 +5,7 @@ import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { TikTokVideoFeed } from '@/modules/media/TikTokVideoFeed'
 import { VideoFilmSkeleton } from '@/modules/media/VideoFilmSkeleton'
+import { useImmersiveFilmTabBar } from '@/modules/media/useImmersiveFilmTabBar'
 import { VIDEOS_COPY, VIDEOS_SCREEN } from '@/modules/media/videosContent'
 import { useVideosBrowse } from '@/modules/media/useVideosBrowse'
 
@@ -13,6 +14,8 @@ export function VideosBrowseScreen() {
   const insets = useSafeAreaInsets()
   const copy = VIDEOS_COPY
   const hasVideos = browse.videos.length > 0
+
+  useImmersiveFilmTabBar(hasVideos)
 
   if (browse.isError) {
     return (
@@ -39,7 +42,7 @@ export function VideosBrowseScreen() {
   }
 
   return (
-    <View className="flex-1 bg-black" style={{ paddingTop: insets.top }}>
+    <View className="flex-1 bg-black">
       <TikTokVideoFeed items={browse.videos} />
     </View>
   )

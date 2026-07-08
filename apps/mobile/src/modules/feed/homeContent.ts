@@ -103,19 +103,12 @@ export const HOME_SECTION_COPY = {
   videos: {
     featured: {
       title: 'Featured film',
-      subtitle: 'The latest upload across the Statman network.',
-    },
-    latest: {
-      title: 'Latest uploads',
-      subtitle: 'Athlete, team, and game film from the last week.',
-    },
-    rail: {
-      title: 'More film',
-      subtitle: 'Swipe through recent highlights and recaps.',
+      subtitle: 'Latest highlight across the network — open Film for the full vertical browse.',
     },
   },
   linkLabels: {
     seeAll: 'Rankings',
+    allFilm: 'All film',
   },
 } as const
 
@@ -127,6 +120,7 @@ export const HOME_EMPTY_COPY = {
   videos: {
     title: 'No film uploaded yet',
     description: 'Athlete highlights, team reels, and game recaps will surface here as they are submitted.',
+    browseCta: 'Browse Film',
   },
 } as const
 

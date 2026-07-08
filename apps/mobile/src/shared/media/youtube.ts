@@ -11,6 +11,9 @@ export function youtubeEmbedUrl(videoId: string, { autoplay = false }: { autopla
     playsinline: '1',
     rel: '0',
     modestbranding: '1',
+    controls: '1',
+    fs: '1',
+    iv_load_policy: '3',
     ...(autoplay ? { autoplay: '1' } : {}),
   })
   return `https://www.youtube.com/embed/${videoId}?${params.toString()}`

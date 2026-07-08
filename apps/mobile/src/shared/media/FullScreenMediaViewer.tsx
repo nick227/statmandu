@@ -14,10 +14,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { X, Play, UserRound } from 'lucide-react-native'
 import { FilmLabelBadge } from './FilmLabelBadge'
 import type { MediaTargetType } from './mediaLabels'
-import { PlayOverlay } from './PlayOverlay'
-import { SmartImage } from './SmartImage'
-import { YouTubePlayer } from './YouTubePlayer'
-import { youtubeThumbnailUrl, youtubeWatchUrl } from './youtube'
+import { VideoStage } from './VideoStage'
+import { youtubeWatchUrl } from './youtube'
 import { Text } from '@/shared/ui/Text'
 
 export interface FullScreenMediaItem {
@@ -85,11 +83,6 @@ export function FullScreenMediaViewer({
     onClose()
   }
 
-  function startPlayback(item: FullScreenMediaItem) {
-    setPlayingId(item.id)
-    setChromeVisible(true)
-  }
-
   const pan = Gesture.Pan()
     .activeOffsetY(24)
     .failOffsetX([-20, 20])
@@ -152,32 +145,24 @@ export function FullScreenMediaViewer({
               }}
               showsHorizontalScrollIndicator={false}
               onMomentumScrollEnd={handleMomentumEnd}
-              renderItem={({ item }) => {
-                const itemPlaying = playingId === item.id
-                return (
-                  <Pressable
-                    style={{ width, height }}
-                    className="items-center justify-center bg-black"
-                    onPress={() => !itemPlaying && setChromeVisible((v) => !v)}
-                  >
-                    {itemPlaying ? (
-                      <YouTubePlayer videoId={item.youtubeVideoId} autoplay style={{ width, height: height * 0.55 }} />
-                    ) : (
-                      <>
-                        <SmartImage uri={youtubeThumbnailUrl(item.youtubeVideoId)} className="h-full w-full" resizeMode="contain" />
-                        <Pressable
-                          className="absolute inset-0 items-center justify-center"
-                          onPress={() => startPlayback(item)}
-                          accessibilityRole="button"
-                          accessibilityLabel="Play video"
-                        >
-                          <PlayOverlay variant="hero" />
-                        </Pressable>
-                      </>
-                    )}
-                  </Pressable>
-                )
-              }}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={{ width, height }}
+                  onPress={() => playingId !== item.id && setChromeVisible((v) => !v)}
+                >
+                  <VideoStage
+                    videoId={item.youtubeVideoId}
+                    mode="immersive"
+                    width={width}
+                    height={height}
+                    isPlaying={playingId === item.id}
+                    onPlayRequest={() => {
+                      setPlayingId(item.id)
+                      setChromeVisible(true)
+                    }}
+                  />
+                </Pressable>
+              )}
             />
 
             <Animated.View pointerEvents={chromeVisible ? 'auto' : 'none'} style={[{ position: 'absolute', top: insets.top + 12, left: 0, right: 0 }, chromeStyle]} className="flex-row items-center justify-between px-lg">

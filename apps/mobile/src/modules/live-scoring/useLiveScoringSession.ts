@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Platform } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import {
@@ -6,6 +6,7 @@ import {
   useFinalizeGame,
   useGame,
   useGameConflicts,
+  useGameEvents,
   useGameSnapshot,
   useJoinGameAsReporter,
   useStartLiveGame,
@@ -14,7 +15,7 @@ import {
   useUndoGameEvent,
 } from '@statman/sdk'
 import type { components } from '@statman/sdk'
-import { predictNext } from '@statman/sports'
+import { computeDisciplineStatus, emptyNumericStats, getSportDefinition, predictNext, reconcileEvents } from '@statman/sports'
 
 type GameEventType = components['schemas']['GameEventType']
 
@@ -99,8 +100,26 @@ export function useLiveScoringSession(gameId: string) {
   const sport = game?.sport?.slug ?? 'basketball'
   const homeTeam = game?.gameTeams.find((gt) => gt.isHome)?.team
   const awayTeam = game?.gameTeams.find((gt) => !gt.isHome)?.team
-  const activeTeamSlug = selectedTeamId === homeTeam?.id ? homeTeam?.slug : awayTeam?.slug
-  const rosterQuery = useTeamRoster(activeTeamSlug ?? '')
+  // Both rosters, not just the selected team's — the recent-plays strip
+  // shows whichever team's event happened most recently, regardless of
+  // which team is currently selected for input, so name/number resolution
+  // needs to cover both sides. Also means switching the selected team no
+  // longer triggers a fresh fetch, since both are already loaded.
+  const homeRosterQuery = useTeamRoster(homeTeam?.slug ?? '')
+  const awayRosterQuery = useTeamRoster(awayTeam?.slug ?? '')
+  const roster = (selectedTeamId === awayTeam?.id ? awayRosterQuery.data?.data : homeRosterQuery.data?.data) ?? []
+  const playerById = useMemo(() => {
+    const all = [...(homeRosterQuery.data?.data ?? []), ...(awayRosterQuery.data?.data ?? [])]
+    return Object.fromEntries(
+      all.map((m) => [
+        m.player.id,
+        {
+          jerseyNumber: m.jerseyNumber ?? m.player.jerseyNumber ?? null,
+          name: `${m.player.athleteProfile.firstName} ${m.player.athleteProfile.lastName}`,
+        },
+      ])
+    )
+  }, [homeRosterQuery.data, awayRosterQuery.data])
 
   const join = useJoinGameAsReporter(gameId)
   const startLive = useStartLiveGame(gameId)
@@ -113,6 +132,32 @@ export function useLiveScoringSession(gameId: string) {
   const isManager = Boolean(joinedRole && MANAGER_ROLES.includes(joinedRole))
   const conflictsQuery = useGameConflicts(isManager ? gameId : '')
   const openConflictCount = conflictsQuery.data?.data.length ?? 0
+
+  // Polled (not the static Play-by-Play usage) — a live foul/bonus read
+  // needs the full log, since the snapshot's last-20 cap isn't reliable
+  // over a whole game.
+  const eventsQuery = useGameEvents(gameId, { poll: Boolean(joinedRole) })
+  const events = eventsQuery.data?.data ?? []
+  // Shared shape for both engines below (computeDisciplineStatus,
+  // reconcileEvents) so the GameEvent -> ReconcileEvent mapping happens once.
+  const reconcileReadyEvents = useMemo(
+    () => events.map((e) => ({ type: e.type, playerId: e.playerId ?? null, teamId: e.teamId ?? null, status: e.status })),
+    [events]
+  )
+  const disciplineStatus = useMemo(() => {
+    const teamIds = [homeTeam?.id, awayTeam?.id].filter((id): id is string => Boolean(id))
+    return computeDisciplineStatus(getSportDefinition(sport), reconcileReadyEvents, teamIds)
+  }, [sport, homeTeam?.id, awayTeam?.id, reconcileReadyEvents])
+
+  // The live single-player stat line for Track-a-Player mode — same
+  // reconcileEvents engine finalize() uses server-side, run client-side
+  // against the in-progress event log instead of waiting for finalize.
+  const trackedPlayerStats = useMemo(() => {
+    if (!selectedPlayerId || !selectedTeamId) return null
+    const definition = getSportDefinition(sport)
+    const result = reconcileEvents(definition, reconcileReadyEvents, [selectedTeamId])
+    return result.playerLines.find((line) => line.playerId === selectedPlayerId)?.stats ?? emptyNumericStats(definition)
+  }, [sport, reconcileReadyEvents, selectedPlayerId, selectedTeamId])
 
   useEffect(() => {
     if (finalize.isSuccess) safeHaptic(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success))
@@ -213,9 +258,20 @@ export function useLiveScoringSession(gameId: string) {
 
   async function undoLastEvent() {
     if (!lastEventId) return
-    await undoEvent.mutateAsync(lastEventId)
-    setLastEventId(null)
-    setSuggestedEventTypes([])
+    await undoEventById(lastEventId)
+  }
+
+  // Backs the recent-plays correction strip — a scorer's real mistake
+  // pattern is noticing an error a couple of plays later, not just on the
+  // very last tap, so this isn't restricted to lastEventId like
+  // undoLastEvent above (the backend itself has no "most recent only"
+  // restriction either — any of the reporter's own non-finalized events).
+  async function undoEventById(eventId: string) {
+    await undoEvent.mutateAsync(eventId)
+    if (eventId === lastEventId) {
+      setLastEventId(null)
+      setSuggestedEventTypes([])
+    }
   }
 
   function selectTeam(teamId: string) {
@@ -227,9 +283,13 @@ export function useLiveScoringSession(gameId: string) {
     game,
     homeTeam,
     awayTeam,
-    roster: rosterQuery.data?.data ?? [],
+    roster,
+    playerById,
     score,
     reporterCount,
+    events,
+    disciplineStatus,
+    trackedPlayerStats,
     mode,
     setMode,
     joinedRole,
@@ -244,6 +304,7 @@ export function useLiveScoringSession(gameId: string) {
     submitEventMutation,
     undoEvent,
     undoLastEvent,
+    undoEventById,
     finalize,
     selectTeam,
     setSelectedPlayerId,

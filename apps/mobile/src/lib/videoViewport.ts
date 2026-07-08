@@ -12,10 +12,17 @@ export function useFloatingTabBarInset() {
   return FLOATING_TAB_BAR.height + FLOATING_TAB_BAR.bottom + insets.bottom
 }
 
-/** Height available for a full-bleed page inside a tab (no screen title). */
+/** Film snap page with floating tab bar visible. */
 export function useFilmStageHeight() {
   const { height } = useWindowDimensions()
   const tabInset = useFloatingTabBarInset()
   const insets = useSafeAreaInsets()
   return Math.max(height - insets.top - tabInset, 320)
+}
+
+/** Full-bleed film page when tab bar is hidden (immersive browse). */
+export function useImmersiveFilmStageHeight() {
+  const { height } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+  return Math.max(height, 320)
 }

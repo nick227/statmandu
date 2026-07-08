@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router'
 import { Clapperboard, Home, Search, PlusSquare, Shield, User } from 'lucide-react-native'
+import { FLOATING_TAB_BAR_STYLE } from '@/lib/tabBarStyle'
 import { TabBarIcon } from '@/shared/layout'
 import { useNativeColor } from '@/lib/theme'
 
@@ -15,18 +16,7 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.55)',
-        tabBarStyle: {
-          position: 'absolute',
-          left: 20,
-          right: 20,
-          bottom: 18,
-          height: 62,
-          borderRadius: 999,
-          borderTopWidth: 0,
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.12)',
-          backgroundColor: 'rgba(8,10,16,0.92)',
-        },
+        tabBarStyle: FLOATING_TAB_BAR_STYLE,
         tabBarItemStyle: { paddingVertical: 8 },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         tabBarActiveBackgroundColor: brandColor,

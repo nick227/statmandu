@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useGame, useMedia, usePlayer, usePlayerGames, usePlayerSeasonStats } from '@statman/sdk'
+import { useCurrentUser, useGame, useMedia, usePlayer, usePlayerGames, usePlayerSeasonStats, useUpdatePlayer } from '@statman/sdk'
 import { sportStatChips } from '@/modules/sports'
 
 const PLAYER_PROFILE_TABS = ['Stats', 'Games', 'Media', 'Sources']
@@ -11,6 +11,8 @@ export function usePlayerProfile(playerId: string) {
   const seasonStatsQuery = usePlayerSeasonStats(playerId)
   const gamesQuery = usePlayerGames(playerId)
   const mediaQuery = useMedia('PLAYER', playerId)
+  const currentUserQuery = useCurrentUser()
+  const updatePlayer = useUpdatePlayer(playerId)
 
   const player = playerQuery.data?.data
   const profile = player?.athleteProfile
@@ -35,8 +37,10 @@ export function usePlayerProfile(playerId: string) {
 
   const sport = player?.sport?.slug ?? 'basketball'
   const stats = sportStatChips(sport, season ?? { stats: null })
+  const canEditProfile = Boolean(profile?.claimedByUserId && profile.claimedByUserId === currentUserQuery.data?.data.id)
 
   return {
+    canEditProfile,
     tab,
     setTab,
     tabs: PLAYER_PROFILE_TABS,
@@ -50,6 +54,7 @@ export function usePlayerProfile(playerId: string) {
     lastGame,
     seasonHighPoints,
     media,
+    updatePlayer,
     isLoading: playerQuery.isLoading,
     isError: playerQuery.isError,
   }

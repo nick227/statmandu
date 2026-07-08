@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 import type { components } from '@statman/sdk'
-import { Avatar } from '@/shared/ui/Avatar'
 import { Text } from '@/shared/ui/Text'
 import { Button } from '@/shared/ui/Button'
 import { SheetScrollView } from '@/shared/ui/Sheet'
+import { PlayerPickRow } from '@/modules/live-scoring/PlayerPickRow'
 
 type RosterMembership = components['schemas']['RosterMembership']
 
@@ -33,20 +33,13 @@ export function SubstitutionPicker({ roster, onComplete, onCancel }: Substitutio
           {outgoingId ? 'Back' : 'Cancel'}
         </Button>
       </View>
-      {candidates.map((m) => {
-        const name = `${m.player.athleteProfile.firstName} ${m.player.athleteProfile.lastName}`
-        return (
-          <Pressable
-            key={m.id}
-            onPress={() => (outgoingId ? onComplete(outgoingId, m.player.id) : setOutgoingId(m.player.id))}
-            className="flex-row items-center gap-md px-lg py-sm border-b border-border"
-          >
-            <Text variant="caption" className="w-8 text-center">{m.jerseyNumber ?? m.player.jerseyNumber ?? '-'}</Text>
-            <Avatar uri={m.player.athleteProfile.avatarUrl} fallback={name} size="sm" />
-            <Text className="flex-1 font-semibold">{name}</Text>
-          </Pressable>
-        )
-      })}
+      {candidates.map((m) => (
+        <PlayerPickRow
+          key={m.id}
+          membership={m}
+          onPress={() => (outgoingId ? onComplete(outgoingId, m.player.id) : setOutgoingId(m.player.id))}
+        />
+      ))}
     </SheetScrollView>
   )
 }

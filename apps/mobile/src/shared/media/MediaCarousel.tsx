@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Dimensions, FlatList, Linking, Pressable, View, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native'
-import { YouTubeVideoCardThumb } from './YouTubeVideoCard'
-import { youtubeWatchUrl } from './youtube'
+import { Dimensions, FlatList, Pressable, View, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native'
+import { VideoStage } from './VideoStage'
 
 export interface MediaCarouselItem {
   id: string
@@ -13,17 +12,9 @@ export interface MediaCarouselProps {
   items: MediaCarouselItem[]
   height?: number
   className?: string
-  /** Called with the tapped index instead of the default tap-out-to-YouTube
-   *  behavior — e.g. escalate to the full-screen immersive viewer. */
   onItemPress?: (index: number) => void
 }
 
-// A swipeable, paged stage for all of an entity's attached media — the
-// "video/photo carousel" called for in the wireframes, replacing a single
-// static hero video. Taps out to YouTube directly by default (no in-app
-// player/new dependency needed, same pattern as YouTubeEmbed elsewhere) —
-// pass onItemPress to redirect the tap instead, e.g. to open
-// FullScreenMediaViewer for the half-screen-hero → full-screen tier jump.
 export function MediaCarousel({ items, height = 420, className, onItemPress }: MediaCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const width = Dimensions.get('window').width
@@ -44,12 +35,13 @@ export function MediaCarousel({ items, height = 420, className, onItemPress }: M
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleMomentumEnd}
         renderItem={({ item, index }) => (
-          <Pressable
-            style={{ width, height }}
-            onPress={() => (onItemPress ? onItemPress(index) : Linking.openURL(youtubeWatchUrl(item.youtubeVideoId)))}
-          >
-            <YouTubeVideoCardThumb videoId={item.youtubeVideoId} variant="hero" className="h-full rounded-none" />
-          </Pressable>
+          <VideoStage
+            videoId={item.youtubeVideoId}
+            mode="chrome"
+            width={width}
+            height={height}
+            onPlayRequest={() => onItemPress?.(index)}
+          />
         )}
       />
       {items.length > 1 ? (

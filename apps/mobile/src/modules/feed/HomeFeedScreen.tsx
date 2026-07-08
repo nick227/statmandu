@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ScrollView, View } from 'react-native'
+import { Link } from 'expo-router'
 import { Rss, Video } from 'lucide-react-native'
 import { ContentSection } from '@/shared/layout/ContentSection'
 import { EmptyState } from '@/shared/ui/EmptyState'
@@ -18,6 +19,7 @@ import { useHomeFeed } from '@/modules/feed/useHomeFeed'
 import { HOME_EMPTY_COPY, HOME_PLAYER_STAT, HOME_SCREEN, HOME_SPORT_SLUG } from '@/modules/feed/homeContent'
 import { ConnectedVideoCard } from '@/modules/media/ConnectedVideoCard'
 import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
+import { Button } from '@/shared/ui/Button'
 import { RankingsSkeleton } from '@/modules/leaderboards/RankingsSkeleton'
 import { ChampionRibbon, PodiumStrip, ShowcaseMosaic } from '@/modules/leaderboards/RankingsShowcase'
 import { AthleteSpotlightCardLink, TeamSpotlightCardLink } from '@/modules/leaderboards/SpotlightCardLinks'
@@ -58,7 +60,12 @@ export function HomeFeedScreen() {
       <PlatformAuthorityBand {...home.authority} />
       {topAd ? <AdPlaceholder slot={topAd} /> : null}
 
-      <ContentSection title={copy.videos.featured.title} subtitle={copy.videos.featured.subtitle}>
+      <ContentSection
+        title={copy.videos.featured.title}
+        subtitle={copy.videos.featured.subtitle}
+        href={{ pathname: '/(tabs)/videos' }}
+        linkLabel={copy.linkLabels.allFilm}
+      >
         {home.featuredVideo ? (
           <ConnectedVideoCard
             item={home.featuredVideo}
@@ -66,7 +73,12 @@ export function HomeFeedScreen() {
             onPress={() => setViewerIndex(0)}
           />
         ) : (
-          <EmptyState icon={Video} title={HOME_EMPTY_COPY.videos.title} description={HOME_EMPTY_COPY.videos.description} className="py-lg" />
+          <View className="gap-sm">
+            <EmptyState icon={Video} title={HOME_EMPTY_COPY.videos.title} description={HOME_EMPTY_COPY.videos.description} className="py-lg" />
+            <Link href="/(tabs)/videos" asChild>
+              <Button variant="secondary">{HOME_EMPTY_COPY.videos.browseCta}</Button>
+            </Link>
+          </View>
         )}
       </ContentSection>
 

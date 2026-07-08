@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Pressable, Share, View } from 'react-native'
 import { Link, useRouter } from 'expo-router'
+import type { components } from '@statman/sdk'
 import Animated, { FadeIn, Layout, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { ChevronDown } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { Button } from '@/shared/ui/Button'
+import { Input } from '@/shared/ui/Input'
+import { Textarea } from '@/shared/ui/Textarea'
 import { BackButton } from '@/shared/ui/BackButton'
 import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
 import { toViewerItemsForTarget } from '@/modules/media/mediaViewerItem'
@@ -22,6 +25,99 @@ import { usePlayerProfile } from '@/modules/players/usePlayerProfile'
 import { ConnectedFollowButton } from '@/modules/social/ConnectedFollowButton'
 import { ConnectedReactionBar } from '@/modules/social/ConnectedReactionBar'
 import { SportStatStrip, SportStatTable } from '@/modules/sports'
+import { cn } from '@/lib/utils'
+
+type Player = components['schemas']['Player']
+type AthleteProfile = components['schemas']['AthleteProfile']
+const BASKETBALL_POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'] as const
+
+function ProfileDetailsEditor({
+  canEdit,
+  player,
+  profile,
+  updatePlayer,
+}: {
+  canEdit: boolean
+  player: Player
+  profile: AthleteProfile
+  updatePlayer: ReturnType<typeof usePlayerProfile>['updatePlayer']
+}) {
+  const [bio, setBio] = useState(profile.bio ?? '')
+  const [hometown, setHometown] = useState(profile.hometown ?? '')
+  const [position, setPosition] = useState(player.position ?? '')
+  const [classYear, setClassYear] = useState(player.classYear ?? '')
+  const [jerseyNumber, setJerseyNumber] = useState(player.jerseyNumber?.toString() ?? '')
+  const [heightInches, setHeightInches] = useState(player.heightInches?.toString() ?? '')
+
+  useEffect(() => {
+    setBio(profile.bio ?? '')
+    setHometown(profile.hometown ?? '')
+    setPosition(player.position ?? '')
+    setClassYear(player.classYear ?? '')
+    setJerseyNumber(player.jerseyNumber?.toString() ?? '')
+    setHeightInches(player.heightInches?.toString() ?? '')
+  }, [player.classYear, player.heightInches, player.jerseyNumber, player.position, profile.bio, profile.hometown])
+
+  if (!canEdit && !profile.bio) return null
+
+  if (!canEdit) {
+    return (
+      <View className="px-lg pb-md">
+        <Text>{profile.bio}</Text>
+      </View>
+    )
+  }
+
+  async function save() {
+    await updatePlayer.mutateAsync({
+      bio: bio || undefined,
+      hometown: hometown || undefined,
+      position: position || undefined,
+      classYear: classYear || undefined,
+      jerseyNumber: jerseyNumber ? Number(jerseyNumber) : undefined,
+      heightInches: heightInches ? Number(heightInches) : undefined,
+    })
+  }
+
+  return (
+    <View className="mx-lg mb-md gap-sm rounded-lg border border-border bg-surface p-md">
+      <View>
+        <Text className="font-semibold">Profile details</Text>
+        <Text variant="caption">Quick edits update the public profile after you save.</Text>
+      </View>
+      <Textarea placeholder="Bio" value={bio} onChangeText={setBio} />
+      <Input placeholder="Hometown" value={hometown} onChangeText={setHometown} />
+      <View className="gap-xs">
+        <Text variant="caption">Position</Text>
+        <View className="flex-row gap-sm">
+          {BASKETBALL_POSITIONS.map((value) => {
+            const selected = position === value
+            return (
+              <Pressable
+                key={value}
+                onPress={() => setPosition(value)}
+                className={cn(
+                  'flex-1 items-center rounded-md border px-sm py-sm active:opacity-70',
+                  selected ? 'border-sport-accent bg-sport-accent' : 'border-border bg-canvas'
+                )}
+              >
+                <Text className={cn('font-semibold', selected ? 'text-white' : 'text-text')}>{value}</Text>
+              </Pressable>
+            )
+          })}
+        </View>
+      </View>
+      <View className="flex-row gap-sm">
+        <Input className="flex-1" placeholder="Class year" keyboardType="number-pad" value={classYear} onChangeText={setClassYear} />
+        <Input className="flex-1" placeholder="Jersey" keyboardType="number-pad" value={jerseyNumber} onChangeText={setJerseyNumber} />
+      </View>
+      <View className="flex-row gap-sm">
+        <Input className="flex-1" placeholder="Height inches" keyboardType="number-pad" value={heightInches} onChangeText={setHeightInches} />
+      </View>
+      <Button isLoading={updatePlayer.isPending} onPress={save}>Save Details</Button>
+    </View>
+  )
+}
 
 export function PlayerProfileScreen({ playerId }: { playerId: string }) {
   const profileState = usePlayerProfile(playerId)
@@ -56,7 +152,7 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
     )
   }
 
-  const { games, lastGame, lastGameLine, media, player, profile, season, seasonHighPoints, setTab, stats, tab, tabs } = profileState
+  const { canEditProfile, games, lastGame, lastGameLine, media, player, profile, season, seasonHighPoints, setTab, stats, tab, tabs, updatePlayer } = profileState
   const sport = player.sport?.slug ?? 'basketball'
   const name = `${profile.firstName} ${profile.lastName}`
   const mediaItems = media.map((m) => ({ id: m.id, youtubeVideoId: m.youtubeVideoId, title: m.title }))
@@ -109,6 +205,8 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
           <ConnectedFollowButton targetType="PLAYER" targetId={player.id} />
           <ConnectedReactionBar targetType="PLAYER" targetId={player.id} />
         </View>
+
+        <ProfileDetailsEditor canEdit={canEditProfile} player={player} profile={profile} updatePlayer={updatePlayer} />
 
         {tab === 'Stats' ? (
           <Animated.View entering={FadeIn.duration(200)} layout={Layout.duration(220)} className="px-lg gap-sm">

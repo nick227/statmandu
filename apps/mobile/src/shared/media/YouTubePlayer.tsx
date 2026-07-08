@@ -5,6 +5,7 @@ import { youtubeEmbedUrl } from './youtube'
 export interface YouTubePlayerProps {
   videoId: string
   autoplay?: boolean
+  mounted?: boolean
   className?: string
   style?: ViewStyle
 }
@@ -23,7 +24,9 @@ function WebYouTubePlayer({ src, className, style }: { src: string; className?: 
   )
 }
 
-export function YouTubePlayer({ videoId, autoplay = false, className, style }: YouTubePlayerProps) {
+export function YouTubePlayer({ videoId, autoplay = false, mounted = true, className, style }: YouTubePlayerProps) {
+  if (!mounted) return null
+
   const src = youtubeEmbedUrl(videoId, { autoplay })
 
   if (Platform.OS === 'web') {

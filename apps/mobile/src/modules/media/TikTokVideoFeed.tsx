@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from 'react'
-import { FlatList, View, type ViewToken } from 'react-native'
+import { FlatList, View, useWindowDimensions, type ViewToken } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { components } from '@statman/sdk'
-import { useFilmStageHeight, useFloatingTabBarInset } from '@/lib/videoViewport'
+import { useImmersiveFilmStageHeight } from '@/lib/videoViewport'
 import { TikTokVideoPage } from '@/modules/media/TikTokVideoPage'
 import { Text } from '@/shared/ui/Text'
 
@@ -12,8 +13,9 @@ export interface TikTokVideoFeedProps {
 }
 
 export function TikTokVideoFeed({ items }: TikTokVideoFeedProps) {
-  const pageHeight = useFilmStageHeight()
-  const tabInset = useFloatingTabBarInset()
+  const pageHeight = useImmersiveFilmStageHeight()
+  const { width } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
   const [activeIndex, setActiveIndex] = useState(0)
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 85 }).current
 
@@ -23,7 +25,7 @@ export function TikTokVideoFeed({ items }: TikTokVideoFeedProps) {
   }, [])
 
   return (
-    <View className="flex-1">
+    <View className="flex-1 bg-black" style={{ width }}>
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
@@ -37,11 +39,20 @@ export function TikTokVideoFeed({ items }: TikTokVideoFeedProps) {
         viewabilityConfig={viewabilityConfig}
         getItemLayout={(_, index) => ({ length: pageHeight, offset: pageHeight * index, index })}
         renderItem={({ item, index }) => (
-          <TikTokVideoPage item={item} isActive={index === activeIndex} pageHeight={pageHeight} />
+          <TikTokVideoPage
+            item={item}
+            isActive={index === activeIndex}
+            preload={index === activeIndex + 1}
+            pageHeight={pageHeight}
+          />
         )}
       />
       {items.length > 1 ? (
-        <Text variant="caption" className="absolute inset-x-0 text-center text-white/70" style={{ bottom: tabInset + 8 }}>
+        <Text
+          variant="caption"
+          className="absolute inset-x-0 text-center text-white/60"
+          style={{ bottom: insets.bottom + 12 }}
+        >
           {activeIndex + 1} / {items.length}
         </Text>
       ) : null}

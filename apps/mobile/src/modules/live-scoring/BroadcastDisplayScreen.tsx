@@ -1,4 +1,4 @@
-import { View } from 'react-native'
+import { View, Platform } from 'react-native'
 import { Stack } from 'expo-router'
 import { useSportTheme } from '@/lib/theme'
 import { Text } from '@/shared/ui/Text'
@@ -15,7 +15,7 @@ import { useBroadcastDisplay } from '@/modules/live-scoring/useBroadcastDisplay'
 // backend change: useGameSnapshot already returns score + recentEvents +
 // reporterCount and already polls every 4s.
 export function BroadcastDisplayScreen({ gameId }: { gameId: string }) {
-  const { game, isError, isLoading, recentEvents, reporterCount, score } = useBroadcastDisplay(gameId)
+  const { game, isError, isLoading, recentEvents, reporterCount, score, youtubeVideoId } = useBroadcastDisplay(gameId)
   const sportTheme = useSportTheme(game?.sport?.slug)
 
   if (isError) {
@@ -50,7 +50,22 @@ export function BroadcastDisplayScreen({ gameId }: { gameId: string }) {
     <View className="dark flex-1 bg-canvas" style={sportTheme}>
       <Stack.Screen options={{ headerShown: false, title: 'Broadcast' }} />
 
-      <View className="items-center gap-sm pt-xxl pb-lg px-lg">
+      {youtubeVideoId ? (
+        <View className="w-full aspect-video bg-black items-center justify-center">
+          {Platform.OS === 'web' ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=1`}
+              style={{ width: '100%', height: '100%', border: 0 }}
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          ) : (
+            <Text className="text-white text-lg font-bold">YouTube Broadcast: Available on Web</Text>
+          )}
+        </View>
+      ) : null}
+
+      <View className={youtubeVideoId ? "items-center gap-sm pt-md pb-md px-lg" : "items-center gap-sm pt-xxl pb-lg px-lg"}>
         <View className="flex-row items-center gap-md">
           <GameStatusBadge status={game.status} />
           <ReporterPresencePill count={reporterCount} />
