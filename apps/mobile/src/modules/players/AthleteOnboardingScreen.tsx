@@ -117,13 +117,14 @@ export function AthleteOnboardingScreen() {
           <View className="gap-sm">
             <Badge tone="verified" icon={ShieldCheck}>Ownership</Badge>
             <Textarea placeholder="Verification note, coach contact, or source link" value={wizard.proofNote} onChangeText={wizard.setProofNote} />
+            <Text variant="caption">Use this as a private checklist before publishing. Team verification tools come later.</Text>
           </View>
         ) : null}
 
         {wizard.step === 'Media' ? (
           <View className="gap-sm">
             <Input placeholder="YouTube highlight URL" autoCapitalize="none" value={wizard.mediaUrl} onChangeText={wizard.setMediaUrl} />
-            <Text variant="caption">Media attachment comes next; this first pass saves the athlete profile.</Text>
+            <Text variant="caption">This video attaches to the profile when you publish.</Text>
           </View>
         ) : null}
 
@@ -133,13 +134,16 @@ export function AthleteOnboardingScreen() {
             <Text className="font-semibold">{wizard.name || 'Your athlete profile'}</Text>
             <Text variant="caption">{[wizard.position, wizard.classYear ? `Class of ${wizard.classYear}` : null, wizard.hometown].filter(Boolean).join(' · ')}</Text>
             {wizard.bio ? <Text>{wizard.bio}</Text> : null}
+            {wizard.teamName ? <Text variant="caption">{`Team note: ${wizard.teamName}`}</Text> : null}
+            {wizard.mediaUrl ? <Text variant="caption">Highlight video will be attached.</Text> : null}
+            {wizard.publishError ? <Text className="text-live">{wizard.publishError.message}</Text> : null}
           </View>
         ) : null}
 
         <View className="flex-row gap-sm pt-sm">
           <Button variant="secondary" className="flex-1" disabled={!wizard.canGoBack} onPress={wizard.goBack}>Back</Button>
           {wizard.isLastStep ? (
-            <Button className="flex-1" isLoading={wizard.createPlayer.isPending} disabled={!wizard.name.trim()} onPress={wizard.publish}>Publish</Button>
+            <Button className="flex-1" isLoading={wizard.isPublishing} disabled={!wizard.name.trim()} onPress={wizard.publish}>Publish</Button>
           ) : (
             <Button className="flex-1" onPress={wizard.goNext}>Next</Button>
           )}

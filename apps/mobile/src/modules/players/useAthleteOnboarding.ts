@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Platform } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { useCreatePlayer } from '@statman/sdk'
+import { useAttachYouTubeMedia, useCreatePlayer } from '@statman/sdk'
 
 const STEPS = ['Identity', 'Sport Fit', 'Team', 'Proof', 'Media', 'Preview'] as const
 
@@ -23,9 +23,17 @@ function splitName(name: string) {
   }
 }
 
+function optionalBoundedNumber(value: string, min: number, max: number) {
+  if (!value.trim()) return undefined
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return undefined
+  return Math.min(max, Math.max(min, Math.round(parsed)))
+}
+
 export function useAthleteOnboarding() {
   const router = useRouter()
   const createPlayer = useCreatePlayer()
+  const attachMedia = useAttachYouTubeMedia()
   const [stepIndex, setStepIndex] = useState(0)
   const [name, setName] = useState('')
   const [hometown, setHometown] = useState('')
@@ -37,6 +45,9 @@ export function useAthleteOnboarding() {
   const [teamName, setTeamName] = useState('')
   const [proofNote, setProofNote] = useState('')
   const [mediaUrl, setMediaUrl] = useState('')
+  const [createdPlayerId, setCreatedPlayerId] = useState<string | null>(null)
+  const [createdPlayerName, setCreatedPlayerName] = useState<string | null>(null)
+  const [mediaAttached, setMediaAttached] = useState(false)
 
   const step = STEPS[stepIndex]
   const canGoBack = stepIndex > 0
@@ -70,18 +81,37 @@ export function useAthleteOnboarding() {
 
   async function publish() {
     const { firstName, lastName } = splitName(name)
-    const result = await createPlayer.mutateAsync({
-      firstName,
-      lastName,
-      sportSlug: 'basketball',
-      bio: bio || undefined,
-      hometown: hometown || undefined,
-      position: position ?? undefined,
-      classYear: classYear || undefined,
-      jerseyNumber: jerseyNumber ? Number(jerseyNumber) : undefined,
-      heightInches,
-    })
-    router.replace({ pathname: '/players/[playerId]', params: { playerId: result.data.id } })
+    let playerId = createdPlayerId
+    let playerName = createdPlayerName
+
+    if (!playerId) {
+      const result = await createPlayer.mutateAsync({
+        firstName,
+        lastName,
+        sportSlug: 'basketball',
+        bio: bio || undefined,
+        hometown: hometown || undefined,
+        position: position ?? undefined,
+        classYear: classYear || undefined,
+        jerseyNumber: optionalBoundedNumber(jerseyNumber, 0, 99),
+        heightInches,
+      })
+      playerId = result.data.id
+      playerName = `${firstName} ${lastName}`
+      setCreatedPlayerId(playerId)
+      setCreatedPlayerName(playerName)
+    }
+
+    if (mediaUrl.trim() && !mediaAttached) {
+      await attachMedia.mutateAsync({
+        targetType: 'PLAYER',
+        targetId: playerId,
+        youtubeUrl: mediaUrl.trim(),
+        title: `${playerName ?? `${firstName} ${lastName}`} highlight`,
+      })
+      setMediaAttached(true)
+    }
+    router.replace({ pathname: '/players/[playerId]', params: { playerId } })
   }
 
   return {
@@ -89,7 +119,10 @@ export function useAthleteOnboarding() {
     canGoBack,
     classYear,
     completion,
+    isPublishing: createPlayer.isPending || attachMedia.isPending,
+    publishError: createPlayer.error ?? attachMedia.error,
     createPlayer,
+    attachMedia,
     goBack,
     goNext,
     heightInches,

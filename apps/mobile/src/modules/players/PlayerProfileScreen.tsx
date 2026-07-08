@@ -13,6 +13,7 @@ import { Textarea } from '@/shared/ui/Textarea'
 import { BackButton } from '@/shared/ui/BackButton'
 import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
 import { toViewerItemsForTarget } from '@/modules/media/mediaViewerItem'
+import { ConnectedImageUploadButton } from '@/modules/media/ConnectedImageUploadButton'
 import { Screen } from '@/shared/layout'
 import { useNativeColor, useSportTheme } from '@/lib/theme'
 import { EntityProfileShell } from '@/shared/layout/entity-profile/EntityProfileShell'
@@ -30,6 +31,13 @@ import { cn } from '@/lib/utils'
 type Player = components['schemas']['Player']
 type AthleteProfile = components['schemas']['AthleteProfile']
 const BASKETBALL_POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'] as const
+
+function optionalBoundedNumber(value: string, min: number, max: number) {
+  if (!value.trim()) return undefined
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return undefined
+  return Math.min(max, Math.max(min, Math.round(parsed)))
+}
 
 function ProfileDetailsEditor({
   canEdit,
@@ -74,8 +82,8 @@ function ProfileDetailsEditor({
       hometown: hometown || undefined,
       position: position || undefined,
       classYear: classYear || undefined,
-      jerseyNumber: jerseyNumber ? Number(jerseyNumber) : undefined,
-      heightInches: heightInches ? Number(heightInches) : undefined,
+      jerseyNumber: optionalBoundedNumber(jerseyNumber, 0, 99),
+      heightInches: optionalBoundedNumber(heightInches, 40, 100),
     })
   }
 
@@ -85,6 +93,7 @@ function ProfileDetailsEditor({
         <Text className="font-semibold">Profile details</Text>
         <Text variant="caption">Quick edits update the public profile after you save.</Text>
       </View>
+      <ConnectedImageUploadButton targetType="PLAYER" targetId={player.id} usage="AVATAR" label="Upload Profile Image" />
       <Textarea placeholder="Bio" value={bio} onChangeText={setBio} />
       <Input placeholder="Hometown" value={hometown} onChangeText={setHometown} />
       <View className="gap-xs">
@@ -167,6 +176,12 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
       ? { text: positionAndTeam, onPress: () => router.push({ pathname: '/teams/[teamId]', params: { teamId: currentTeam.id } }) }
       : positionAndTeam
     : null
+  const heightLabel = player.heightInches ? `${Math.floor(player.heightInches / 12)}'${player.heightInches % 12}"` : null
+  const vitals = [
+    player.jerseyNumber != null ? { label: 'Jersey', value: `#${player.jerseyNumber}` } : null,
+    heightLabel ? { label: 'Height', value: heightLabel } : null,
+    player.classYear ? { label: 'Class', value: player.classYear.toLowerCase().startsWith('class') ? player.classYear.replace(/^class of\s*/i, '') : player.classYear } : null,
+  ].filter(Boolean) as Array<{ label: string; value: string }>
 
   function handleShare() {
     const headline = stats.map((s) => `${s.value} ${s.label}`).join(' · ')
@@ -205,6 +220,17 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
           <ConnectedFollowButton targetType="PLAYER" targetId={player.id} />
           <ConnectedReactionBar targetType="PLAYER" targetId={player.id} />
         </View>
+
+        {vitals.length > 0 ? (
+          <View className="flex-row gap-sm px-lg pb-md">
+            {vitals.map((item) => (
+              <View key={item.label} className="flex-1 rounded-md border border-border bg-surface px-sm py-sm">
+                <Text variant="caption">{item.label}</Text>
+                <Text className="font-semibold">{item.value}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         <ProfileDetailsEditor canEdit={canEditProfile} player={player} profile={profile} updatePlayer={updatePlayer} />
 

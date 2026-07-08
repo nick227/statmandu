@@ -29,7 +29,7 @@ Athletes want exposure, confidence, and a profile that looks legitimate. Statman
 - Explore: serious research, rankings, filters, search, comparisons.
 - Enter: live/post-game stat capture and media updates.
 - Teams: team management and roster support.
-- Me: athlete/account/profile controls.
+- Me: neutral account hub with unlocked profile, activity, role, and management tools.
 
 ## Core features
 
@@ -56,6 +56,16 @@ Entity pages support players, teams, games, leagues, schools, seasons, and tourn
 - Media tab.
 - Source/dispute tab.
 - Follow, react, share, claim/update actions.
+- Low-stress inline editing for claimed athletes.
+- Optional Lightning Wizard for claim, create, and profile completion.
+
+### Account and access model
+
+- Accounts start neutral rather than locked to a permanent user type.
+- Users unlock tools through claims, follows, team roles, and reporter assignments.
+- Public users can browse and spectate without login.
+- Login is required for profile ownership and team management.
+- Role-specific tools appear only when the user has the relevant capability.
 
 ### Live game stat capture
 
@@ -66,6 +76,7 @@ Entity pages support players, teams, games, leagues, schools, seasons, and tourn
 - Broadcaster mode.
 - End-of-game reconciliation.
 - Disputed stat footnotes when consensus cannot be reached.
+- Scorekeeping and athlete onboarding share a Rapid Capture UX family: big tiles, sheets, haptics, autosave, and preview.
 
 ### Social and growth
 

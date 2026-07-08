@@ -39,6 +39,7 @@ export function useAttachYouTubeMedia() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['media', variables.targetType, variables.targetId] })
       queryClient.invalidateQueries({ queryKey: ['media', 'recent'] })
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
     },
   })
 }

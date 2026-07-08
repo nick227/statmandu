@@ -67,6 +67,54 @@
 └─────────────────────────────┘
 ```
 
+## Athlete Lightning Wizard
+
+```txt
+┌─────────────────────────────┐
+│ Build Profile        3 of 6 │
+│ Sport Fit                   │
+├─────────────────────────────┤
+│ LIVE PROFILE PREVIEW        │
+│ Jayden Rios                 │
+│ Guard · Class of 2027       │
+│ Profile strength: 62%       │
+├─────────────────────────────┤
+│ Position                    │
+│ [PG] [SG] [SF] [PF] [C]     │
+├─────────────────────────────┤
+│ Height                      │
+│       6'1"                  │
+│  [ - ]             [ + ]    │
+├─────────────────────────────┤
+│ Back                  Next  │
+└─────────────────────────────┘
+```
+
+## Neutral Me hub
+
+```txt
+┌─────────────────────────────┐
+│ Avatar  Sam Rivera          │
+│ @samrivera                  │
+├─────────────────────────────┤
+│ Your Profiles               │
+│ Claim/Create athlete card   │
+│ Claimed profile, if any     │
+├─────────────────────────────┤
+│ Your Roles                  │
+│ Team scorer assignments     │
+│ Reporter/game assignments   │
+├─────────────────────────────┤
+│ Activity                    │
+│ Follows · Reactions         │
+│ Corrections · Spectated     │
+├─────────────────────────────┤
+│ Management                  │
+│ Team/roster/admin tools     │
+│ shown only when unlocked    │
+└─────────────────────────────┘
+```
+
 ## Spectator mode
 
 ```txt

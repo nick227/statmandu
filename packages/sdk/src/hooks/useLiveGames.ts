@@ -89,10 +89,29 @@ export function useGameSnapshot(gameId: string) {
   })
 }
 
+export function useCreateGameReaction(gameId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: { deviceId: string; type: string }) => {
+      const { data, error, response } = await getApiClient().POST('/games/{gameId}/reactions', {
+        params: { path: { gameId } },
+        body: body as any,
+      })
+      if (error) throw new ApiError(response.status, (error as any).error)
+      return data!
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['game', gameId, 'snapshot'] })
+    },
+  })
+}
+
 // Full play-by-play — distinct from useGameSnapshot (last 20, live-polling
-// only). Works for any game status and doesn't poll, since a finalized
-// recap is static.
-export function useGameEvents(gameId: string) {
+// only). Works for any game status. Doesn't poll by default since a
+// finalized recap is static; pass { poll: true } for a live game (e.g. to
+// derive running foul/bonus totals from the complete log, where the
+// snapshot's last-20 cap isn't reliable over a full game).
+export function useGameEvents(gameId: string, options?: { poll?: boolean }) {
   return useQuery({
     queryKey: ['game', gameId, 'events'],
     queryFn: async () => {
@@ -103,6 +122,7 @@ export function useGameEvents(gameId: string) {
       return data!
     },
     enabled: Boolean(gameId),
+    ...(options?.poll ? { refetchInterval: 4000 } : {}),
   })
 }
 

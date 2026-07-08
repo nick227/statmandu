@@ -14,6 +14,20 @@ export function useCurrentUser() {
   })
 }
 
+export function useMeCapabilities(opts: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ['me-capabilities'],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET('/auth/me/capabilities')
+      if (error) throw new ApiError(response.status, (error as any).error)
+      return data!
+    },
+    enabled: opts.enabled ?? true,
+    retry: false,
+    staleTime: 60_000,
+  })
+}
+
 export function useLogin() {
   const queryClient = useQueryClient()
   return useMutation({

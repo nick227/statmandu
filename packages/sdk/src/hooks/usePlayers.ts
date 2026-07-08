@@ -60,6 +60,7 @@ export function useCreatePlayer() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['players'] })
+      queryClient.invalidateQueries({ queryKey: ['me-capabilities'] })
     },
   })
 }
