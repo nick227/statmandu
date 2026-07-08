@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react'
-import { Alert, Image, Pressable, ScrollView, View } from 'react-native'
-import * as ImagePicker from 'expo-image-picker'
-import type { components } from '@statman/sdk'
-import { useRouter } from 'expo-router'
+import { useCallback, useState } from 'react'
+import { Image, Pressable, ScrollView, View } from 'react-native'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Screen } from '@/shared/layout/Screen'
 import { Text } from '@/shared/ui/Text'
 import { Input } from '@/shared/ui/Input'
 import { Button } from '@/shared/ui/Button'
+import { LoadingState } from '@/shared/ui/LoadingState'
+import { ErrorState } from '@/shared/ui/ErrorState'
 import { cn } from '@/lib/utils'
 import { CardBuilderStepShell } from './CardBuilderStepShell'
 import { useCardBuilderState } from './useCardBuilderState'
@@ -16,43 +16,39 @@ import { CardPreviewStage } from './CardPreviewStage'
 import { CardReleasePicker } from './CardReleasePicker'
 import { useCardStudioSdk } from './useCardStudioSdk'
 import { useCardBuilderData } from './useCardBuilderData'
+import { useCardStudioBootstrap } from './useCardStudioBootstrap'
+import type { CardBuilderState } from './cardBuilderTypes'
+import type { components } from '@statman/sdk'
 
-type Player = components['schemas']['Player']
-type ImageAsset = components['schemas']['ImageAsset']
-
+type Card = components['schemas']['Card']
 type BuilderStep = 'subject' | 'photo' | 'type' | 'style' | 'preview' | 'release' | 'publish'
 
 const STEPS: BuilderStep[] = ['subject', 'photo', 'type', 'style', 'preview', 'release', 'publish']
 
-function supportedContentType(value?: string): 'image/jpeg' | 'image/png' | 'image/webp' {
-  if (value === 'image/png' || value === 'image/webp') return value
-  return 'image/jpeg'
-}
-
-function athleteName(player?: Player | null) {
-  const profile = player?.athleteProfile
-  return profile ? `${profile.firstName} ${profile.lastName}` : null
-}
-
-function teamName(player?: Player | null) {
-  return player?.currentTeam?.name ?? player?.sport?.name ?? null
-}
-
 export function CardBuilderScreen() {
   const router = useRouter()
-  const { state, updateState } = useCardBuilderState()
+  const params = useLocalSearchParams<{ cardId?: string }>()
+  const cardId = typeof params.cardId === 'string' ? params.cardId : undefined
+  const { state, setState, updateState } = useCardBuilderState()
   const studio = useCardStudioSdk()
+  const { setSavedCard } = studio
+  const builderData = useCardBuilderData(state, updateState)
   const [stepIndex, setStepIndex] = useState(0)
 
-  const step = STEPS[stepIndex]
+  const onLoadExisting = useCallback(
+    (card: Card, nextState: CardBuilderState) => {
+      setSavedCard(card)
+      setState(nextState)
+      // Jump past subject/photo when the draft already has both.
+      setStepIndex(nextState.sourceImageAssetId ? 2 : nextState.athleteProfileId ? 1 : 0)
+    },
+    [setSavedCard, setState],
+  )
 
-  const [athleteQuery, setAthleteQuery] = useState('')
-  const data = useCardBuilderData({ athleteQuery, athleteProfileId: state.athleteProfileId })
-  const players = data.players
-  const selectedPlayer = useMemo(() => data.findDefaultPlayer(state.athleteProfileId), [data, state.athleteProfileId])
-  const gallery = data.gallery
-  const galleryQuery = data.galleryQuery
-  const uploadImage = data.uploadImage
+  const bootstrap = useCardStudioBootstrap(cardId, onLoadExisting)
+
+  const step = STEPS[stepIndex]
+  const isBusy = studio.isBusy || builderData.isUploading
 
   function next() {
     setStepIndex((v) => Math.min(v + 1, STEPS.length - 1))
@@ -62,85 +58,58 @@ export function CardBuilderScreen() {
     setStepIndex((v) => Math.max(v - 1, 0))
   }
 
-  async function pickAndUploadPhoto() {
-    if (!state.athleteProfileId) {
-      Alert.alert('Select athlete', 'Choose an athlete before adding a gallery photo.')
-      return
-    }
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!permission.granted) {
-      Alert.alert('Photo access needed', 'Photo library access is needed to choose an image.')
-      return
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9, allowsEditing: false })
-    if (result.canceled) return
-    const asset = result.assets[0]
-    if (!asset?.uri) return
-
-    const uploaded = await uploadImage.mutateAsync({
-      targetType: 'ATHLETE_PROFILE',
-      targetId: state.athleteProfileId,
-      usage: 'GALLERY',
-      contentType: supportedContentType(asset.mimeType),
-      file: {
-        uri: asset.uri,
-        name: asset.fileName ?? `card-gallery.${supportedContentType(asset.mimeType).split('/')[1]}`,
-        type: supportedContentType(asset.mimeType),
-      },
-      originalFilename: asset.fileName ?? undefined,
-      width: asset.width,
-      height: asset.height,
-    })
-
-    const image = uploaded.data as ImageAsset
-    updateState({ sourceImageAssetId: image.id, sourceImageUrl: image.url })
+  if (bootstrap.isLoading) {
+    return (
+      <Screen title="Card Studio" withBack>
+        <LoadingState label="Loading card" />
+      </Screen>
+    )
   }
 
-  const selectedGalleryImage = useMemo(() => gallery.find((g) => g.id === state.sourceImageAssetId) ?? null, [gallery, state.sourceImageAssetId])
+  if (bootstrap.isError) {
+    return (
+      <Screen title="Card Studio" withBack>
+        <ErrorState message="This card couldn't be loaded for editing." />
+      </Screen>
+    )
+  }
 
-  const isBusy = studio.isBusy || uploadImage.isPending
+  if (bootstrap.isLocked) {
+    return (
+      <Screen title="Card Studio" withBack scroll contentClassName="gap-md p-lg">
+        <ErrorState message="Published cards can't be reopened in the studio." />
+        <Button variant="secondary" onPress={() => router.replace('/cards')}>
+          Back to Trading Cards
+        </Button>
+      </Screen>
+    )
+  }
 
   if (step === 'subject') {
     return (
-      <Screen title="Card Studio">
+      <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Choose Subject"
           description="Who is this card for?"
           onNext={() => {
-            const player = selectedPlayer
-            if (!player?.athleteProfileId) return
-            updateState({
-              athleteProfileId: player.athleteProfileId,
-              athleteName: athleteName(player),
-              athleteTeamName: teamName(player),
-            })
-            next()
+            if (builderData.selectDefaultPlayer()) next()
           }}
           onBack={undefined}
-          isNextDisabled={!selectedPlayer?.athleteProfileId}
+          isNextDisabled={!builderData.hasSelectablePlayer}
         >
           <View className="gap-md">
-            <Input value={athleteQuery} onChangeText={setAthleteQuery} placeholder="Search athletes" />
+            <Input value={builderData.athleteQuery} onChangeText={builderData.setAthleteQuery} placeholder="Search athletes" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-              {players.map((player) => {
-                const selected = player.athleteProfileId === state.athleteProfileId || (!state.athleteProfileId && player.id === selectedPlayer?.id)
-                return (
-                  <Pressable
-                    key={player.id}
-                    onPress={() =>
-                      updateState({
-                        athleteProfileId: player.athleteProfileId,
-                        athleteName: athleteName(player),
-                        athleteTeamName: teamName(player),
-                      })
-                    }
-                    className={cn('min-w-44 rounded-md border p-sm', selected ? 'border-brand bg-brand/10' : 'border-border bg-canvas')}
-                  >
-                    <Text className={cn('font-semibold', selected ? 'text-brand' : 'text-text')}>{athleteName(player) ?? 'Athlete'}</Text>
-                    <Text variant="caption" numberOfLines={1}>{teamName(player) ?? 'Athlete profile'}</Text>
-                  </Pressable>
-                )
-              })}
+              {builderData.playerOptions.map((player) => (
+                <Pressable
+                  key={player.id}
+                  onPress={() => builderData.selectPlayer(player)}
+                  className={cn('min-w-44 rounded-md border p-sm', player.selected ? 'border-brand bg-brand/10' : 'border-border bg-canvas')}
+                >
+                  <Text className={cn('font-semibold', player.selected ? 'text-brand' : 'text-text')}>{player.name}</Text>
+                  <Text variant="caption" numberOfLines={1}>{player.teamName}</Text>
+                </Pressable>
+              ))}
             </ScrollView>
           </View>
         </CardBuilderStepShell>
@@ -150,7 +119,7 @@ export function CardBuilderScreen() {
 
   if (step === 'photo') {
     return (
-      <Screen title="Card Studio">
+      <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Select Photo"
           description="Choose the main image for the card."
@@ -159,11 +128,11 @@ export function CardBuilderScreen() {
           isNextDisabled={!state.sourceImageUrl}
         >
           <View className="gap-md">
-            <Button variant="secondary" isLoading={uploadImage.isPending} onPress={pickAndUploadPhoto}>
+            <Button variant="secondary" isLoading={builderData.isUploading} onPress={builderData.pickAndUploadPhoto}>
               Upload to gallery
             </Button>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-              {gallery.map((image) => {
+              {builderData.gallery.map((image) => {
                 const selected = image.id === state.sourceImageAssetId
                 return (
                   <Pressable
@@ -176,8 +145,8 @@ export function CardBuilderScreen() {
                 )
               })}
             </ScrollView>
-            {galleryQuery.isLoading ? <Text variant="caption">Loading gallery…</Text> : null}
-            {galleryQuery.isError ? <Text variant="caption">Gallery couldn’t be loaded.</Text> : null}
+            {builderData.galleryQuery.isLoading ? <Text variant="caption">Loading gallery...</Text> : null}
+            {builderData.galleryQuery.isError ? <Text variant="caption">Gallery couldn't be loaded.</Text> : null}
           </View>
         </CardBuilderStepShell>
       </Screen>
@@ -186,7 +155,7 @@ export function CardBuilderScreen() {
 
   if (step === 'type') {
     return (
-      <Screen title="Card Studio">
+      <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Card Type"
           description="What kind of card are you creating?"
@@ -202,7 +171,7 @@ export function CardBuilderScreen() {
 
   if (step === 'style') {
     return (
-      <Screen title="Card Studio">
+      <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Card Style"
           description="Choose a visual preset."
@@ -218,7 +187,7 @@ export function CardBuilderScreen() {
 
   if (step === 'preview') {
     return (
-      <Screen title="Card Studio">
+      <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Preview"
           description="Flip the card and make sure everything looks right."
@@ -252,7 +221,7 @@ export function CardBuilderScreen() {
 
   if (step === 'release') {
     return (
-      <Screen title="Card Studio">
+      <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Release Settings"
           description="How should this card be released?"
@@ -271,32 +240,42 @@ export function CardBuilderScreen() {
     )
   }
 
+  const isDraft = state.release === 'draft'
+
   return (
-    <Screen title="Card Studio">
+    <Screen title="Card Studio" withBack>
       <CardBuilderStepShell
-        title="Ready to Publish"
-        description="Your draft will be created/updated, generated, then published."
+        title={isDraft ? 'Save Draft' : 'Ready to Publish'}
+        description={
+          isDraft
+            ? 'Saves your studio work privately — generate & publish later from Trading Cards.'
+            : 'Create/update the draft, generate artwork, then publish for fans to claim.'
+        }
         onNext={async () => {
           const result = await studio.publish(state)
-          if (result?.id) router.replace({ pathname: '/cards/[cardId]', params: { cardId: result.id } })
+          if (!result?.id) return
+          if (isDraft) {
+            router.replace('/cards')
+            return
+          }
+          router.replace({ pathname: '/cards/[cardId]', params: { cardId: result.id } })
         }}
         onBack={back}
-        nextLabel={state.release === 'draft' ? 'Save Draft' : 'Publish Card'}
+        nextLabel={isDraft ? 'Save Draft' : 'Generate & Publish'}
         isLoading={isBusy}
       >
         <View className="gap-md">
           <CardPreviewStage state={state} isLoading={isBusy} />
-          <View className="gap-sm p-md bg-surface border border-white/5 rounded-lg">
+          <View className="gap-sm rounded-lg border border-border bg-surface p-md">
             <Text className="text-center font-bold text-text">Summary</Text>
             <Text className="text-center text-muted-text">Athlete: {state.athleteName ?? '—'}</Text>
             <Text className="text-center text-muted-text">Type: {state.cardType}</Text>
             <Text className="text-center text-muted-text">Style: {state.stylePreset}</Text>
             <Text className="text-center text-muted-text">Release: {state.release}</Text>
-            {selectedGalleryImage?.url ? <Text className="text-center text-muted-text">Photo: selected</Text> : null}
+            {state.sourceImageUrl ? <Text className="text-center text-muted-text">Photo: selected</Text> : null}
           </View>
         </View>
       </CardBuilderStepShell>
     </Screen>
   )
 }
-

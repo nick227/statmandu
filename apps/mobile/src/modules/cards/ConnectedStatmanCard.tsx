@@ -2,6 +2,7 @@ import { Link } from 'expo-router'
 import type { components } from '@statman/sdk'
 import { StatmanCard, type StatmanCardSize } from './StatmanCard'
 import { ConnectedCardClaimButton } from './ConnectedCardClaimButton'
+import { isEditableCardStatus } from './builder/cardFromApi'
 
 type Card = components['schemas']['Card']
 
@@ -10,16 +11,29 @@ export interface ConnectedStatmanCardProps {
   size?: StatmanCardSize
   /** Owner-only context (draft/generating/failed) — passed through to StatmanCard. */
   showStatus?: boolean
+  /** When true, unfinished owned cards open Card Studio instead of the public detail page. */
+  editInStudio?: boolean
   className?: string
 }
 
-// StatmanCard wired to navigation and (only at "featured" size, where a
-// direct CTA makes sense — see CardDropSection) an inline claim action.
-// Rail-sized tiles stay purely navigational: "CTA should drive back to
-// athlete profile/card detail, not generic feed" per the module brief.
-export function ConnectedStatmanCard({ card, size = 'rail', showStatus = false, className }: ConnectedStatmanCardProps) {
+export function ConnectedStatmanCard({
+  card,
+  size = 'rail',
+  showStatus = false,
+  editInStudio = false,
+  className,
+}: ConnectedStatmanCardProps) {
+  const openStudio = editInStudio && showStatus && isEditableCardStatus(card.status)
+
   return (
-    <Link href={{ pathname: '/cards/[cardId]', params: { cardId: card.id } }} asChild>
+    <Link
+      href={
+        openStudio
+          ? ({ pathname: '/cards/studio', params: { cardId: card.id } } as never)
+          : ({ pathname: '/cards/[cardId]', params: { cardId: card.id } } as never)
+      }
+      asChild
+    >
       <StatmanCard
         card={card}
         size={size}

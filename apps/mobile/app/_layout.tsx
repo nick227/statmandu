@@ -1,6 +1,5 @@
 import '../global.css'
 
-import { useEffect, useState } from 'react'
 import { Stack } from 'expo-router'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -22,6 +21,8 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="cards/studio" />
+            <Stack.Screen name="cards/[cardId]" />
             <Stack.Screen name="login" options={{ presentation: 'modal', headerShown: true, title: 'Sign In' }} />
             <Stack.Screen name="register" options={{ presentation: 'modal', headerShown: true, title: 'Create Account' }} />
           </Stack>

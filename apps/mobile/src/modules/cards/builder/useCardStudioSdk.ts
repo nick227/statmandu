@@ -90,9 +90,9 @@ export function useCardStudioSdk() {
     const card = savedCard ?? (await saveDraft(state))
     if (!card) return null
 
+    // Private draft stops after save — no generate/publish pipeline.
     if (state.release === 'draft') {
-      Alert.alert('Choose release', 'Select a public release before publishing.')
-      return null
+      return card
     }
 
     const generated = card.frontImage?.url ? card : await generate(card.id)

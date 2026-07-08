@@ -40,7 +40,7 @@ export function useCard(cardId: string) {
   })
 }
 
-export function useMyCards() {
+export function useMyCards(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['cards', 'mine'],
     queryFn: async () => {
@@ -48,6 +48,7 @@ export function useMyCards() {
       if (error) throw new ApiError(response.status, (error as any).error)
       return data!
     },
+    enabled: options?.enabled ?? true,
   })
 }
 
