@@ -1,143 +1,123 @@
-import { View } from 'react-native'
-import { Sparkles } from 'lucide-react-native'
-import { useRouter } from 'expo-router'
-import { Screen } from '@/shared/layout/Screen'
-import { ContentSection } from '@/shared/layout/ContentSection'
-import { LoadingState } from '@/shared/ui/LoadingState'
+import { FlatList, View, useWindowDimensions } from 'react-native'
+import { CreditCard } from 'lucide-react-native'
+import { PageFrame, Screen } from '@/shared/layout'
+import { LAYOUT } from '@/shared/layout/layoutConstants'
+import { Skeleton } from '@/shared/ui/Skeleton'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
-import { Button } from '@/shared/ui/Button'
 import { Text } from '@/shared/ui/Text'
-import { SignInPrompt } from '@/shared/ui/SignInPrompt'
-import { CardRail } from '@/modules/cards/CardRail'
-import { ConnectedCardDropSection } from '@/modules/cards/ConnectedCardDropSection'
+import { ConnectedStatmanCard } from '@/modules/cards/ConnectedStatmanCard'
+import { CardsSidebar, partitionOwnedCards } from '@/modules/cards/CardsSidebar'
+import { useCardsBrowse } from '@/modules/cards/useCardsBrowse'
 import { useCardManager } from '@/modules/cards/useCardManager'
 import { useAuthGate } from '@/modules/auth/useAuthGate'
-import { isEditableCardStatus } from '@/modules/cards/builder/cardFromApi'
-import { CARD_TYPES } from '@/modules/cards/builder/builderConstants'
 
-function SectionLabel({ children }: { children: string }) {
-  return <Text variant="statLabel" className="px-xs text-muted-text">{children}</Text>
-}
-
-function StudioHero({ onOpen }: { onOpen: () => void }) {
-  return (
-    <View className="gap-md overflow-hidden rounded-md border border-border bg-surface p-md">
-      <View className="h-1 bg-sport-accent" />
-      <View className="gap-xs">
-        <Text variant="kicker">Card Studio</Text>
-        <Text className="text-xl font-bold text-text">Build a Statman Card</Text>
-        <Text variant="caption">
-          Pick an athlete, photo, type, and style — then generate collectible artwork fans can claim.
-        </Text>
-      </View>
-      <View className="flex-row flex-wrap gap-xs">
-        {CARD_TYPES.slice(0, 4).map((type) => (
-          <View key={type.value} className="rounded-sm border border-border bg-canvas px-sm py-xs">
-            <Text variant="statLabel" className="text-muted-text">{type.label}</Text>
-          </View>
-        ))}
-      </View>
-      <Button onPress={onOpen}>Open Card Studio</Button>
-    </View>
-  )
+function browseColumns(width: number) {
+  if (width >= LAYOUT.wideBreakpoint) return 3
+  if (width >= 640) return 2
+  return 1
 }
 
 export function CardManagerScreen() {
-  const router = useRouter()
+  const { width } = useWindowDimensions()
+  const columns = browseColumns(width)
   const { isAuthenticated, isAuthLoading } = useAuthGate()
-  const manager = useCardManager(isAuthenticated)
+  const browse = useCardsBrowse()
+  const manager = useCardManager(isAuthenticated && !isAuthLoading)
+  const { inProgress } = partitionOwnedCards(manager.createdCards)
 
-  const openStudio = () => router.push('/cards/studio')
+  const sidebar = (
+    <CardsSidebar
+      filter={browse.filter}
+      onFilterChange={browse.setFilter}
+      isAuthenticated={isAuthenticated}
+      inProgress={inProgress}
+      claimed={manager.claimedCards}
+    />
+  )
 
-  if (isAuthLoading) {
+  if (browse.isError) {
     return (
       <Screen title="Trading Cards" insetTop={false}>
-        <LoadingState label="Loading" />
+        <PageFrame
+          main={<ErrorState message="Trading cards couldn't be loaded." />}
+          sidebar={sidebar}
+          narrowSidebar="below"
+        />
       </Screen>
     )
   }
 
-  if (!isAuthenticated) {
-    return (
-      <Screen title="Trading Cards" scroll contentClassName="gap-lg px-md pb-xxl" insetTop={false}>
-        <StudioHero onOpen={() => router.push('/login')} />
-        <ConnectedCardDropSection />
-        <View className="gap-md rounded-md border border-border bg-surface p-md">
-          <Text className="font-bold">Sign in to create & manage cards</Text>
-          <Text variant="caption">
-            Card Studio saves drafts to your account, generates artwork, and publishes drops you can claim later.
-          </Text>
-          <SignInPrompt message="Sign in to use Card Studio" className="items-center py-sm" />
-        </View>
-      </Screen>
-    )
-  }
-
-  if (manager.isError) {
-    return (
-      <Screen title="Trading Cards" insetTop={false} contentClassName="px-md">
-        <ErrorState message="Your cards couldn't be loaded." />
-        <Button className="mt-md" variant="secondary" onPress={openStudio}>
-          Open Card Studio anyway
-        </Button>
-      </Screen>
-    )
-  }
-
-  if (manager.isLoading) {
+  if (browse.isLoading || isAuthLoading) {
     return (
       <Screen title="Trading Cards" insetTop={false}>
-        <LoadingState label="Loading cards" />
+        <PageFrame
+          main={
+            <View className="gap-md">
+              <Skeleton className="h-80 w-full rounded-lg" />
+              <View className="flex-row gap-md">
+                {[0, 1].map((i) => (
+                  <Skeleton key={i} className="h-56 flex-1 rounded-lg" />
+                ))}
+              </View>
+            </View>
+          }
+          sidebar={sidebar}
+          narrowSidebar="below"
+        />
       </Screen>
     )
   }
 
-  const inProgress = manager.createdCards.filter((card) => isEditableCardStatus(card.status))
-  const published = manager.createdCards.filter((card) => card.status === 'PUBLISHED')
-  const hasInventory = manager.createdCards.length > 0 || manager.claimedCards.length > 0
+  const gridCards = browse.featured ? browse.rest : browse.cards
 
   return (
-    <Screen title="Trading Cards" scroll contentClassName="gap-lg px-md pb-xxl" insetTop={false}>
-      <StudioHero onOpen={openStudio} />
-
-      {!hasInventory ? (
-        <EmptyState
-          icon={Sparkles}
-          title="No personal cards yet"
-          description="Open Card Studio to design your first drop, or claim one from recent releases below."
-        />
-      ) : null}
-
-      {inProgress.length > 0 ? (
-        <View className="gap-sm">
-          <SectionLabel>Continue in Studio</SectionLabel>
-          <Text variant="caption">Drafts and unfinished cards reopen the generator.</Text>
-          <CardRail cards={inProgress} showStatus editInStudio className="gap-sm" />
-        </View>
-      ) : null}
-
-      {published.length > 0 ? (
-        <View className="gap-sm">
-          <SectionLabel>Published</SectionLabel>
-          <CardRail cards={published} showStatus className="gap-sm" />
-        </View>
-      ) : null}
-
-      {manager.claimedCards.length > 0 ? (
-        <View className="gap-sm">
-          <SectionLabel>Claimed</SectionLabel>
-          <CardRail cards={manager.claimedCards.map((c) => c.card)} className="gap-sm" />
-        </View>
-      ) : null}
-
-      <ConnectedCardDropSection />
-
-      <ContentSection title="Studio pipeline" subtitle="Subject → photo → type → style → generate → publish.">
-        <Button variant="secondary" onPress={openStudio}>
-          Start a new card
-        </Button>
-      </ContentSection>
+    <Screen title="Trading Cards" insetTop={false}>
+      <PageFrame
+        main={
+          <FlatList
+            key={`cards-${columns}`}
+            data={gridCards}
+            keyExtractor={(card) => card.id}
+            numColumns={columns}
+            contentContainerClassName="gap-md pb-xxl"
+            columnWrapperClassName={columns > 1 ? 'gap-md' : undefined}
+            ListHeaderComponent={
+              <View className="mb-md gap-md">
+                <Text variant="caption">
+                  Browse published Statman Cards — claim a drop, then create your own from the sidebar.
+                </Text>
+                {browse.featured ? (
+                  <View className="gap-sm">
+                    <Text className="text-lg font-semibold">New drops</Text>
+                    <Text variant="caption">Latest public releases, ready to claim.</Text>
+                    <ConnectedStatmanCard card={browse.featured} size="featured" />
+                    {gridCards.length > 0 ? (
+                      <Text className="pt-sm text-lg font-semibold">More cards</Text>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            }
+            renderItem={({ item }) => (
+              <View className={columns > 1 ? 'flex-1' : 'w-full'}>
+                <ConnectedStatmanCard card={item} size="rail" className="w-full" />
+              </View>
+            )}
+            ListEmptyComponent={
+              browse.featured ? null : (
+                <EmptyState
+                  icon={CreditCard}
+                  title="No cards yet"
+                  description="When creators publish drops, they'll show up here to browse and claim."
+                />
+              )
+            }
+          />
+        }
+        sidebar={sidebar}
+        narrowSidebar="below"
+      />
     </Screen>
   )
 }
