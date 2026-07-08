@@ -10,6 +10,7 @@
 | `POST /auth/login` | Log in with email and password | Public | `200` |
 | `POST /auth/logout` | Log out and clear the session cookie | Auth required | `200` |
 | `GET /auth/me` | Get the current authenticated user | Auth required | `200` |
+| `GET /auth/me/capabilities` | Get the current user's unlocked profile, role, and management tools | Auth required | `200` |
 
 ## Sports
 
@@ -33,6 +34,15 @@
 | `GET /teams/{teamSlug}/roster` | Get a team's active roster for its current season | Public | `200` |
 | `POST /teams/{teamId}/roster/members` | Add a player to a team's roster for a season | Auth required | `201` |
 
+## Stats
+
+| Endpoint | Description | Auth | Success |
+|---|---|---|---|
+| `GET /teams/{teamSlug}/stats` | List a team's season stat aggregates | Public | `200` |
+| `GET /players/{playerId}/games` | List a player's recent games with their stat line | Public | `200` |
+| `GET /players/{playerId}/stats` | List a player's season stat aggregates | Public | `200` |
+| `GET /games/{gameId}/stats` | Get the final box score for a game | Public | `200` |
+
 ## Players
 
 | Endpoint | Description | Auth | Success |
@@ -42,14 +52,6 @@
 | `GET /players/{playerId}` | Get a player by id | Public | `200` |
 | `PATCH /players/{playerId}` | Update a player (owner of the claimed profile, or admin) | Auth required | `200` |
 | `POST /players/{playerId}/verify` | Set a player's source/verification status (admin only) | Auth required | `200` |
-
-## Stats
-
-| Endpoint | Description | Auth | Success |
-|---|---|---|---|
-| `GET /players/{playerId}/games` | List a player's recent games with their stat line | Public | `200` |
-| `GET /players/{playerId}/stats` | List a player's season stat aggregates | Public | `200` |
-| `GET /games/{gameId}/stats` | Get the final box score for a game | Public | `200` |
 
 ## Claims
 
@@ -76,6 +78,8 @@
 | `PATCH /games/{gameId}/reporters/{reporterId}` | Change a reporter role or team assignment (game manager only) | Auth required | `200` |
 | `DELETE /games/{gameId}/reporters/{reporterId}` | Remove a reporter from a game (game manager only) | Auth required | `200` |
 | `POST /games/{gameId}/start-live` | Transition a game to LIVE (official scorer or admin reporter only) | Auth required | `200` |
+| `POST /games/{gameId}/reactions` | Add an ephemeral live-game reaction from a spectator device | Public | `201` |
+| `GET /games/{gameId}/events` | Full ordered event log for a game (play-by-play) — works for any game status, not just LIVE | Public | `200` |
 | `POST /games/{gameId}/events` | Submit a raw live-game event (offline-queueable by the client) | Auth required | `201` |
 | `DELETE /games/{gameId}/events/{eventId}` | Undo an event submitted by the calling reporter | Auth required | `200` |
 | `GET /games/{gameId}/snapshot` | Live score, recent events, and reporter presence (poll for realtime-lite updates) | Public | `200` |
@@ -84,12 +88,22 @@
 | `POST /games/{gameId}/conflicts/{conflictId}/resolve` | Resolve a live-scoring conflict by selecting the accepted event | Auth required | `200` |
 | `POST /games/{gameId}/conflicts/{conflictId}/mark-disputed` | Mark a live-scoring conflict as disputed instead of resolved | Auth required | `200` |
 
+## Leaderboards
+
+| Endpoint | Description | Auth | Success |
+|---|---|---|---|
+| `GET /leaderboards/players` | Rank players by a sport stat | Public | `200` |
+| `GET /leaderboards/teams` | Rank teams by a sport stat | Public | `200` |
+
 ## Media
 
 | Endpoint | Description | Auth | Success |
 |---|---|---|---|
 | `GET /media` | List media attached to a target (player, team, or game) | Public | `200` |
+| `GET /media/recent` | List recently attached YouTube media across the platform | Public | `200` |
 | `POST /media/youtube` | Attach a YouTube video to a player, team, or game | Auth required | `201` |
+| `GET /images` | List stored images attached to a target | Public | `200` |
+| `POST /images/upload` | Upload an image and attach it to a target | Auth required | `201` |
 
 ## Follows
 

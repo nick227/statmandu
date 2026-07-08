@@ -164,9 +164,26 @@ ResolveGameConflictInput:
   properties:
     resolvedEventId: { type: string }
 
+GameReaction:
+  type: object
+  required: [id, gameId, deviceId, type, createdAt]
+  properties:
+    id: { type: string }
+    gameId: { type: string }
+    deviceId: { type: string }
+    type: { $ref: './social.yaml#/ReactionType' }
+    createdAt: { type: string, format: date-time }
+
+CreateGameReactionInput:
+  type: object
+  required: [deviceId, type]
+  properties:
+    deviceId: { type: string, minLength: 1, maxLength: 120 }
+    type: { $ref: './social.yaml#/ReactionType' }
+
 GameSnapshot:
   type: object
-  required: [gameId, status, score, recentEvents, reporterCount]
+  required: [gameId, status, score, recentEvents, recentReactions, recentImageAssets, recentMediaAssets, reporterCount]
   properties:
     gameId: { type: string }
     youtubeVideoId: { type: ['string', 'null'] }
@@ -182,6 +199,15 @@ GameSnapshot:
     recentEvents:
       type: array
       items: { $ref: '#/GameEvent' }
+    recentReactions:
+      type: array
+      items: { $ref: '#/GameReaction' }
+    recentImageAssets:
+      type: array
+      items: { $ref: './social.yaml#/ImageAsset' }
+    recentMediaAssets:
+      type: array
+      items: { $ref: './social.yaml#/MediaAsset' }
     reporterCount: { type: integer }
 
 GameStatLine:

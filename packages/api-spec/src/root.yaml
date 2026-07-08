@@ -68,6 +68,10 @@ components:
       $ref: './components/schemas/auth.yaml#/LoginInput'
     AuthResponse:
       $ref: './components/schemas/auth.yaml#/AuthResponse'
+    MeCapabilities:
+      $ref: './components/schemas/auth.yaml#/MeCapabilities'
+    MeCapabilitiesResponse:
+      $ref: './components/schemas/auth.yaml#/MeCapabilitiesResponse'
 
     Sport:
       $ref: './components/schemas/sports.yaml#/Sport'
@@ -118,6 +122,10 @@ components:
 
     MediaAsset:
       $ref: './components/schemas/social.yaml#/MediaAsset'
+    ImageAsset:
+      $ref: './components/schemas/social.yaml#/ImageAsset'
+    UploadImageInput:
+      $ref: './components/schemas/social.yaml#/UploadImageInput'
     AttachYouTubeInput:
       $ref: './components/schemas/social.yaml#/AttachYouTubeInput'
     Follow:
@@ -163,6 +171,8 @@ paths:
     $ref: './paths/auth.yaml#/logout'
   /auth/me:
     $ref: './paths/auth.yaml#/me'
+  /auth/me/capabilities:
+    $ref: './paths/auth.yaml#/capabilities'
 
   /sports:
     $ref: './paths/sports.yaml#/list'
@@ -208,6 +218,8 @@ paths:
     $ref: './paths/live-games.yaml#/reporter'
   /games/{gameId}/start-live:
     $ref: './paths/live-games.yaml#/startLive'
+  /games/{gameId}/reactions:
+    $ref: './paths/live-games.yaml#/reactions'
   /games/{gameId}/events:
     $ref: './paths/live-games.yaml#/events'
   /games/{gameId}/events/{eventId}:
@@ -236,6 +248,10 @@ paths:
     $ref: './paths/media.yaml#/recent'
   /media/youtube:
     $ref: './paths/media.yaml#/youtube'
+  /images:
+    $ref: './paths/images.yaml#/collection'
+  /images/upload:
+    $ref: './paths/images.yaml#/upload'
 
   /follows:
     $ref: './paths/follows.yaml#/collection'

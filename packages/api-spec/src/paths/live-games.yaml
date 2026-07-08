@@ -165,6 +165,35 @@ startLive:
       '404':
         $ref: '../components/responses/common.yaml#/NotFound'
 
+reactions:
+  post:
+    operationId: createGameReaction
+    summary: Add an ephemeral live-game reaction from a spectator device
+    security: []
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/games.yaml#/CreateGameReactionInput' }
+    responses:
+      '201':
+        description: Reaction recorded
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/GameReaction' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
 events:
   get:
     operationId: listGameEvents

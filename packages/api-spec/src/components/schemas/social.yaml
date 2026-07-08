@@ -1,6 +1,6 @@
 MediaAsset:
   type: object
-  required: [id, type, youtubeVideoId, targetType, targetId]
+  required: [id, type, youtubeVideoId, targetType, targetId, createdAt]
   properties:
     id: { type: string }
     type: { type: string, enum: [YOUTUBE] }
@@ -8,6 +8,47 @@ MediaAsset:
     title: { type: ['string', 'null'] }
     targetType: { $ref: './common.yaml#/EntityType' }
     targetId: { type: string }
+    createdAt: { type: string, format: date-time }
+
+ImageAssetUsage:
+  type: string
+  enum: [AVATAR, LOGO, HERO, EVIDENCE, GALLERY]
+
+ImageStorageProvider:
+  type: string
+  enum: [LOCAL, R2, RAILWAY_VOLUME]
+
+ImageAsset:
+  type: object
+  required: [id, targetType, targetId, usage, storageProvider, objectKey, url, contentType, byteSize, createdAt]
+  properties:
+    id: { type: string }
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+    usage: { $ref: '#/ImageAssetUsage' }
+    storageProvider: { $ref: '#/ImageStorageProvider' }
+    objectKey: { type: string }
+    url: { type: string }
+    originalFilename: { type: ['string', 'null'] }
+    contentType: { type: string }
+    byteSize: { type: integer }
+    width: { type: ['integer', 'null'] }
+    height: { type: ['integer', 'null'] }
+    uploadedByUserId: { type: ['string', 'null'] }
+    createdAt: { type: string, format: date-time }
+
+UploadImageInput:
+  type: object
+  required: [targetType, targetId, usage, contentType, dataBase64]
+  properties:
+    targetType: { $ref: './common.yaml#/EntityType' }
+    targetId: { type: string }
+    usage: { $ref: '#/ImageAssetUsage' }
+    contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+    dataBase64: { type: string }
+    originalFilename: { type: string, maxLength: 200 }
+    width: { type: integer, minimum: 1 }
+    height: { type: integer, minimum: 1 }
 
 AttachYouTubeInput:
   type: object

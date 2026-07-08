@@ -44,3 +44,46 @@ AuthResponse:
     # httpOnly Set-Cookie header); native clients have no cookie jar, so they
     # read this, store it (e.g. SecureStore), and inject it as a Bearer header.
     token: { type: string }
+
+MeAthleteProfileCapability:
+  type: object
+  required: [athleteProfileId, playerId, name, sportSlug]
+  properties:
+    athleteProfileId: { type: string }
+    playerId: { type: string }
+    name: { type: string }
+    avatarUrl: { type: ['string', 'null'] }
+    sportSlug: { type: string }
+    currentTeamName: { type: ['string', 'null'] }
+
+MeReporterAssignment:
+  type: object
+  required: [id, gameId, role, canManageGame, gameLabel, gameStatus, scheduledAt]
+  properties:
+    id: { type: string }
+    gameId: { type: string }
+    role: { $ref: './games.yaml#/GameReporterRole' }
+    teamId: { type: ['string', 'null'] }
+    teamName: { type: ['string', 'null'] }
+    gameLabel: { type: string }
+    gameStatus: { $ref: './games.yaml#/GameStatus' }
+    scheduledAt: { type: string, format: date-time }
+    canManageGame: { type: boolean }
+
+MeCapabilities:
+  type: object
+  required: [athleteProfiles, reporterAssignments, canReviewClaims]
+  properties:
+    athleteProfiles:
+      type: array
+      items: { $ref: '#/MeAthleteProfileCapability' }
+    reporterAssignments:
+      type: array
+      items: { $ref: '#/MeReporterAssignment' }
+    canReviewClaims: { type: boolean }
+
+MeCapabilitiesResponse:
+  type: object
+  required: [data]
+  properties:
+    data: { $ref: '#/MeCapabilities' }

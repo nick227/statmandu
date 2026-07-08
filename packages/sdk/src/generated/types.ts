@@ -72,6 +72,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/me/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user's unlocked profile, role, and management tools */
+        get: operations["getMeCapabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sports": {
         parameters: {
             query?: never;
@@ -416,6 +433,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/games/{gameId}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an ephemeral live-game reaction from a spectator device */
+        post: operations["createGameReaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/games/{gameId}/events": {
         parameters: {
             query?: never;
@@ -632,6 +666,40 @@ export interface paths {
         put?: never;
         /** Attach a YouTube video to a player, team, or game */
         post: operations["attachYouTubeMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List stored images attached to a target */
+        get: operations["listImages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/images/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload an image and attach it to a target */
+        post: operations["uploadImage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -857,6 +925,14 @@ export interface components {
             data: components["schemas"]["User"];
             token?: string;
         };
+        MeCapabilities: {
+            athleteProfiles: components["schemas"]["MeAthleteProfileCapability"][];
+            reporterAssignments: components["schemas"]["MeReporterAssignment"][];
+            canReviewClaims: boolean;
+        };
+        MeCapabilitiesResponse: {
+            data: components["schemas"]["MeCapabilities"];
+        };
         Sport: {
             id: string;
             slug: string;
@@ -1011,6 +1087,9 @@ export interface components {
                 points: number;
             }[];
             recentEvents: components["schemas"]["GameEvent"][];
+            recentReactions: components["schemas"]["GameReaction"][];
+            recentImageAssets: components["schemas"]["ImageAsset"][];
+            recentMediaAssets: components["schemas"]["MediaAsset"][];
             reporterCount: number;
         };
         GameStatLine: {
@@ -1099,6 +1178,36 @@ export interface components {
             title?: string | null;
             targetType: components["schemas"]["EntityType"];
             targetId: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ImageAsset: {
+            id: string;
+            targetType: components["schemas"]["EntityType"];
+            targetId: string;
+            usage: components["schemas"]["ImageAssetUsage"];
+            storageProvider: components["schemas"]["ImageStorageProvider"];
+            objectKey: string;
+            url: string;
+            originalFilename?: string | null;
+            contentType: string;
+            byteSize: number;
+            width?: number | null;
+            height?: number | null;
+            uploadedByUserId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        UploadImageInput: {
+            targetType: components["schemas"]["EntityType"];
+            targetId: string;
+            usage: components["schemas"]["ImageAssetUsage"];
+            /** @enum {string} */
+            contentType: "image/jpeg" | "image/png" | "image/webp";
+            dataBase64: string;
+            originalFilename?: string;
+            width?: number;
+            height?: number;
         };
         AttachYouTubeInput: {
             targetType: components["schemas"]["EntityType"];
@@ -1206,6 +1315,30 @@ export interface components {
         VerifyPlayerInput: {
             sourceStatus: components["schemas"]["SourceStatus"];
         };
+        MeAthleteProfileCapability: {
+            athleteProfileId: string;
+            playerId: string;
+            name: string;
+            avatarUrl?: string | null;
+            sportSlug: string;
+            currentTeamName?: string | null;
+        };
+        /** @enum {string} */
+        GameReporterRole: "ADMIN_OWNER" | "OFFICIAL_SCORER" | "TEAM_SCORER" | "BROADCASTER" | "CONTRIBUTOR" | "SPECTATOR_REPORTER" | "VIEWER";
+        /** @enum {string} */
+        GameStatus: "SCHEDULED" | "LIVE" | "FINAL" | "DISPUTED";
+        MeReporterAssignment: {
+            id: string;
+            gameId: string;
+            role: components["schemas"]["GameReporterRole"];
+            teamId?: string | null;
+            teamName?: string | null;
+            gameLabel: string;
+            gameStatus: components["schemas"]["GameStatus"];
+            /** Format: date-time */
+            scheduledAt: string;
+            canManageGame: boolean;
+        };
         /** @enum {string} */
         PlayerPosition: "PG" | "SG" | "SF" | "PF" | "C" | "GK" | "DEF" | "MID" | "FWD" | "QB" | "RB" | "WR" | "TE" | "OL" | "DL" | "LB" | "CB" | "S" | "K" | "P" | "SINGLES" | "DOUBLES";
         /** @enum {string} */
@@ -1219,16 +1352,12 @@ export interface components {
         };
         /** @enum {string} */
         ClaimStatus: "PENDING" | "APPROVED" | "REJECTED";
-        /** @enum {string} */
-        GameStatus: "SCHEDULED" | "LIVE" | "FINAL" | "DISPUTED";
         GameTeamSummary: {
             teamId: string;
             isHome: boolean;
             finalScore?: number | null;
             team?: components["schemas"]["Team"];
         };
-        /** @enum {string} */
-        GameReporterRole: "ADMIN_OWNER" | "OFFICIAL_SCORER" | "TEAM_SCORER" | "BROADCASTER" | "CONTRIBUTOR" | "SPECTATOR_REPORTER" | "VIEWER";
         InviteReporterInput: {
             userId: string;
             role: components["schemas"]["GameReporterRole"];
@@ -1239,9 +1368,32 @@ export interface components {
             teamId?: string | null;
         };
         /** @enum {string} */
+        ReactionType: "LIKE" | "FIRE" | "CLAP";
+        CreateGameReactionInput: {
+            deviceId: string;
+            type: components["schemas"]["ReactionType"];
+        };
+        GameReaction: {
+            id: string;
+            gameId: string;
+            deviceId: string;
+            type: components["schemas"]["ReactionType"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @enum {string} */
         GameEventType: "FT_MADE" | "FT_MISS" | "FG2_MADE" | "FG2_MISS" | "FG3_MADE" | "FG3_MISS" | "REBOUND_OFF" | "REBOUND_DEF" | "ASSIST" | "STEAL" | "BLOCK" | "TURNOVER" | "FOUL" | "SUBSTITUTION_IN" | "SUBSTITUTION_OUT" | "SOCCER_GOAL" | "SOCCER_ASSIST" | "SOCCER_SHOT" | "SOCCER_SAVE" | "SOCCER_YELLOW_CARD" | "SOCCER_RED_CARD" | "FOOTBALL_PASS_TD" | "FOOTBALL_RUSH_TD" | "FOOTBALL_REC_TD" | "FOOTBALL_FIELD_GOAL_MADE" | "FOOTBALL_EXTRA_POINT_MADE" | "FOOTBALL_SACK" | "FOOTBALL_INTERCEPTION" | "TENNIS_MATCH_WIN" | "TENNIS_MATCH_LOSS" | "TENNIS_SET_WIN" | "TENNIS_SET_LOSS" | "TENNIS_ACE" | "TENNIS_DOUBLE_FAULT";
         /** @enum {string} */
         GameEventStatus: "PENDING" | "ACCEPTED" | "REJECTED" | "CONFLICTING" | "CORRECTED" | "DISPUTED" | "FINALIZED";
+        /**
+         * @description Shared polymorphic target vocabulary (mirrors the Prisma EntityType enum).
+         * @enum {string}
+         */
+        EntityType: "PLAYER" | "TEAM" | "GAME" | "FEED_ITEM" | "ATHLETE_PROFILE" | "GAME_STAT_LINE" | "GAME_EVENT" | "PROFILE_FIELD" | "SOURCE_REFERENCE" | "PLAYER_SEASON_STAT" | "TEAM_SEASON_STAT";
+        /** @enum {string} */
+        ImageAssetUsage: "AVATAR" | "LOGO" | "HERO" | "EVIDENCE" | "GALLERY";
+        /** @enum {string} */
+        ImageStorageProvider: "LOCAL" | "R2" | "RAILWAY_VOLUME";
         /** @enum {string} */
         GameConflictStatus: "PENDING" | "CONFIRMED" | "CONFLICTING" | "RESOLVED";
         GameConflict: {
@@ -1255,13 +1407,6 @@ export interface components {
         ResolveGameConflictInput: {
             resolvedEventId: string;
         };
-        /**
-         * @description Shared polymorphic target vocabulary (mirrors the Prisma EntityType enum).
-         * @enum {string}
-         */
-        EntityType: "PLAYER" | "TEAM" | "GAME" | "FEED_ITEM" | "ATHLETE_PROFILE" | "GAME_STAT_LINE" | "GAME_EVENT" | "PROFILE_FIELD" | "SOURCE_REFERENCE" | "PLAYER_SEASON_STAT" | "TEAM_SEASON_STAT";
-        /** @enum {string} */
-        ReactionType: "LIKE" | "FIRE" | "CLAP";
         /** @enum {string} */
         ReferenceSourceType: "VERIFIED_TEAM_ACCOUNT" | "TEAM_MANAGER" | "OFFICIAL_SCORER" | "PLAYER_REPORT" | "SPECTATOR_REPORT" | "MULTI_SPECTATOR_REPORT" | "TEAM_WEBSITE" | "LEAGUE_WEBSITE" | "MAXPREPS" | "HUDL" | "YOUTUBE" | "NEWS_ARTICLE" | "BOXSCORE_PDF" | "SCOREBOOK_PHOTO" | "PUBLIC_SCRAPE" | "OTHER";
         /** @enum {string} */
@@ -1399,6 +1544,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getMeCapabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current user capabilities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeCapabilitiesResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -2146,6 +2312,35 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    createGameReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGameReactionInput"];
+            };
+        };
+        responses: {
+            /** @description Reaction recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GameReaction"];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
     listGameEvents: {
         parameters: {
             query?: never;
@@ -2614,6 +2809,77 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    listImages: {
+        parameters: {
+            query: {
+                targetType: components["schemas"]["EntityType"];
+                targetId: string;
+                usage?: components["schemas"]["ImageAssetUsage"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Image assets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ImageAsset"][];
+                    };
+                };
+            };
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    uploadImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadImageInput"];
+            };
+        };
+        responses: {
+            /** @description Image uploaded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ImageAsset"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     listFollows: {
