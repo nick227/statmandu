@@ -51,7 +51,7 @@ export function Screen({
         {showHeader ? (
           <View className="flex-row items-center gap-sm px-lg pt-md pb-sm">
             {withBack ? <BackButton tone="dark" /> : null}
-            {title ? <Text variant="entityName" className="flex-1">{title}</Text> : <View className="flex-1" />}
+            {title ? <Text className="flex-1 text-2xl font-bold text-text">{title}</Text> : <View className="flex-1" />}
             {headerActions}
           </View>
         ) : null}

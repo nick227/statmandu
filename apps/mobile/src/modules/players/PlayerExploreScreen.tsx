@@ -1,6 +1,7 @@
 import { ActivityIndicator, FlatList, View } from 'react-native'
 import { Search } from 'lucide-react-native'
 import { Input } from '@/shared/ui/Input'
+import { Text } from '@/shared/ui/Text'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { ContentSection } from '@/shared/layout/ContentSection'
@@ -70,7 +71,14 @@ export function PlayerExploreScreen() {
   return (
     <Screen title="Leaderboard" style={sportTheme} insetTop={false}>
       <PageFrame
-        main={main}
+        main={
+          <View className="gap-sm">
+            <Text variant="caption" className="px-0">
+              Season leaders from finalized games — search anytime to jump to a player, team, or game.
+            </Text>
+            {main}
+          </View>
+        }
         sidebar={<ExploreSidebar rankings={rankings} />}
         narrowSidebar="hidden"
       />
