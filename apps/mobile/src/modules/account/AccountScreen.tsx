@@ -1,4 +1,4 @@
-import { Pressable, View } from 'react-native'
+import { Pressable, ScrollView, View } from 'react-native'
 import type { ComponentType, ReactNode } from 'react'
 import { Link, useRouter, type Href } from 'expo-router'
 import { Activity, Radio, ShieldCheck, Trophy, UserRound } from 'lucide-react-native'
@@ -10,10 +10,11 @@ import { Badge } from '@/shared/ui/Badge'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { SignInPrompt } from '@/shared/ui/SignInPrompt'
 import { Skeleton } from '@/shared/ui/Skeleton'
-import { Screen } from '@/shared/layout'
+import { PageFrame, Screen } from '@/shared/layout'
 import { useAccountSession } from '@/modules/account/useAccountSession'
 import { clearStoredToken } from '@/lib/sdk'
 import { useStatusNativeColor } from '@/lib/theme'
+import { MeSidebar } from '@/modules/account/MeSidebar'
 
 function HubIcon({ icon: Icon, tone = 'brand' }: { icon: ComponentType<{ size?: number; color?: string }>; tone?: 'brand' | 'verified' | 'muted-text' }) {
   const color = useStatusNativeColor(tone)
@@ -51,8 +52,8 @@ export function AccountScreen() {
   const athleteProfiles = capabilities?.athleteProfiles ?? []
   const reporterAssignments = capabilities?.reporterAssignments ?? []
 
-  return (
-    <Screen scroll contentClassName="gap-md p-lg">
+  const main = (
+    <ScrollView contentContainerClassName="gap-md pb-xxl">
       <View className="flex-row items-center gap-md">
         <Avatar uri={user?.profile?.avatarUrl} fallback={user?.profile?.displayName ?? user?.email ?? '?'} size="lg" />
         <View className="flex-1">
@@ -182,6 +183,12 @@ export function AccountScreen() {
       >
         Log out
       </Button>
+    </ScrollView>
+  )
+
+  return (
+    <Screen title="Me">
+      <PageFrame main={main} sidebar={<MeSidebar user={user} capabilities={capabilities ?? undefined} />} />
     </Screen>
   )
 }
