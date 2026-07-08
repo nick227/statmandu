@@ -5,13 +5,7 @@ type CardTemplateStatus = components['schemas']['CardTemplateStatus']
 type CardType = components['schemas']['CardType']
 type BadgeTone = 'muted-text' | 'brand' | 'verified' | 'dispute' | 'live' | 'imported'
 
-// Formatting helpers shared by every real (SDK-backed) card surface. Kept
-// separate from the Card Builder workstream's modules/cards/types.ts +
-// CardStatusBadge/CardEditionBadge — those model a local mock CardStatus
-// ('draft'|'ready'|...) and CardEditionInfo shape for the in-progress
-// builder wizard, not the real CardTemplateStatus/CardEditionMode enums
-// the backend actually returns. Two different data contracts, so kept
-// as two separate, non-colliding pieces rather than forcing a shared file.
+// Formatting helpers shared by every real (SDK-backed) card surface.
 export const CARD_TYPE_LABEL: Record<CardType, string> = {
   PROFILE: 'Profile',
   BIG_GAME: 'Big Game',
@@ -56,7 +50,7 @@ export function claimedStatusMessage(card: Pick<Card, 'editionMode' | 'editionSi
 }
 
 export function athleteFullName(card: Pick<Card, 'athlete'>): string {
-  return card.athlete ? `${card.athlete.firstName} ${card.athlete.lastName}` : 'Unknown Athlete'
+  return card.athlete?.displayName ?? 'Unknown Athlete'
 }
 
 export function cardImageUri(card: Pick<Card, 'frontImage' | 'sourceImage' | 'athlete'>): string | null {

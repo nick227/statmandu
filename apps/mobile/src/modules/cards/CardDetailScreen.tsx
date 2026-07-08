@@ -9,9 +9,9 @@ import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { Screen } from '@/shared/layout'
 import { SmartImage } from '@/shared/media/SmartImage'
-import { useCardDetail } from './useCardDetail'
 import { ConnectedCardClaimButton } from './ConnectedCardClaimButton'
 import { CardAuthenticitySheet } from './CardAuthenticitySheet'
+import { useCardDetail } from './useCardDetail'
 import {
   CARD_STATUS_LABEL,
   CARD_STATUS_TONE,
@@ -80,16 +80,15 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
 
           <View className="gap-xs">
             <Text className="text-2xl font-bold">{card.title}</Text>
-            {/* Athlete name only, not linked — Card only carries athleteProfileId,
-                and the player profile route is keyed on the separate Player.id
-                (AthleteProfile:Player isn't 1:1 in the schema). Resolving that
-                needs a backend join this workstream doesn't own; deferred
-                rather than guessing, same call as hometown/@username on the
-                player profile itself. */}
             <Text variant="caption">{athleteFullName(card)}</Text>
           </View>
 
           <View className="flex-row flex-wrap gap-sm">
+            {card.athlete?.playerId ? (
+              <Link href={{ pathname: '/players/[playerId]', params: { playerId: card.athlete.playerId } }} asChild>
+                <Button variant="secondary" size="sm">View athlete profile</Button>
+              </Link>
+            ) : null}
             {card.team ? (
               <Link href={{ pathname: '/teams/[teamId]', params: { teamId: card.team.id } }} asChild>
                 <Button variant="secondary" size="sm">{`View ${card.team.name}`}</Button>

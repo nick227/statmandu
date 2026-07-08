@@ -16,6 +16,8 @@ import {
 } from '@/modules/feed/homeContent'
 import { buildCommunityPulse } from '@/modules/feed/interleavePulseFeed'
 
+const ENABLE_HOME_MOCK_ACTIVITY = process.env.EXPO_PUBLIC_ENABLE_HOME_MOCK_ACTIVITY === '1'
+
 export function useHomeFeed() {
   const feedQuery = useFeed()
   const playerLeaderboardQuery = usePlayerLeaderboard({ sportSlug: HOME_SPORT_SLUG, stat: HOME_PLAYER_STAT, limit: 8 })
@@ -76,7 +78,10 @@ export function useHomeFeed() {
     [feedItems]
   )
 
-  const mockActivity = useMemo(() => HOME_MOCK_ACTIVITY.slice(0, HOME_LAYOUT.maxMockActivity), [])
+  const mockActivity = useMemo(
+    () => (ENABLE_HOME_MOCK_ACTIVITY ? HOME_MOCK_ACTIVITY.slice(0, HOME_LAYOUT.maxMockActivity) : []),
+    []
+  )
 
   const recentVideos = recentMediaQuery.data?.data ?? []
   const featuredVideo = recentVideos[0] ?? null

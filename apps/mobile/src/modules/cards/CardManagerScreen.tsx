@@ -1,57 +1,77 @@
-import { View, FlatList } from 'react-native';
-import { CreditCard } from 'lucide-react-native';
-import { Text } from '@/shared/ui/Text';
-import { Button } from '@/shared/ui/Button';
-import { LoadingState } from '@/shared/ui/LoadingState';
-import { EmptyState } from '@/shared/ui/EmptyState';
-import { useCards } from './useCards';
-import { CardManagerRow } from './CardManagerRow';
-import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '@react-navigation/native';
+import { View } from 'react-native'
+import { CreditCard } from 'lucide-react-native'
+import { Screen } from '@/shared/layout/Screen'
+import { LoadingState } from '@/shared/ui/LoadingState'
+import { EmptyState } from '@/shared/ui/EmptyState'
+import { ErrorState } from '@/shared/ui/ErrorState'
+import { Button } from '@/shared/ui/Button'
+import { CardRail } from '@/modules/cards/CardRail'
+import { useCardManager } from '@/modules/cards/useCardManager'
+import { useRouter } from 'expo-router'
 
 export function CardManagerScreen() {
-  const { cards, isLoading, fetchCards } = useCards();
-  const router = useRouter();
-  const { colors } = useTheme();
+  const router = useRouter()
+  const manager = useCardManager()
 
-  useEffect(() => {
-    fetchCards();
-  }, [fetchCards]);
+  if (manager.isError) {
+    return (
+      <Screen title="My Cards">
+        <ErrorState message="Your cards couldn't be loaded." />
+      </Screen>
+    )
+  }
 
-  const handleCreateNew = () => {
-    router.push('/cards/new');
-  };
+  if (manager.isLoading) {
+    return (
+      <Screen title="My Cards">
+        <LoadingState label="Loading cards" />
+      </Screen>
+    )
+  }
+
+  if (manager.createdCards.length === 0 && manager.claimedCards.length === 0) {
+    return (
+      <Screen title="My Cards" scroll contentClassName="gap-md p-lg">
+        <EmptyState
+          icon={CreditCard}
+          title="No cards yet"
+          description="Create your first Statman Card to share with fans."
+        />
+        <Button variant="secondary" onPress={() => router.push('/cards/studio')}>
+          Create a card
+        </Button>
+      </Screen>
+    )
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
-      <View className="flex-1 px-md pt-lg">
-        <View className="flex-row justify-between items-center mb-lg">
-          <Text variant="entityName" className="text-foreground">My Cards</Text>
-          <Button size="sm" onPress={handleCreateNew}>
-            Create New
-          </Button>
+    <Screen title="My Cards" scroll contentClassName="gap-md p-lg">
+      {manager.createdCards.length > 0 ? (
+        <View className="gap-sm">
+          <View className="px-xs">
+            <Button variant="ghost" size="sm" disabled>
+              Created
+            </Button>
+          </View>
+          <CardRail cards={manager.createdCards} showStatus className="gap-sm" />
         </View>
+      ) : null}
 
-        {isLoading && cards.length === 0 ? (
-          <LoadingState label="Loading cards" />
-        ) : (
-          <FlatList
-            data={cards}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <CardManagerRow card={item} className="mb-md" />}
-            contentContainerStyle={{ paddingBottom: 20 }}
-            ListEmptyComponent={
-              <EmptyState
-                icon={CreditCard}
-                title="No cards yet"
-                description="Create your first Statman card to share with fans."
-              />
-            }
-          />
-        )}
-      </View>
-    </SafeAreaView>
-  );
+      {manager.claimedCards.length > 0 ? (
+        <View className="gap-sm">
+          <View className="px-xs">
+            <Button variant="ghost" size="sm" disabled>
+              Claimed
+            </Button>
+          </View>
+          <CardRail cards={manager.claimedCards.map((c) => c.card)} className="gap-sm" />
+        </View>
+      ) : null}
+
+      <Button variant="secondary" onPress={() => router.push('/cards/studio')}>
+        New card
+      </Button>
+    </Screen>
+  )
 }
+

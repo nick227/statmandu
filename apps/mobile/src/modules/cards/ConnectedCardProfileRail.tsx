@@ -15,11 +15,7 @@ export interface ConnectedCardProfileRailProps {
 
 // Athlete profile Cards section — rail of published cards for public
 // viewers, plus the owner's own in-progress cards (any status) when they're
-// looking at their own profile. `/cards/new` is the Card Builder workstream's
-// entry point (see modules/cards/useCardBuilder.ts) — not built yet, so this
-// links to it without creating the route file; Expo Router's not-found
-// fallback degrades gracefully until that screen lands, at which point this
-// link starts working with no further change here.
+// looking at their own profile.
 export function ConnectedCardProfileRail({ athleteProfileId, canEdit, className }: ConnectedCardProfileRailProps) {
   const cardsQuery = useAthleteCards(athleteProfileId)
   const cards = cardsQuery.data?.data ?? []
@@ -39,7 +35,7 @@ export function ConnectedCardProfileRail({ athleteProfileId, canEdit, className 
           }
         />
         {canEdit ? (
-          <Link href={'/cards/new' as never} asChild>
+          <Link href={'/cards/studio' as never} asChild>
             <Button variant="secondary">Create a card</Button>
           </Link>
         ) : null}
@@ -51,7 +47,7 @@ export function ConnectedCardProfileRail({ athleteProfileId, canEdit, className 
     <View className={className ?? 'gap-sm'}>
       <CardRail cards={cards} showStatus={canEdit} className="gap-sm px-lg" />
       {canEdit ? (
-        <Link href={'/cards/new' as never} asChild>
+        <Link href={'/cards/studio' as never} asChild>
           <Button variant="ghost" size="sm" className="mx-lg self-start">+ New card</Button>
         </Link>
       ) : null}

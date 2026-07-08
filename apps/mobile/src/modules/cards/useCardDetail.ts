@@ -11,3 +11,4 @@ export function useCardDetail(cardId: string) {
     markDownloaded,
   }
 }
+
