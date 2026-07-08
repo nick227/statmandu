@@ -10,6 +10,7 @@ packages/sdk/src/generated/types.ts.tmp
 packages/api-spec/openapi.yaml
 .turbo/
 coverage/
+art/
 
 # Expo / React Native
 .expo/
