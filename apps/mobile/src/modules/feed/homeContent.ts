@@ -48,7 +48,7 @@ export const HOME_USAGE_CTAS: UsageCta[] = [
   },
   {
     id: 'highlight',
-    title: 'Add film',
+    title: 'Add video',
     description: 'Attach highlights and land in the feed.',
     href: { pathname: '/(tabs)/videos' },
     eyebrow: 'Media',
@@ -102,13 +102,13 @@ export const HOME_SECTION_COPY = {
   },
   videos: {
     featured: {
-      title: 'Featured film',
-      subtitle: 'Latest highlight across the network — open Film for the full vertical browse.',
+      title: 'Featured video',
+      subtitle: 'Latest highlight across the network. Open Video for the full vertical browse.',
     },
   },
   linkLabels: {
     seeAll: 'Rankings',
-    allFilm: 'All film',
+    allVideos: 'All videos',
   },
 } as const
 
@@ -118,9 +118,9 @@ export const HOME_EMPTY_COPY = {
     description: 'Finalized games and new media will populate this section.',
   },
   videos: {
-    title: 'No film uploaded yet',
+    title: 'No video uploaded yet',
     description: 'Athlete highlights, team reels, and game recaps will surface here as they are submitted.',
-    browseCta: 'Browse Film',
+    browseCta: 'Browse Video',
   },
 } as const
 
@@ -193,7 +193,7 @@ export const HOME_MOCK_ACTIVITY: HomeMockActivity[] = [
     id: 'mock-2',
     icon: 'MEDIA_ADDED',
     eyebrow: 'Highlight',
-    title: 'New film: Westview full-court press breakdown',
+    title: 'New video: Westview full-court press breakdown',
     subtitle: 'Team reel attached to game archive',
     timestamp: '4h ago',
   },
@@ -224,8 +224,8 @@ export const HOME_MOCK_ACTIVITY: HomeMockActivity[] = [
 ]
 
 export const HOME_LAYOUT = {
-  sectionGap: 'gap-lg',
-  railCardWidth: 'w-[42%]',
+  sectionGap: 'gap-md',
+  railCardWidth: 'w-[34%]',
   maxFeedItems: 4,
   maxMockActivity: 5,
 } as const

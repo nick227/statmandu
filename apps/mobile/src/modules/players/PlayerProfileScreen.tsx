@@ -5,24 +5,22 @@ import type { components } from '@statman/sdk'
 import Animated, { FadeIn, Layout, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { ChevronDown } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
-import { LoadingState } from '@/shared/ui/LoadingState'
-import { ErrorState } from '@/shared/ui/ErrorState'
 import { Button } from '@/shared/ui/Button'
 import { Input } from '@/shared/ui/Input'
 import { Textarea } from '@/shared/ui/Textarea'
-import { BackButton } from '@/shared/ui/BackButton'
 import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
-import { toViewerItemsForTarget } from '@/modules/media/mediaViewerItem'
 import { ConnectedImageUploadButton } from '@/modules/media/ConnectedImageUploadButton'
-import { Screen } from '@/shared/layout'
+import { ErrorScreenState, LoadingScreenState, TabPanel } from '@/shared/layout'
 import { useNativeColor, useSportTheme } from '@/lib/theme'
 import { EntityProfileShell } from '@/shared/layout/entity-profile/EntityProfileShell'
 import { MediaGrid } from '@/modules/media/MediaGrid'
 import { YouTubeMediaAttachForm } from '@/modules/media/YouTubeMediaAttachForm'
+import { useTargetMediaViewer } from '@/modules/media/useTargetMediaViewer'
 import { ConnectedSourcesPanel } from '@/modules/disputes/ConnectedSourcesPanel'
 import { ConnectedCardProfileRail } from '@/modules/cards/ConnectedCardProfileRail'
 import { PlayerSourceBadge } from '@/modules/players/PlayerSourceBadge'
 import { PlayerHighlights } from '@/modules/players/PlayerHighlights'
+import { PlayerSidebar } from '@/modules/players/PlayerSidebar'
 import { usePlayerProfile } from '@/modules/players/usePlayerProfile'
 import { ConnectedFollowButton } from '@/modules/social/ConnectedFollowButton'
 import { ConnectedReactionBar } from '@/modules/social/ConnectedReactionBar'
@@ -141,10 +139,10 @@ function ProfileDetailsEditor({
 export function PlayerProfileScreen({ playerId }: { playerId: string }) {
   const profileState = usePlayerProfile(playerId)
   const router = useRouter()
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const [statsExpanded, setStatsExpanded] = useState(false)
   const mutedTextColor = useNativeColor('mutedText')
   const sportTheme = useSportTheme(profileState.player?.sport?.slug)
+  const mediaViewer = useTargetMediaViewer(profileState.media, 'PLAYER', playerId)
   const chevronRotation = useSharedValue(0)
   const chevronStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${chevronRotation.value}deg` }] }))
 
@@ -154,28 +152,17 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
   }
 
   if (profileState.isError) {
-    return (
-      <Screen>
-        <View className="px-lg pb-md"><BackButton tone="dark" /></View>
-        <ErrorState className="flex-1 items-center justify-center p-lg gap-sm" message="This player couldn't be loaded." />
-      </Screen>
-    )
+    return <ErrorScreenState withBack message="This player couldn't be loaded." />
   }
 
   if (profileState.isLoading || !profileState.player || !profileState.profile) {
-    return (
-      <Screen>
-        <View className="px-lg pb-md"><BackButton tone="dark" /></View>
-        <LoadingState />
-      </Screen>
-    )
+    return <LoadingScreenState withBack />
   }
 
-  const { canEditProfile, games, lastGame, lastGameLine, media, player, profile, season, seasonHighPoints, setTab, stats, tab, tabs, updatePlayer } = profileState
+  const { canEditProfile, games, lastGame, lastGameLine, player, profile, season, seasonHighPoints, setTab, stats, tab, tabs, updatePlayer } = profileState
   const sport = player.sport?.slug ?? 'basketball'
   const name = `${profile.firstName} ${profile.lastName}`
-  const mediaItems = media.map((m) => ({ id: m.id, youtubeVideoId: m.youtubeVideoId, title: m.title }))
-  const viewerItems = toViewerItemsForTarget(mediaItems, 'PLAYER', player.id)
+  const { mediaItems } = mediaViewer
   const classYear = player.classYear
     ? player.classYear.toLowerCase().startsWith('class') ? player.classYear : `Class of ${player.classYear}`
     : null
@@ -206,7 +193,7 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
     <>
       <EntityProfileShell
         style={sportTheme}
-        hero={{ mediaItems, fallbackImageUri: profile.avatarUrl, onMediaPress: setViewerIndex }}
+        hero={{ mediaItems, fallbackImageUri: profile.avatarUrl, onMediaPress: mediaViewer.setViewerIndex }}
         onShare={handleShare}
         identity={{
           name,
@@ -225,6 +212,16 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
         tabs={tabs}
         activeTab={tab}
         onTabChange={setTab}
+        sidebar={
+          <PlayerSidebar
+            player={player}
+            profile={profile}
+            games={games}
+            media={profileState.media}
+            lastGame={lastGame}
+            seasonHighPoints={seasonHighPoints}
+          />
+        }
       >
         <View className="flex-row items-center justify-between px-lg py-md">
           <ConnectedFollowButton targetType="PLAYER" targetId={player.id} />
@@ -272,39 +269,31 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
           </Animated.View>
         ) : null}
 
-        {tab === 'Games' ? (
-          <Animated.View entering={FadeIn.duration(200)}>
-            <SportStatTable
-              sport={sport}
-              rows={games}
-              mode="byGame"
-              emptyTitle="No game stats yet"
-              emptyDescription="Game stats appear after finalized contests."
-            />
-          </Animated.View>
-        ) : null}
+        <TabPanel active={tab} tab="Games">
+          <SportStatTable
+            sport={sport}
+            rows={games}
+            mode="byGame"
+            emptyTitle="No game stats yet"
+            emptyDescription="Game stats appear after finalized contests."
+          />
+        </TabPanel>
 
-        {tab === 'Media' ? (
-          <Animated.View entering={FadeIn.duration(200)} className="px-lg gap-md">
-            <MediaGrid items={mediaItems} onItemPress={setViewerIndex} />
-            <YouTubeMediaAttachForm targetType="PLAYER" targetId={player.id} />
-          </Animated.View>
-        ) : null}
+        <TabPanel active={tab} tab="Media" className="px-lg gap-md">
+          <MediaGrid items={mediaItems} onItemPress={mediaViewer.setViewerIndex} />
+          <YouTubeMediaAttachForm targetType="PLAYER" targetId={player.id} />
+        </TabPanel>
 
-        {tab === 'Cards' ? (
-          <Animated.View entering={FadeIn.duration(200)}>
-            <ConnectedCardProfileRail athleteProfileId={profile.id} canEdit={canEditProfile} />
-          </Animated.View>
-        ) : null}
+        <TabPanel active={tab} tab="Cards">
+          <ConnectedCardProfileRail athleteProfileId={profile.id} canEdit={canEditProfile} />
+        </TabPanel>
 
-        {tab === 'Sources' ? (
-          <Animated.View entering={FadeIn.duration(200)} className="gap-lg">
-            <View className="px-lg">
-              <Text variant="caption">Source status: {profile.sourceStatus}</Text>
-            </View>
-            <ConnectedSourcesPanel targetType="ATHLETE_PROFILE" targetId={profile.id} />
-          </Animated.View>
-        ) : null}
+        <TabPanel active={tab} tab="Sources" className="gap-lg">
+          <View className="px-lg">
+            <Text variant="caption">Source status: {profile.sourceStatus}</Text>
+          </View>
+          <ConnectedSourcesPanel targetType="ATHLETE_PROFILE" targetId={profile.id} />
+        </TabPanel>
 
         {!profile.claimedByUserId ? (
           <View className="mx-lg mt-lg gap-sm rounded-lg border border-border p-lg">
@@ -317,12 +306,7 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
         ) : null}
       </EntityProfileShell>
 
-      <ConnectedFullScreenMediaViewer
-        visible={viewerIndex != null}
-        items={viewerItems}
-        initialIndex={viewerIndex ?? 0}
-        onClose={() => setViewerIndex(null)}
-      />
+      <ConnectedFullScreenMediaViewer {...mediaViewer.viewerProps} />
     </>
   )
 }

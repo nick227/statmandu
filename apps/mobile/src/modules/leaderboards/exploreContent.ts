@@ -56,12 +56,12 @@ export const EXPLORE_COPY = {
     },
     videos: {
       champion: {
-        title: 'Leader film',
+        title: 'Leader video',
         subtitle: 'Video attached to the current #1 player.',
-        empty: 'No film attached to the current leader yet.',
+        empty: 'No video attached to the current leader yet.',
       },
       board: {
-        title: 'Film from the board',
+        title: 'Video from the board',
         subtitle: 'Recent uploads from ranked athletes and programs.',
       },
     },

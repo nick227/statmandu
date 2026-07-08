@@ -5,11 +5,13 @@ import { Rss, Video } from 'lucide-react-native'
 import { ContentSection } from '@/shared/layout/ContentSection'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
-import { Screen } from '@/shared/layout'
+import { PageFrame, Screen } from '@/shared/layout'
 import { AdPlaceholder } from '@/modules/feed/AdPlaceholder'
 import { CommunityPulseFeed } from '@/modules/feed/CommunityPulseFeed'
 import {
   CommunityPulseMetrics,
+  HomeSidebar,
+  type HomeSidebarItem,
   PlatformAuthorityBand,
   PlatformPitchCard,
   UsageCtaRow,
@@ -25,12 +27,50 @@ import { RankingsSkeleton } from '@/modules/leaderboards/RankingsSkeleton'
 import { ChampionRibbon, PodiumStrip, ShowcaseMosaic } from '@/modules/leaderboards/RankingsShowcase'
 import { AthleteSpotlightCardLink, TeamSpotlightCardLink } from '@/modules/leaderboards/SpotlightCardLinks'
 
+function gameTitle(game: NonNullable<ReturnType<typeof useHomeFeed>['featuredGame']>) {
+  const home = game.gameTeams.find((gt) => gt.isHome)?.team?.name ?? 'Home'
+  const away = game.gameTeams.find((gt) => !gt.isHome)?.team?.name ?? 'Away'
+  return `${home} vs ${away}`
+}
+
 export function HomeFeedScreen() {
   const home = useHomeFeed()
   const copy = home.sectionCopy
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
 
   const viewerItems = useMemo(() => home.recentVideos, [home.recentVideos])
+  const topAd = home.ads.find((slot) => slot.id === 'ad-top')
+  const midAd = home.ads.find((slot) => slot.id === 'ad-mid')
+  const bottomAd = home.ads.find((slot) => slot.id === 'ad-bottom')
+  const hasPulse = home.communityPulse.length > 0
+  const sidebarItems = useMemo<HomeSidebarItem[]>(() => {
+    const gameItems = [home.featuredGame, ...home.recentGames]
+      .filter(Boolean)
+      .map((game) => ({
+        id: `game:${game.id}`,
+        section: 'Live' as const,
+        title: gameTitle(game),
+        meta: `${game.status} · ${new Date(game.scheduledAt).toLocaleDateString()}`,
+        href: { pathname: '/games/[gameId]', params: { gameId: game.id } },
+      }))
+    const leaderItems = [home.featuredAthlete, ...home.podiumPlayers.filter((entry) => entry.player.id !== home.featuredAthlete?.player.id)]
+      .filter(Boolean)
+      .map((entry) => ({
+        id: `leader:${entry.player.id}:${entry.rank}`,
+        section: 'Leaders' as const,
+        title: `${entry.player.athleteProfile.firstName} ${entry.player.athleteProfile.lastName}`,
+        meta: `#${entry.rank} · ${entry.value} ${entry.stat}`,
+        href: { pathname: '/players/[playerId]', params: { playerId: entry.player.id } },
+      }))
+    const videoItems = home.recentVideos.slice(0, 4).map((video) => ({
+      id: `video:${video.id}`,
+      section: 'Videos' as const,
+      title: video.title ?? 'New video',
+      meta: video.targetType,
+      href: { pathname: '/(tabs)/videos' },
+    }))
+    return [...gameItems, ...leaderItems, ...videoItems]
+  }, [home.featuredAthlete, home.featuredGame, home.podiumPlayers, home.recentGames, home.recentVideos])
 
   if (home.isError) {
     return (
@@ -50,22 +90,15 @@ export function HomeFeedScreen() {
     )
   }
 
-  const topAd = home.ads.find((slot) => slot.id === 'ad-top')
-  const midAd = home.ads.find((slot) => slot.id === 'ad-mid')
-  const bottomAd = home.ads.find((slot) => slot.id === 'ad-bottom')
-  const hasPulse = home.communityPulse.length > 0
-
-  return (
-    <>
-    <Screen title={HOME_SCREEN.title} scroll contentClassName={`${home.layout.sectionGap} px-lg`}>
+  const mainColumn = (
+    <View className="gap-md">
       <PlatformAuthorityBand {...home.authority} />
-      {topAd ? <AdPlaceholder slot={topAd} /> : null}
 
       <ContentSection
         title={copy.videos.featured.title}
         subtitle={copy.videos.featured.subtitle}
         href={{ pathname: '/(tabs)/videos' }}
-        linkLabel={copy.linkLabels.allFilm}
+        linkLabel={copy.linkLabels.allVideos}
       >
         {home.featuredVideo ? (
           <ConnectedVideoCard
@@ -194,13 +227,21 @@ export function HomeFeedScreen() {
         <ShowcaseMosaic index={1} list={home.reboundShowcase} sportSlug={HOME_SPORT_SLUG} />
       ) : null}
 
-      {bottomAd ? <AdPlaceholder slot={bottomAd} /> : null}
-
       <PlatformPitchCard {...home.platformPitch} />
 
       <ContentSection title={copy.usage.title} subtitle={copy.usage.subtitle}>
         <UsageCtaRow ctas={home.usageCtas} />
       </ContentSection>
+    </View>
+  )
+
+  return (
+    <>
+    <Screen title={HOME_SCREEN.title} scroll contentClassName="pb-xxl">
+      <PageFrame
+        main={mainColumn}
+        sidebar={<HomeSidebar ad={topAd ?? bottomAd} items={sidebarItems} />}
+      />
     </Screen>
 
     <ConnectedFullScreenMediaViewer

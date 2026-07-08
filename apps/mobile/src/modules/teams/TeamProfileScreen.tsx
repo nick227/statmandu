@@ -1,19 +1,16 @@
-import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { Link } from 'expo-router'
 
 import { Text } from '@/shared/ui/Text'
-import { LoadingState } from '@/shared/ui/LoadingState'
-import { ErrorState } from '@/shared/ui/ErrorState'
-import { BackButton } from '@/shared/ui/BackButton'
 import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
-import { toViewerItemsForTarget } from '@/modules/media/mediaViewerItem'
-import { Screen } from '@/shared/layout'
+import { ErrorScreenState, LoadingScreenState, TabPanel } from '@/shared/layout'
 import { useSportTheme } from '@/lib/theme'
 import { EntityProfileShell } from '@/shared/layout/entity-profile/EntityProfileShell'
 import { GameStatusBadge } from '@/modules/games/GameStatusBadge'
 import { MediaGrid } from '@/modules/media/MediaGrid'
+import { useTargetMediaViewer } from '@/modules/media/useTargetMediaViewer'
 import { TeamRosterList } from '@/modules/teams/TeamRosterList'
+import { TeamSidebar } from '@/modules/teams/TeamSidebar'
 import { useTeamProfile } from '@/modules/teams/useTeamProfile'
 import { YouTubeMediaAttachForm } from '@/modules/media/YouTubeMediaAttachForm'
 import { ConnectedSourcesPanel } from '@/modules/disputes/ConnectedSourcesPanel'
@@ -23,37 +20,26 @@ import { SportStatStrip } from '@/modules/sports'
 
 export function TeamProfileScreen({ teamId }: { teamId: string }) {
   const teamState = useTeamProfile(teamId)
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const sportTheme = useSportTheme(teamState.team?.sport?.slug)
+  const mediaViewer = useTargetMediaViewer(teamState.media, 'TEAM', teamId)
 
   if (teamState.isError) {
-    return (
-      <Screen>
-        <View className="px-lg pb-md"><BackButton tone="dark" /></View>
-        <ErrorState className="flex-1 items-center justify-center p-lg gap-sm" message="This team couldn't be loaded." />
-      </Screen>
-    )
+    return <ErrorScreenState withBack message="This team couldn't be loaded." />
   }
 
   if (teamState.isLoading || !teamState.team) {
-    return (
-      <Screen>
-        <View className="px-lg pb-md"><BackButton tone="dark" /></View>
-        <LoadingState />
-      </Screen>
-    )
+    return <LoadingScreenState withBack />
   }
 
-  const { currentSeasonStats, games, media, roster, setTab, stats, tab, tabs, team } = teamState
+  const { currentSeasonStats, games, roster, setTab, stats, tab, tabs, team } = teamState
   const sport = team.sport?.slug ?? 'basketball'
-  const mediaItems = media.map((m) => ({ id: m.id, youtubeVideoId: m.youtubeVideoId, title: m.title }))
-  const viewerItems = toViewerItemsForTarget(mediaItems, 'TEAM', team.id)
+  const { mediaItems } = mediaViewer
 
   return (
     <>
     <EntityProfileShell
       style={sportTheme}
-      hero={{ mediaItems, fallbackImageUri: team.logoUrl, onMediaPress: setViewerIndex }}
+      hero={{ mediaItems, fallbackImageUri: team.logoUrl, onMediaPress: mediaViewer.setViewerIndex }}
       identity={{
         name: team.name,
         metaLines: [team.league?.name, team.city],
@@ -63,16 +49,18 @@ export function TeamProfileScreen({ teamId }: { teamId: string }) {
       tabs={tabs}
       activeTab={tab}
       onTabChange={setTab}
+      sidebar={<TeamSidebar team={team} roster={roster} games={games} media={teamState.media} />}
     >
       <View className="flex-row items-center justify-between px-lg py-md">
         <ConnectedFollowButton targetType="TEAM" targetId={team.id} />
         <ConnectedReactionBar targetType="TEAM" targetId={team.id} />
       </View>
 
-      {tab === 'Roster' ? <TeamRosterList memberships={roster} /> : null}
+      <TabPanel active={tab} tab="Roster">
+        <TeamRosterList memberships={roster} />
+      </TabPanel>
 
-      {tab === 'Games' ? (
-        <View className="px-lg gap-sm">
+      <TabPanel active={tab} tab="Games" className="px-lg gap-sm">
           {games.map((g) => {
             const opponent = g.gameTeams.find((gt) => gt.teamId !== team.id)?.team?.name
             return (
@@ -87,11 +75,9 @@ export function TeamProfileScreen({ teamId }: { teamId: string }) {
               </Link>
             )
           })}
-        </View>
-      ) : null}
+      </TabPanel>
 
-      {tab === 'Stats' ? (
-        <View className="px-lg">
+      <TabPanel active={tab} tab="Stats" className="px-lg">
           {currentSeasonStats ? (
             <SportStatStrip
               sport={sport}
@@ -102,25 +88,19 @@ export function TeamProfileScreen({ teamId }: { teamId: string }) {
           ) : (
             <Text variant="caption">No team stats yet this season.</Text>
           )}
-        </View>
-      ) : null}
+      </TabPanel>
 
-      {tab === 'Media' ? (
-        <View className="px-lg gap-md">
-          <MediaGrid items={mediaItems} onItemPress={setViewerIndex} />
+      <TabPanel active={tab} tab="Media" className="px-lg gap-md">
+          <MediaGrid items={mediaItems} onItemPress={mediaViewer.setViewerIndex} />
           <YouTubeMediaAttachForm targetType="TEAM" targetId={team.id} />
-        </View>
-      ) : null}
+      </TabPanel>
 
-      {tab === 'Sources' ? <ConnectedSourcesPanel targetType="TEAM" targetId={team.id} /> : null}
+      <TabPanel active={tab} tab="Sources">
+        <ConnectedSourcesPanel targetType="TEAM" targetId={team.id} />
+      </TabPanel>
     </EntityProfileShell>
 
-    <ConnectedFullScreenMediaViewer
-      visible={viewerIndex != null}
-      items={viewerItems}
-      initialIndex={viewerIndex ?? 0}
-      onClose={() => setViewerIndex(null)}
-    />
+    <ConnectedFullScreenMediaViewer {...mediaViewer.viewerProps} />
     </>
   )
 }

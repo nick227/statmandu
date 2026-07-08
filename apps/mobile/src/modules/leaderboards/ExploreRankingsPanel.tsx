@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Pressable, ScrollView, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import { BarChart3, Shield, Video } from 'lucide-react-native'
-import { getSportDefinition } from '@statman/sports'
 import type { components } from '@statman/sdk'
 import { ContentSection } from '@/shared/layout/ContentSection'
 import { EmptyState } from '@/shared/ui/EmptyState'
@@ -19,17 +18,6 @@ import type { useExploreRankings } from '@/modules/leaderboards/useExploreRankin
 
 type MediaAsset = components['schemas']['MediaAsset']
 
-function FilterChip({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className={active ? 'rounded-pill bg-sport-accent px-md py-xs' : 'rounded-pill border border-border bg-surface px-md py-xs'}
-    >
-      <Text variant="caption" className={active ? 'font-semibold text-white' : 'font-semibold'}>{label}</Text>
-    </Pressable>
-  )
-}
-
 type RankingsState = ReturnType<typeof useExploreRankings>
 
 export function ExploreRankingsPanel({ rankings }: { rankings: RankingsState }) {
@@ -46,34 +34,6 @@ export function ExploreRankingsPanel({ rankings }: { rankings: RankingsState }) 
     <>
     <View className="gap-lg pb-md">
       <PlatformAuthorityBand {...authority} />
-
-      <ContentSection title={copy.sections.rankings.title} subtitle={copy.sections.rankings.subtitle}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-sm">
-          {rankings.sportOptions.map((sportSlug) => (
-            <FilterChip
-              key={sportSlug}
-              label={getSportDefinition(sportSlug).name}
-              active={rankings.sportSlug === sportSlug}
-              onPress={() => rankings.setSportSlug(sportSlug)}
-            />
-          ))}
-        </ScrollView>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-sm">
-          {rankings.playerStats.map((stat) => (
-            <FilterChip
-              key={stat}
-              label={rankings.sport.playerStatFields[stat]?.fullLabel ?? rankings.sport.playerStatFields[stat]?.label ?? stat}
-              active={rankings.playerStat === stat}
-              onPress={() => rankings.setPlayerStat(stat)}
-            />
-          ))}
-          <FilterChip
-            label={copy.filters.verifiedOnly}
-            active={rankings.verifiedOnly}
-            onPress={() => rankings.setVerifiedOnly(!rankings.verifiedOnly)}
-          />
-        </ScrollView>
-      </ContentSection>
 
       {rankings.isError ? (
         <ErrorState message={copy.errors.rankings} />

@@ -1,9 +1,11 @@
-import type { ReactNode } from 'react'
 import { View } from 'react-native'
 import { Link } from 'expo-router'
 import { Text } from '@/shared/ui/Text'
 import { SpotlightCard } from '@/shared/ui/SpotlightCard'
 import { ContentSection } from '@/shared/layout/ContentSection'
+import { AdPlaceholder } from '@/modules/feed/AdPlaceholder'
+import type { HomeAdSlot } from '@/modules/feed/homeContent'
+import { SidebarBrandPanel, SidebarRail, SidebarSearchList, type SidebarListItem } from '@/shared/layout'
 
 export { ContentSection as HomeSection }
 
@@ -16,15 +18,15 @@ export interface PlatformAuthorityBandProps {
 
 export function PlatformAuthorityBand({ sportLabel, headline, subhead, metrics }: PlatformAuthorityBandProps) {
   return (
-    <View className="gap-md rounded-lg border border-border bg-surface p-lg">
-      <View className="gap-xs">
+    <View className="gap-sm border-b border-border bg-canvas pb-md">
+      <View className="gap-xs border-l-4 border-sport-accent pl-md">
         <Text variant="statLabel" className="text-sport-accent">{sportLabel}</Text>
-        <Text variant="entityName" className="text-2xl">{headline}</Text>
-        <Text variant="caption">{subhead}</Text>
+        <Text className="text-2xl font-bold">{headline}</Text>
+        <Text variant="caption" numberOfLines={2}>{subhead}</Text>
       </View>
       <View className="flex-row flex-wrap gap-sm">
         {metrics.map((metric) => (
-          <View key={metric.label} className="min-w-[30%] flex-1 rounded-md bg-canvas px-md py-sm">
+          <View key={metric.label} className="min-w-[30%] flex-1 border-r border-border bg-surface px-md py-sm">
             <Text variant="statValue" className="text-xl">{metric.value}</Text>
             <Text variant="statLabel">{metric.label}</Text>
           </View>
@@ -95,5 +97,29 @@ export function CommunityPulseMetrics({ metrics }: { metrics: { label: string; v
         </View>
       ))}
     </View>
+  )
+}
+
+export type HomeSidebarItem = SidebarListItem & { section: 'Live' | 'Leaders' | 'Videos' }
+
+export interface HomeSidebarProps {
+  ad?: HomeAdSlot
+  items: HomeSidebarItem[]
+}
+
+export function HomeSidebar({ ad, items }: HomeSidebarProps) {
+  return (
+    <SidebarRail>
+      <SidebarBrandPanel />
+
+      {ad ? <AdPlaceholder slot={ad} /> : null}
+
+      <SidebarSearchList
+        title="Freshest"
+        subtitle="Filter the latest items on the board."
+        items={items}
+        filters={['All', 'Live', 'Leaders', 'Videos']}
+      />
+    </SidebarRail>
   )
 }
