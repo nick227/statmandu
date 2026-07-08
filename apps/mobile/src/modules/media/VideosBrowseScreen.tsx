@@ -1,5 +1,4 @@
 import { View, useWindowDimensions } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Video } from 'lucide-react-native'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
@@ -8,58 +7,51 @@ import { VideoFilmSkeleton } from '@/modules/media/VideoFilmSkeleton'
 import { useImmersiveFilmTabBar } from '@/modules/media/useImmersiveFilmTabBar'
 import { VIDEOS_COPY, VIDEOS_SCREEN } from '@/modules/media/videosContent'
 import { useVideosBrowse } from '@/modules/media/useVideosBrowse'
-import { LAYOUT, WideSidebarColumn } from '@/shared/layout'
+import { LAYOUT, PageFrame, Screen } from '@/shared/layout'
 import { VideosSidebar } from '@/modules/media/VideosSidebar'
 
 export function VideosBrowseScreen() {
   const browse = useVideosBrowse()
-  const insets = useSafeAreaInsets()
   const { width } = useWindowDimensions()
   const copy = VIDEOS_COPY
   const hasVideos = browse.videos.length > 0
   const showSidebar = width >= LAYOUT.wideBreakpoint
-  const stageWidth = showSidebar ? Math.floor(width * 0.7) : undefined
+  const contentWidth = Math.min(width, LAYOUT.pageMaxWidth)
+  const stageWidth = showSidebar ? Math.floor(contentWidth * 0.7) : contentWidth
 
   useImmersiveFilmTabBar(hasVideos)
 
   if (browse.isError) {
     return (
-      <View className="flex-1 bg-canvas" style={{ paddingTop: insets.top }}>
+      <Screen title="Video">
         <ErrorState message={VIDEOS_SCREEN.error} />
-      </View>
+      </Screen>
     )
   }
 
   if (browse.isLoading) {
     return (
-      <View className="flex-1 bg-canvas" style={{ paddingTop: insets.top }}>
+      <Screen title="Video">
         <VideoFilmSkeleton />
-      </View>
+      </Screen>
     )
   }
 
   if (!hasVideos) {
     return (
-      <View className="flex-1 bg-canvas" style={{ paddingTop: insets.top }}>
+      <Screen title="Video">
         <EmptyState icon={Video} title={copy.empty.title} description={copy.empty.description} />
-      </View>
+      </Screen>
     )
   }
 
   return (
-    <View className="flex-1 bg-black" style={{ paddingTop: insets.top }}>
-      {showSidebar ? (
-        <View className="flex-1 flex-row">
-          <View className="flex-1">
-            <VideoFeed items={browse.videos} stageWidth={stageWidth} />
-          </View>
-          <WideSidebarColumn>
-            <VideosSidebar videos={browse.videos} />
-          </WideSidebarColumn>
-        </View>
-      ) : (
-        <VideoFeed items={browse.videos} />
-      )}
-    </View>
+    <Screen title="Video" className="bg-black">
+      <PageFrame
+        main={<VideoFeed items={browse.videos} stageWidth={stageWidth} />}
+        sidebar={<VideosSidebar videos={browse.videos} />}
+        narrowSidebar="hidden"
+      />
+    </Screen>
   )
 }

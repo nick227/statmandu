@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { AppState, FlatList, View, useWindowDimensions, type ViewToken } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useIsFocused } from '@react-navigation/native'
+import { useFocusEffect } from 'expo-router'
 import type { components } from '@statman/sdk'
 import { VideoFeedCard } from '@/modules/media/VideoFeedCard'
 import { VideoPlaybackProvider, useVideoPlayback } from '@/shared/media'
@@ -17,17 +17,18 @@ function VideoFeedList({ items, stageWidth }: { items: MediaAsset[]; stageWidth?
   const { width } = useWindowDimensions()
   const resolvedWidth = stageWidth ?? width
   const insets = useSafeAreaInsets()
-  const isFocused = useIsFocused()
   const { activeVideoId, setActiveVideoId } = useVideoPlayback()
 
   const stateRef = useRef({ activeVideoId, setActiveVideoId })
   stateRef.current = { activeVideoId, setActiveVideoId }
 
-  useEffect(() => {
-    if (!isFocused) {
-      setActiveVideoId(null)
-    }
-  }, [isFocused, setActiveVideoId])
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        stateRef.current.setActiveVideoId(null)
+      }
+    }, [])
+  )
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
@@ -51,7 +52,7 @@ function VideoFeedList({ items, stageWidth }: { items: MediaAsset[]; stageWidth?
   }).current
 
   return (
-    <View className="flex-1 bg-canvas" style={{ width: resolvedWidth }}>
+    <View className="flex-1 bg-canvas">
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
@@ -64,6 +65,7 @@ function VideoFeedList({ items, stageWidth }: { items: MediaAsset[]; stageWidth?
             item={item}
             isActive={item.id === activeVideoId}
             onPlay={() => setActiveVideoId(item.id)}
+            stageWidth={stageWidth}
           />
         )}
       />

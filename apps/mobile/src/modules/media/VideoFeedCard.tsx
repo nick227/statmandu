@@ -13,6 +13,7 @@ export interface VideoFeedCardProps {
   item: MediaAsset
   isActive: boolean
   onPlay: () => void
+  stageWidth?: number
 }
 
 function formatRelativeTime(dateString: string) {
@@ -26,9 +27,10 @@ function formatRelativeTime(dateString: string) {
   return `${Math.floor(days / 7)}w`
 }
 
-export function VideoFeedCard({ item, isActive, onPlay }: VideoFeedCardProps) {
+export function VideoFeedCard({ item, isActive, onPlay, stageWidth }: VideoFeedCardProps) {
   const router = useRouter()
   const { width } = useWindowDimensions()
+  const resolvedWidth = stageWidth ?? width
   const filmLabel = mediaFilmLabelForTarget(item.targetType)
   const targetType = isMediaTargetType(item.targetType) ? item.targetType : null
   const targetActionLabel = targetType ? mediaTargetActionLabel(targetType) : null
@@ -44,7 +46,7 @@ export function VideoFeedCard({ item, isActive, onPlay }: VideoFeedCardProps) {
   const displayName = uploadedBy?.profile?.displayName || 'Unknown User'
 
   // 16:9 aspect ratio for standard YouTube videos
-  const videoHeight = (width * 9) / 16
+  const videoHeight = (resolvedWidth * 9) / 16
 
   return (
     <View className="bg-canvas">
@@ -72,11 +74,11 @@ export function VideoFeedCard({ item, isActive, onPlay }: VideoFeedCardProps) {
       </View>
 
       {/* Video Stage */}
-      <View className="bg-black" style={{ width, height: videoHeight }}>
+      <View className="bg-black" style={{ width: resolvedWidth, height: videoHeight }}>
         <VideoStage
           videoId={item.youtubeVideoId}
           mode="inline"
-          width={width}
+          width={resolvedWidth}
           height={videoHeight}
           isActive={isActive}
           onPlayRequest={onPlay}
