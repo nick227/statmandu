@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useCurrentUser, useFollows, useCreateFollow, useDeleteFollow } from '@statman/sdk'
 import { Button } from '@/shared/ui/Button'
+import { SignInPrompt } from '@/shared/ui/SignInPrompt'
 
 export interface ConnectedFollowButtonProps {
   targetType: 'PLAYER' | 'TEAM'
@@ -9,7 +10,7 @@ export interface ConnectedFollowButtonProps {
 }
 
 export function ConnectedFollowButton({ targetType, targetId, className }: ConnectedFollowButtonProps) {
-  const { data: me } = useCurrentUser()
+  const { data: me, isLoading: isAuthLoading } = useCurrentUser()
   const { data: follows, isLoading } = useFollows(targetType, targetId)
   const create = useCreateFollow()
   const remove = useDeleteFollow(targetType, targetId)
@@ -19,7 +20,11 @@ export function ConnectedFollowButton({ targetType, targetId, className }: Conne
     [follows, me]
   )
 
-  if (isLoading || !me) return null
+  if (isAuthLoading || isLoading) return null
+
+  if (!me) {
+    return <SignInPrompt message="Sign in to follow" className={className ?? 'py-sm'} />
+  }
 
   const isFollowing = Boolean(myFollow)
 

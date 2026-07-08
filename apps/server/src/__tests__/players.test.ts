@@ -14,7 +14,7 @@ describe('listPlayers', () => {
   it('GET /players', async () => {
     const sport = await seedSport()
     const athleteProfile = await db.athleteProfile.create({
-      data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'SELF_REPORTED' },
+      data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
     })
     await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
 
@@ -28,10 +28,10 @@ describe('listPlayers', () => {
   it('searches by name via q', async () => {
     const sport = await seedSport()
     const alpha = await db.athleteProfile.create({
-      data: { slug: 'alpha-jones', firstName: 'Alpha', lastName: 'Jones', sourceStatus: 'SELF_REPORTED' },
+      data: { slug: 'alpha-jones', firstName: 'Alpha', lastName: 'Jones', sourceStatus: 'PLAYER_REPORTED' },
     })
     const beta = await db.athleteProfile.create({
-      data: { slug: 'beta-smith', firstName: 'Beta', lastName: 'Smith', sourceStatus: 'SELF_REPORTED' },
+      data: { slug: 'beta-smith', firstName: 'Beta', lastName: 'Smith', sourceStatus: 'PLAYER_REPORTED' },
     })
     await db.player.create({ data: { athleteProfileId: alpha.id, sportId: sport.id } })
     await db.player.create({ data: { athleteProfileId: beta.id, sportId: sport.id } })
@@ -68,7 +68,7 @@ describe('getPlayer', () => {
   it('GET /players/{playerId}', async () => {
     const sport = await seedSport()
     const athleteProfile = await db.athleteProfile.create({
-      data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'SELF_REPORTED' },
+      data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
     })
     const player = await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
 
@@ -92,7 +92,7 @@ describe('updatePlayer', () => {
         slug: 'jayden-rios',
         firstName: 'Jayden',
         lastName: 'Rios',
-        sourceStatus: 'SELF_REPORTED',
+        sourceStatus: 'PLAYER_REPORTED',
         claimedByUserId: testUserId,
       },
     })
@@ -116,7 +116,7 @@ describe('updatePlayer', () => {
         slug: 'jayden-rios',
         firstName: 'Jayden',
         lastName: 'Rios',
-        sourceStatus: 'SELF_REPORTED',
+        sourceStatus: 'PLAYER_REPORTED',
         claimedByUserId: testUserId,
       },
     })
@@ -141,7 +141,7 @@ describe('verifyPlayer', () => {
   it('rejects a non-admin', async () => {
     const sport = await seedSport()
     const athleteProfile = await db.athleteProfile.create({
-      data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'SELF_REPORTED' },
+      data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
     })
     const player = await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
 
@@ -149,7 +149,7 @@ describe('verifyPlayer', () => {
       method: 'POST',
       url: `/players/${player.id}/verify`,
       headers: asAuth(testUserId),
-      payload: { sourceStatus: 'VERIFIED' },
+      payload: { sourceStatus: 'VERIFIED_TEAM_ACCOUNT' },
     })
     expect(res.statusCode).toBe(403)
   })
@@ -158,7 +158,7 @@ describe('verifyPlayer', () => {
     await db.user.update({ where: { id: testUserId }, data: { role: 'ADMIN' } })
     const sport = await seedSport()
     const athleteProfile = await db.athleteProfile.create({
-      data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'SELF_REPORTED' },
+      data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
     })
     const player = await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
 
@@ -166,10 +166,10 @@ describe('verifyPlayer', () => {
       method: 'POST',
       url: `/players/${player.id}/verify`,
       headers: asAuth(testUserId),
-      payload: { sourceStatus: 'VERIFIED' },
+      payload: { sourceStatus: 'VERIFIED_TEAM_ACCOUNT' },
     })
     expect(res.statusCode).toBe(200)
     await validateResponse('verifyPlayer', 200, res.json())
-    expect(res.json().data.athleteProfile.sourceStatus).toBe('VERIFIED')
+    expect(res.json().data.athleteProfile.sourceStatus).toBe('VERIFIED_TEAM_ACCOUNT')
   })
 })

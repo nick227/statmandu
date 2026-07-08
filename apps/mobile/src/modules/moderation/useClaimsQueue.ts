@@ -6,5 +6,6 @@ export function useClaimsQueue() {
   return {
     claims: claimsQuery.data?.data ?? [],
     isLoading: claimsQuery.isLoading,
+    isError: claimsQuery.isError,
   }
 }

@@ -3,11 +3,23 @@ import { useRouter, Stack } from 'expo-router'
 import { Text } from '@/shared/ui/Text'
 import { Textarea } from '@/shared/ui/Textarea'
 import { Button } from '@/shared/ui/Button'
+import { SignInPrompt } from '@/shared/ui/SignInPrompt'
+import { useAuthGate } from '@/modules/auth/useAuthGate'
 import { usePlayerClaim } from '@/modules/players/usePlayerClaim'
 
 export function PlayerClaimScreen({ playerId }: { playerId: string }) {
   const router = useRouter()
+  const { isAuthenticated, isAuthLoading } = useAuthGate()
   const { claim, note, setNote, submitted, submitClaim } = usePlayerClaim(playerId)
+
+  if (!isAuthLoading && !isAuthenticated) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: 'Claim Profile' }} />
+        <SignInPrompt message="Sign in to claim this profile." />
+      </>
+    )
+  }
 
   if (submitted) {
     return (

@@ -18,6 +18,9 @@ module.exports = {
         verified: 'rgb(var(--color-verified) / <alpha-value>)',
         dispute: 'rgb(var(--color-dispute) / <alpha-value>)',
         imported: 'rgb(var(--color-imported) / <alpha-value>)',
+        // Per-sport accent, scoped via useSportTheme()'s vars() — falls back
+        // to brand blue outside any sport context (see global.css).
+        'sport-accent': 'rgb(var(--color-sport-accent) / <alpha-value>)',
       },
       spacing: {
         xs: '4px',

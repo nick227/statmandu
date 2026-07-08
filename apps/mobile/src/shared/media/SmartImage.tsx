@@ -9,7 +9,7 @@ export interface SmartImageProps extends Omit<ImageProps, 'source'> {
 
 export function SmartImage({ uri, fallback, className, ...props }: SmartImageProps) {
   if (!uri) {
-    return <View className={cn('items-center justify-center bg-muted', className)}>{fallback}</View>
+    return <View className={cn('items-center justify-center bg-muted-text/15', className)}>{fallback}</View>
   }
 
   return <Image source={{ uri }} className={className} {...props} />

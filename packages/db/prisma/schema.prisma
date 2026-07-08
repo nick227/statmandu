@@ -77,12 +77,14 @@ model Session {
 // Provenance ladder for any stat, profile field, or record. Drives the
 // verification badge shown on public entity pages.
 enum SourceStatus {
-  SELF_REPORTED
-  TEAM_ENTERED
-  MANAGER_APPROVED
-  IMPORTED_SOURCE
-  SCRAPED_PUBLIC
-  VERIFIED
+  PLAYER_REPORTED
+  SPECTATOR_REPORTED
+  MULTI_SPECTATOR_CONFIRMED
+  TEAM_MANAGER_ENTERED
+  OFFICIAL_SCORER_RECORDED
+  VERIFIED_TEAM_ACCOUNT
+  ONLINE_SOURCE_IMPORTED
+  PUBLIC_SOURCE_SCRAPED
   IN_DISPUTE
 }
 
@@ -208,7 +210,7 @@ model AthleteProfile {
   bio            String?
   hometown       String?
   avatarUrl      String?
-  sourceStatus   SourceStatus @default(SELF_REPORTED)
+  sourceStatus   SourceStatus @default(PLAYER_REPORTED)
   claimedByUserId String?     @unique
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -227,6 +229,23 @@ enum PlayerPosition {
   SF
   PF
   C
+  GK
+  DEF
+  MID
+  FWD
+  QB
+  RB
+  WR
+  TE
+  OL
+  DL
+  LB
+  CB
+  S
+  K
+  P
+  SINGLES
+  DOUBLES
 }
 
 enum PlayerStatus {
@@ -377,6 +396,25 @@ enum GameEventType {
   FOUL
   SUBSTITUTION_IN
   SUBSTITUTION_OUT
+  SOCCER_GOAL
+  SOCCER_ASSIST
+  SOCCER_SHOT
+  SOCCER_SAVE
+  SOCCER_YELLOW_CARD
+  SOCCER_RED_CARD
+  FOOTBALL_PASS_TD
+  FOOTBALL_RUSH_TD
+  FOOTBALL_REC_TD
+  FOOTBALL_FIELD_GOAL_MADE
+  FOOTBALL_EXTRA_POINT_MADE
+  FOOTBALL_SACK
+  FOOTBALL_INTERCEPTION
+  TENNIS_MATCH_WIN
+  TENNIS_MATCH_LOSS
+  TENNIS_SET_WIN
+  TENNIS_SET_LOSS
+  TENNIS_ACE
+  TENNIS_DOUBLE_FAULT
 }
 
 enum GameEventStatus {
@@ -457,7 +495,8 @@ model GameStatLine {
   threeAttempted Int          @default(0)
   ftMade         Int          @default(0)
   ftAttempted    Int          @default(0)
-  sourceStatus   SourceStatus @default(TEAM_ENTERED)
+  stats          Json?
+  sourceStatus   SourceStatus @default(OFFICIAL_SCORER_RECORDED)
   disputeNote    String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -488,6 +527,7 @@ model PlayerSeasonStat {
   threeAttempted Int      @default(0)
   ftMade         Int      @default(0)
   ftAttempted    Int      @default(0)
+  stats          Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -505,6 +545,7 @@ model TeamSeasonStat {
   losses        Int      @default(0)
   pointsFor     Int      @default(0)
   pointsAgainst Int      @default(0)
+  stats         Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -544,9 +585,22 @@ model MediaAsset {
 // ─────────────────────────────────────────────────────────────────────────
 
 enum ReferenceSourceType {
-  IMPORTED_SOURCE
-  SCRAPED_PUBLIC
-  MANUAL
+  VERIFIED_TEAM_ACCOUNT
+  TEAM_MANAGER
+  OFFICIAL_SCORER
+  PLAYER_REPORT
+  SPECTATOR_REPORT
+  MULTI_SPECTATOR_REPORT
+  TEAM_WEBSITE
+  LEAGUE_WEBSITE
+  MAXPREPS
+  HUDL
+  YOUTUBE
+  NEWS_ARTICLE
+  BOXSCORE_PDF
+  SCOREBOOK_PHOTO
+  PUBLIC_SCRAPE
+  OTHER
 }
 
 model SourceReference {

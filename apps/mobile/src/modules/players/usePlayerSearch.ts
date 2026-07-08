@@ -10,5 +10,6 @@ export function usePlayerSearch() {
     setQ,
     players: playersQuery.data?.pages.flatMap((p) => p.data) ?? [],
     isLoading: playersQuery.isLoading,
+    isError: playersQuery.isError,
   }
 }

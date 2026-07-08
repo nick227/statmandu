@@ -89,6 +89,23 @@ export function useGameSnapshot(gameId: string) {
   })
 }
 
+// Full play-by-play — distinct from useGameSnapshot (last 20, live-polling
+// only). Works for any game status and doesn't poll, since a finalized
+// recap is static.
+export function useGameEvents(gameId: string) {
+  return useQuery({
+    queryKey: ['game', gameId, 'events'],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET('/games/{gameId}/events', {
+        params: { path: { gameId } },
+      })
+      if (error) throw new ApiError(response.status, (error as any).error)
+      return data!
+    },
+    enabled: Boolean(gameId),
+  })
+}
+
 export function useFinalizeGame(gameId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -101,6 +118,56 @@ export function useFinalizeGame(gameId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['game', gameId] })
+    },
+  })
+}
+
+export function useGameConflicts(gameId: string) {
+  return useQuery({
+    queryKey: ['game', gameId, 'conflicts'],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET('/games/{gameId}/conflicts', {
+        params: { path: { gameId } },
+      })
+      if (error) throw new ApiError(response.status, (error as any).error)
+      return data!
+    },
+    enabled: Boolean(gameId),
+    refetchInterval: 4000,
+  })
+}
+
+export function useResolveGameConflict(gameId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ conflictId, resolvedEventId }: { conflictId: string; resolvedEventId: string }) => {
+      const { data, error, response } = await getApiClient().POST('/games/{gameId}/conflicts/{conflictId}/resolve', {
+        params: { path: { gameId, conflictId } },
+        body: { resolvedEventId },
+      })
+      if (error) throw new ApiError(response.status, (error as any).error)
+      return data!
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['game', gameId, 'conflicts'] })
+      queryClient.invalidateQueries({ queryKey: ['game', gameId, 'snapshot'] })
+    },
+  })
+}
+
+export function useMarkGameConflictDisputed(gameId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (conflictId: string) => {
+      const { data, error, response } = await getApiClient().POST('/games/{gameId}/conflicts/{conflictId}/mark-disputed', {
+        params: { path: { gameId, conflictId } },
+      })
+      if (error) throw new ApiError(response.status, (error as any).error)
+      return data!
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['game', gameId, 'conflicts'] })
+      queryClient.invalidateQueries({ queryKey: ['game', gameId, 'snapshot'] })
     },
   })
 }

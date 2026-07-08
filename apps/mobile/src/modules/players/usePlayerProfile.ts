@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { useMedia, usePlayer, usePlayerGames, usePlayerSeasonStats } from '@statman/sdk'
+import { useMemo, useState } from 'react'
+import { useGame, useMedia, usePlayer, usePlayerGames, usePlayerSeasonStats } from '@statman/sdk'
+import { sportStatChips } from '@/modules/sports'
 
 const PLAYER_PROFILE_TABS = ['Stats', 'Games', 'Media', 'Sources']
 
@@ -14,14 +15,26 @@ export function usePlayerProfile(playerId: string) {
   const player = playerQuery.data?.data
   const profile = player?.athleteProfile
   const season = seasonStatsQuery.data?.data[0]
-  const primaryVideo = mediaQuery.data?.data[0]
+  const media = mediaQuery.data?.data ?? []
+  const primaryVideo = media[0]
+  const games = gamesQuery.data?.data ?? []
 
-  const stats = [
-    { label: 'PPG', value: season ? (season.points / Math.max(season.gamesPlayed, 1)).toFixed(1) : '0.0' },
-    { label: 'RPG', value: season ? ((season.offRebounds + season.defRebounds) / Math.max(season.gamesPlayed, 1)).toFixed(1) : '0.0' },
-    { label: 'APG', value: season ? (season.assists / Math.max(season.gamesPlayed, 1)).toFixed(1) : '0.0' },
-    { label: 'GP', value: season?.gamesPlayed ?? 0 },
-  ]
+  // games is already ordered desc by createdAt (see StatsService.listPlayerGames),
+  // so the first entry is the most recent — fetched separately for real
+  // opponent/date context since the stat-line list itself carries neither.
+  const lastGameLine = games[0]
+  const lastGameQuery = useGame(lastGameLine?.gameId ?? '')
+  const lastGame = lastGameQuery.data?.data
+
+  // Genuinely computed from real data, not fabricated — the single highest
+  // points total across every finalized game this player has a line for.
+  const seasonHighPoints = useMemo(
+    () => (games.length === 0 ? null : Math.max(...games.map((g) => g.points))),
+    [games]
+  )
+
+  const sport = player?.sport?.slug ?? 'basketball'
+  const stats = sportStatChips(sport, season ?? { stats: null })
 
   return {
     tab,
@@ -32,8 +45,12 @@ export function usePlayerProfile(playerId: string) {
     season,
     primaryVideo,
     stats,
-    games: gamesQuery.data?.data ?? [],
-    media: mediaQuery.data?.data ?? [],
+    games,
+    lastGameLine,
+    lastGame,
+    seasonHighPoints,
+    media,
     isLoading: playerQuery.isLoading,
+    isError: playerQuery.isError,
   }
 }

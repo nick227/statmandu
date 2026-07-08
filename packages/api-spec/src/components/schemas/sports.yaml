@@ -26,5 +26,6 @@ Team:
     city: { type: ['string', 'null'] }
     logoUrl: { type: ['string', 'null'] }
     sportId: { type: string }
+    sport: { $ref: '#/Sport' }
     leagueId: { type: string }
     league: { $ref: '#/League' }

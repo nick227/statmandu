@@ -4,9 +4,12 @@ import { Text } from '@/shared/ui/Text'
 import { Input } from '@/shared/ui/Input'
 import { Textarea } from '@/shared/ui/Textarea'
 import { Button } from '@/shared/ui/Button'
+import { SignInPrompt } from '@/shared/ui/SignInPrompt'
+import { useAuthGate } from '@/modules/auth/useAuthGate'
 import { useDisputeForm } from '@/modules/disputes/useDisputeForm'
 
 export function DisputesScreen() {
+  const { isAuthenticated, isAuthLoading } = useAuthGate()
   const {
     description,
     openDispute,
@@ -19,6 +22,15 @@ export function DisputesScreen() {
     targetType,
     targetTypes,
   } = useDisputeForm()
+
+  if (!isAuthLoading && !isAuthenticated) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: 'Disputes & Corrections' }} />
+        <SignInPrompt message="Sign in to submit a dispute." />
+      </>
+    )
+  }
 
   if (submitted) {
     return (

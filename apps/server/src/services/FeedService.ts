@@ -1,12 +1,17 @@
 import { db } from '@statman/db'
+import type { EntityType, FeedItemType } from '@statman/db'
 import { decodeCursor, encodeCursor, normalizeLimit } from '../lib/pagination'
+import { EntityTargetService } from './EntityTargetService'
+
+const targetService = new EntityTargetService()
 
 export class FeedService {
-  record(data: { type: string; targetType: string; targetId: string; summary: string }) {
+  async record(data: { type: FeedItemType; targetType: EntityType; targetId: string; summary: string }) {
+    await targetService.requireTarget(data.targetType, data.targetId)
     return db.feedItem.create({
       data: {
-        type: data.type as any,
-        targetType: data.targetType as any,
+        type: data.type,
+        targetType: data.targetType,
         targetId: data.targetId,
         summary: data.summary,
         occurredAt: new Date(),

@@ -18,9 +18,10 @@ export function EntityProfileTabs({ tabs, active, onChange, className }: EntityP
           <Pressable
             key={tab}
             onPress={() => onChange(tab)}
-            className={cn('py-sm mr-lg border-b-2', isActive ? 'border-brand' : 'border-transparent')}
+            hitSlop={8}
+            className={cn('py-md mr-lg border-b-2', isActive ? 'border-sport-accent' : 'border-transparent')}
           >
-            <Text className={cn('font-semibold', isActive ? 'text-brand' : 'text-muted-text')}>{tab}</Text>
+            <Text className={cn('font-semibold', isActive ? 'text-sport-accent' : 'text-muted-text')}>{tab}</Text>
           </Pressable>
         )
       })}

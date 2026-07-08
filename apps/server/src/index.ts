@@ -59,7 +59,7 @@ async function main() {
   // spec-driven routing — operationId → handler export, security scheme → handler
   await server.register(openapiGlue, {
     specification: specPath,
-    service: handlers,
+    serviceHandlers: handlers,
     securityHandlers: security,
     noAdditional: true,
   } as any)

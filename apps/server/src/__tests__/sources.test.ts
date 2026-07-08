@@ -9,7 +9,7 @@ const app = buildTestApp()
 async function seedPlayer() {
   const sport = await db.sport.create({ data: { slug: 'basketball', name: 'Basketball' } })
   const athleteProfile = await db.athleteProfile.create({
-    data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'SELF_REPORTED' },
+    data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
   })
   return db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
 }
@@ -18,7 +18,7 @@ describe('listSources', () => {
   it('GET /sources', async () => {
     const player = await seedPlayer()
     await db.sourceReference.create({
-      data: { targetType: 'ATHLETE_PROFILE', targetId: player.athleteProfileId, sourceType: 'MANUAL', label: 'Coach report' },
+      data: { targetType: 'ATHLETE_PROFILE', targetId: player.athleteProfileId, sourceType: 'TEAM_MANAGER', label: 'Coach report' },
     })
 
     const res = await app.inject({ method: 'GET', url: `/sources?targetType=ATHLETE_PROFILE&targetId=${player.athleteProfileId}` })
@@ -44,11 +44,26 @@ describe('createSourceReference', () => {
       payload: {
         targetType: 'ATHLETE_PROFILE',
         targetId: player.athleteProfileId,
-        sourceType: 'MANUAL',
+        sourceType: 'TEAM_MANAGER',
         label: 'Coach report',
       },
     })
     expect(res.statusCode).toBe(201)
     await validateResponse('createSourceReference', 201, res.json())
+  })
+
+  it('rejects a source for an unknown target', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/sources',
+      headers: asAuth(testUserId),
+      payload: {
+        targetType: 'ATHLETE_PROFILE',
+        targetId: 'missing-profile',
+        sourceType: 'TEAM_MANAGER',
+        label: 'Coach report',
+      },
+    })
+    expect(res.statusCode).toBe(404)
   })
 })

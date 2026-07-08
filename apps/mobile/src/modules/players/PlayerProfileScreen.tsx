@@ -1,80 +1,186 @@
-import { View } from 'react-native'
-import { Link } from 'expo-router'
+import { useState } from 'react'
+import { Pressable, Share, View } from 'react-native'
+import { Link, useRouter } from 'expo-router'
+import Animated, { FadeIn, Layout, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import { ChevronDown } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
 import { LoadingState } from '@/shared/ui/LoadingState'
+import { ErrorState } from '@/shared/ui/ErrorState'
 import { Button } from '@/shared/ui/Button'
+import { BackButton } from '@/shared/ui/BackButton'
+import { FullScreenMediaViewer } from '@/shared/media'
+import { Screen } from '@/shared/layout'
+import { useNativeColor, useSportTheme } from '@/lib/theme'
 import { EntityProfileShell } from '@/shared/layout/entity-profile/EntityProfileShell'
-import { GameBoxScoreTable } from '@/modules/games/GameBoxScoreTable'
+import { MediaGrid } from '@/modules/media/MediaGrid'
 import { YouTubeMediaAttachForm } from '@/modules/media/YouTubeMediaAttachForm'
+import { ConnectedSourcesPanel } from '@/modules/disputes/ConnectedSourcesPanel'
 import { PlayerSourceBadge } from '@/modules/players/PlayerSourceBadge'
+import { PlayerHighlights } from '@/modules/players/PlayerHighlights'
 import { usePlayerProfile } from '@/modules/players/usePlayerProfile'
 import { ConnectedFollowButton } from '@/modules/social/ConnectedFollowButton'
 import { ConnectedReactionBar } from '@/modules/social/ConnectedReactionBar'
+import { SportStatStrip, SportStatTable } from '@/modules/sports'
 
 export function PlayerProfileScreen({ playerId }: { playerId: string }) {
   const profileState = usePlayerProfile(playerId)
+  const router = useRouter()
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null)
+  const [statsExpanded, setStatsExpanded] = useState(false)
+  const mutedTextColor = useNativeColor('mutedText')
+  const sportTheme = useSportTheme(profileState.player?.sport?.slug)
+  const chevronRotation = useSharedValue(0)
+  const chevronStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${chevronRotation.value}deg` }] }))
 
-  if (profileState.isLoading || !profileState.player || !profileState.profile) {
-    return <LoadingState />
+  function toggleStatsExpanded() {
+    setStatsExpanded((v) => !v)
+    chevronRotation.value = withTiming(statsExpanded ? 0 : 180, { duration: 200 })
   }
 
-  const { games, media, player, primaryVideo, profile, season, setTab, stats, tab, tabs } = profileState
+  if (profileState.isError) {
+    return (
+      <Screen>
+        <View className="px-lg pb-md"><BackButton tone="dark" /></View>
+        <ErrorState className="flex-1 items-center justify-center p-lg gap-sm" message="This player couldn't be loaded." />
+      </Screen>
+    )
+  }
+
+  if (profileState.isLoading || !profileState.player || !profileState.profile) {
+    return (
+      <Screen>
+        <View className="px-lg pb-md"><BackButton tone="dark" /></View>
+        <LoadingState />
+      </Screen>
+    )
+  }
+
+  const { games, lastGame, lastGameLine, media, player, profile, season, seasonHighPoints, setTab, stats, tab, tabs } = profileState
+  const sport = player.sport?.slug ?? 'basketball'
+  const name = `${profile.firstName} ${profile.lastName}`
+  const mediaItems = media.map((m) => ({ id: m.id, youtubeVideoId: m.youtubeVideoId, title: m.title }))
+  const classYear = player.classYear
+    ? player.classYear.toLowerCase().startsWith('class') ? player.classYear : `Class of ${player.classYear}`
+    : null
+  const positionAndTeam = [player.position, classYear, player.currentTeam?.name].filter(Boolean).join(' · ')
+  const currentTeam = player.currentTeam
+  const teamMetaLine = positionAndTeam
+    ? currentTeam
+      ? { text: positionAndTeam, onPress: () => router.push({ pathname: '/teams/[teamId]', params: { teamId: currentTeam.id } }) }
+      : positionAndTeam
+    : null
+
+  function handleShare() {
+    const headline = stats.map((s) => `${s.value} ${s.label}`).join(' · ')
+    Share.share({
+      message: [name, [player.currentTeam?.name, player.position].filter(Boolean).join(' · '), headline]
+        .filter(Boolean)
+        .join('\n'),
+    })
+  }
 
   return (
-    <EntityProfileShell
-      hero={{ youtubeVideoId: primaryVideo?.youtubeVideoId, fallbackImageUri: profile.avatarUrl }}
-      identity={{
-        name: `${profile.firstName} ${profile.lastName}`,
-        subtitle: [player.currentTeam?.name, player.position, player.classYear].filter(Boolean).join(' · '),
-        avatarUri: profile.avatarUrl,
-        badge: <PlayerSourceBadge status={profile.sourceStatus} />,
-      }}
-      stats={stats}
-      tabs={tabs}
-      activeTab={tab}
-      onTabChange={setTab}
-    >
-      <View className="flex-row items-center justify-between px-lg py-md">
-        <ConnectedFollowButton targetType="PLAYER" targetId={player.id} />
-        <ConnectedReactionBar targetType="PLAYER" targetId={player.id} />
-      </View>
-
-      {tab === 'Stats' ? (
-        <View className="px-lg gap-sm">
-          <Text className="font-semibold">Season totals</Text>
-          <Text>{season ? `${season.points} PTS · ${season.assists} AST · ${season.offRebounds + season.defRebounds} REB` : 'No stats yet this season.'}</Text>
+    <>
+      <EntityProfileShell
+        style={sportTheme}
+        hero={{ mediaItems, fallbackImageUri: profile.avatarUrl, onMediaPress: setViewerIndex }}
+        onShare={handleShare}
+        identity={{
+          name,
+          // Name → @username → location → position, per the profile's IA:
+          // the athlete's identity dominates, everything else steps down.
+          metaLines: [
+            profile.claimedByUsername ? `@${profile.claimedByUsername}` : null,
+            profile.hometown,
+            teamMetaLine,
+          ],
+          avatarUri: profile.avatarUrl,
+          badge: <PlayerSourceBadge status={profile.sourceStatus} />,
+        }}
+        stats={stats}
+        highlights={<PlayerHighlights lastGameLine={lastGameLine} lastGame={lastGame} seasonHighPoints={seasonHighPoints} />}
+        tabs={tabs}
+        activeTab={tab}
+        onTabChange={setTab}
+      >
+        <View className="flex-row items-center justify-between px-lg py-md">
+          <ConnectedFollowButton targetType="PLAYER" targetId={player.id} />
+          <ConnectedReactionBar targetType="PLAYER" targetId={player.id} />
         </View>
-      ) : null}
 
-      {tab === 'Games' ? (
-        <GameBoxScoreTable
-          lines={games}
-          playerNameById={{ [player.id]: `${profile.firstName} ${profile.lastName}` }}
-        />
-      ) : null}
+        {tab === 'Stats' ? (
+          <Animated.View entering={FadeIn.duration(200)} layout={Layout.duration(220)} className="px-lg gap-sm">
+            <Text className="font-semibold">Season totals</Text>
+            {season ? (
+              <>
+                <SportStatStrip
+                  sport={sport}
+                  view={statsExpanded ? 'boxScore' : 'profileHeadline'}
+                  source={season}
+                  stats={season.stats as Record<string, unknown> | null}
+                />
+                <Pressable
+                  onPress={toggleStatsExpanded}
+                  className="flex-row items-center justify-center gap-xs py-sm"
+                  hitSlop={8}
+                >
+                  <Text variant="caption">{statsExpanded ? 'Show less' : 'Show all stats'}</Text>
+                  <Animated.View style={chevronStyle}>
+                    <ChevronDown size={14} color={mutedTextColor} />
+                  </Animated.View>
+                </Pressable>
+              </>
+            ) : (
+              <Text>No stats yet this season.</Text>
+            )}
+          </Animated.View>
+        ) : null}
 
-      {tab === 'Media' ? (
-        <View className="px-lg gap-md">
-          {media.length === 0 ? (
-            <Text variant="caption">No media attached yet.</Text>
-          ) : (
-            media.map((m) => <Text key={m.id}>{m.title ?? m.youtubeVideoId}</Text>)
-          )}
-          <YouTubeMediaAttachForm targetType="PLAYER" targetId={player.id} />
-        </View>
-      ) : null}
+        {tab === 'Games' ? (
+          <Animated.View entering={FadeIn.duration(200)}>
+            <SportStatTable
+              sport={sport}
+              rows={games}
+              mode="byGame"
+              emptyTitle="No game stats yet"
+              emptyDescription="Game stats appear after finalized contests."
+            />
+          </Animated.View>
+        ) : null}
 
-      {tab === 'Sources' ? (
-        <View className="px-lg gap-sm">
-          <Text variant="caption">Source status: {profile.sourceStatus}</Text>
-        </View>
-      ) : null}
+        {tab === 'Media' ? (
+          <Animated.View entering={FadeIn.duration(200)} className="px-lg gap-md">
+            <MediaGrid items={mediaItems} onItemPress={setViewerIndex} />
+            <YouTubeMediaAttachForm targetType="PLAYER" targetId={player.id} />
+          </Animated.View>
+        ) : null}
 
-      {!profile.claimedByUserId ? (
-        <Link href={{ pathname: '/players/[playerId]/claim', params: { playerId: player.id } }} asChild>
-          <Button variant="secondary" className="mx-lg mt-md">Claim this profile</Button>
-        </Link>
-      ) : null}
-    </EntityProfileShell>
+        {tab === 'Sources' ? (
+          <Animated.View entering={FadeIn.duration(200)} className="gap-lg">
+            <View className="px-lg">
+              <Text variant="caption">Source status: {profile.sourceStatus}</Text>
+            </View>
+            <ConnectedSourcesPanel targetType="ATHLETE_PROFILE" targetId={profile.id} />
+          </Animated.View>
+        ) : null}
+
+        {!profile.claimedByUserId ? (
+          <View className="mx-lg mt-lg gap-sm rounded-lg border border-border p-lg">
+            <Text className="font-semibold">Is this you?</Text>
+            <Text variant="caption">Claim this profile to manage it, attach media, and keep your stats up to date.</Text>
+            <Link href={{ pathname: '/players/[playerId]/claim', params: { playerId: player.id } }} asChild>
+              <Button variant="secondary" className="mt-xs">Claim this profile</Button>
+            </Link>
+          </View>
+        ) : null}
+      </EntityProfileShell>
+
+      <FullScreenMediaViewer
+        visible={viewerIndex != null}
+        items={mediaItems}
+        initialIndex={viewerIndex ?? 0}
+        onClose={() => setViewerIndex(null)}
+      />
+    </>
   )
 }

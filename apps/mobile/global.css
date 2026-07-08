@@ -20,6 +20,10 @@
     --color-verified: 22 163 74;
     --color-dispute: 245 158 11;
     --color-imported: 99 102 241;
+
+    /* Default/fallback for screens with no active sport context — mirrors
+       --color-brand. Overridden per-screen via useSportTheme()'s vars(). */
+    --color-sport-accent: 29 78 216;
   }
 
   .dark {
@@ -34,5 +38,7 @@
     --color-verified: 34 197 94;
     --color-dispute: 251 191 36;
     --color-imported: 129 140 248;
+
+    --color-sport-accent: 59 130 246;
   }
 }

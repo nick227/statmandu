@@ -42,7 +42,7 @@ describe('getTeamRoster', () => {
   it('GET /teams/{teamSlug}/roster', async () => {
     const { team, season } = await seedTeam()
     const athleteProfile = await db.athleteProfile.create({
-      data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'SELF_REPORTED' },
+      data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
     })
     const player = await db.player.create({
       data: { athleteProfileId: athleteProfile.id, sportId: team.sportId, jerseyNumber: 23 },
@@ -65,7 +65,7 @@ describe('addTeamRosterMember', () => {
   it('POST /teams/{teamId}/roster/members', async () => {
     const { team, season } = await seedTeam()
     const athleteProfile = await db.athleteProfile.create({
-      data: { slug: 'sam-lee', firstName: 'Sam', lastName: 'Lee', sourceStatus: 'SELF_REPORTED' },
+      data: { slug: 'sam-lee', firstName: 'Sam', lastName: 'Lee', sourceStatus: 'PLAYER_REPORTED' },
     })
     const player = await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: team.sportId } })
 
@@ -78,5 +78,23 @@ describe('addTeamRosterMember', () => {
     expect(res.statusCode).toBe(201)
     await validateResponse('addTeamRosterMember', 201, res.json())
     expect(res.json().data.playerId).toBe(player.id)
+  })
+
+  it('rejects a roster season from another league', async () => {
+    const { sport, team } = await seedTeam()
+    const otherLeague = await db.league.create({ data: { sportId: sport.id, slug: 'other-league', name: 'Other League' } })
+    const otherSeason = await db.season.create({ data: { leagueId: otherLeague.id, slug: 'other-season', name: 'Other Season' } })
+    const athleteProfile = await db.athleteProfile.create({
+      data: { slug: 'sam-lee', firstName: 'Sam', lastName: 'Lee', sourceStatus: 'PLAYER_REPORTED' },
+    })
+    const player = await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: team.sportId } })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/teams/${team.id}/roster/members`,
+      headers: asAuth(testUserId),
+      payload: { playerId: player.id, seasonId: otherSeason.id },
+    })
+    expect(res.statusCode).toBe(400)
   })
 })

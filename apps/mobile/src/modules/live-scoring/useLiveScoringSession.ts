@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Platform } from 'react-native'
+import * as Haptics from 'expo-haptics'
 import {
+  ApiError,
   useFinalizeGame,
   useGame,
+  useGameConflicts,
   useGameSnapshot,
   useJoinGameAsReporter,
   useStartLiveGame,
@@ -9,18 +13,90 @@ import {
   useTeamRoster,
   useUndoGameEvent,
 } from '@statman/sdk'
-import type { BasketballLiveEventType } from '@/modules/live-scoring/BasketballLiveEventPad'
+import type { components } from '@statman/sdk'
+import { predictNext } from '@statman/sports'
 
-export const LIVE_SCORING_ROLES = ['OFFICIAL_SCORER', 'TEAM_SCORER', 'BROADCASTER', 'SPECTATOR_REPORTER'] as const
+type GameEventType = components['schemas']['GameEventType']
+
+// Matches the backend GameReporterRole enum minus ADMIN_OWNER (assigned, not
+// self-joined) and VIEWER (that's the Spectate flow, not live capture).
+export const LIVE_SCORING_ROLES = ['OFFICIAL_SCORER', 'TEAM_SCORER', 'BROADCASTER', 'CONTRIBUTOR', 'SPECTATOR_REPORTER'] as const
+
+// Mirrors PermissionPolicy's GAME_MANAGER_ROLES on the server — keep in sync.
+const MANAGER_ROLES = ['ADMIN_OWNER', 'OFFICIAL_SCORER']
+
+const RETRY_INTERVAL_MS = 5000
+// Catch-up mode spaces synthetic timestamps this far apart so play-by-play
+// ordering stays correct even if the scorer pauses mid-batch to read a
+// paper stat sheet, instead of every rapid-fire tap bunching to "now".
+const CATCH_UP_STEP_MS = 4000
+
+// expo-haptics has no native implementation on web — mirrors the existing
+// Platform.OS === 'web' guard used for expo-secure-store elsewhere in the
+// app rather than assuming the library no-ops safely on its own.
+function safeHaptic(fn: () => void) {
+  if (Platform.OS === 'web') return
+  fn()
+}
+
+export type LiveScoringMode = 'live' | 'catchUp'
+
+export interface QueuedLiveEvent {
+  localId: string
+  type: GameEventType
+  playerId: string
+  teamId: string
+  clientTimestamp: string
+  // 'failed' = transient (network/5xx) — auto-retried. 'rejected' = the
+  // server actively refused it (4xx) — retrying won't help, needs a manual
+  // dismiss so it doesn't look like a silent data-loss bug.
+  status: 'pending' | 'syncing' | 'failed' | 'rejected'
+}
+
+function makeLocalId() {
+  return `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+export interface PredictedSelection {
+  selectedTeamId: string | null
+  clearPlayer: boolean
+  suggestedEventTypes: string[]
+}
+
+// Pure decision logic behind applyPrediction, pulled out so it's testable
+// without rendering the hook or mocking @statman/sdk's ~8 query/mutation
+// hooks. Given the team a just-submitted event belonged to (plus the
+// game's two team ids), decides what the *next* tap's team/player/
+// suggested-tiles should be.
+export function resolvePredictedSelection(
+  sport: string,
+  eventType: string,
+  current: { selectedTeamId: string | null; homeTeamId?: string; awayTeamId?: string }
+): PredictedSelection {
+  const prediction = predictNext(sport, eventType)
+  let selectedTeamId = current.selectedTeamId
+  if (prediction.flipPossession) {
+    if (selectedTeamId === current.homeTeamId) selectedTeamId = current.awayTeamId ?? selectedTeamId
+    else if (selectedTeamId === current.awayTeamId) selectedTeamId = current.homeTeamId ?? selectedTeamId
+  }
+  return { selectedTeamId, clearPlayer: !prediction.keepPlayer, suggestedEventTypes: prediction.suggestedEventTypes }
+}
 
 export function useLiveScoringSession(gameId: string) {
   const [joinedRole, setJoinedRole] = useState<string | null>(null)
+  const [mode, setMode] = useState<LiveScoringMode>('live')
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+  const [suggestedEventTypes, setSuggestedEventTypes] = useState<string[]>([])
   const [lastEventId, setLastEventId] = useState<string | null>(null)
+  const [queue, setQueue] = useState<QueuedLiveEvent[]>([])
+  const queueRef = useRef(queue)
+  queueRef.current = queue
+  const catchUpClockRef = useRef<number | null>(null)
 
   const gameQuery = useGame(gameId)
   const game = gameQuery.data?.data
+  const sport = game?.sport?.slug ?? 'basketball'
   const homeTeam = game?.gameTeams.find((gt) => gt.isHome)?.team
   const awayTeam = game?.gameTeams.find((gt) => !gt.isHome)?.team
   const activeTeamSlug = selectedTeamId === homeTeam?.id ? homeTeam?.slug : awayTeam?.slug
@@ -33,27 +109,113 @@ export function useLiveScoringSession(gameId: string) {
   const finalize = useFinalizeGame(gameId)
   const snapshotQuery = useGameSnapshot(gameId)
   const score = Object.fromEntries((snapshotQuery.data?.data.score ?? []).map((s) => [s.teamId, s.points]))
+  const reporterCount = snapshotQuery.data?.data.reporterCount ?? 1
+  const isManager = Boolean(joinedRole && MANAGER_ROLES.includes(joinedRole))
+  const conflictsQuery = useGameConflicts(isManager ? gameId : '')
+  const openConflictCount = conflictsQuery.data?.data.length ?? 0
+
+  useEffect(() => {
+    if (finalize.isSuccess) safeHaptic(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success))
+  }, [finalize.isSuccess])
 
   async function joinAsRole(role: string) {
     await join.mutateAsync({ role })
     setJoinedRole(role)
   }
 
-  async function submitEvent(type: BasketballLiveEventType) {
-    if (!selectedPlayerId || !selectedTeamId) return
-    const result = await submitEventMutation.mutateAsync({
-      type,
-      playerId: selectedPlayerId,
-      teamId: selectedTeamId,
-      clientTimestamp: new Date().toISOString(),
-    })
-    setLastEventId(result.data.id)
+  function nextClientTimestamp() {
+    if (mode !== 'catchUp') return new Date().toISOString()
+    if (catchUpClockRef.current == null) {
+      catchUpClockRef.current = game?.scheduledAt ? new Date(game.scheduledAt).getTime() : Date.now()
+    } else {
+      catchUpClockRef.current += CATCH_UP_STEP_MS
+    }
+    return new Date(catchUpClockRef.current).toISOString()
   }
+
+  // Applies the predictive engine's output for the team/player that should
+  // be pre-selected for the *next* tap — flips possession and/or clears the
+  // sticky player per the sport's EventDefinition.flow data (@statman/sports).
+  // The decision itself is a pure function (resolvePredictedSelection,
+  // below) so it's unit-testable without rendering this hook or mocking the
+  // SDK — this just applies the result to state.
+  function applyPrediction(eventType: GameEventType) {
+    const result = resolvePredictedSelection(sport, eventType, {
+      selectedTeamId,
+      homeTeamId: homeTeam?.id,
+      awayTeamId: awayTeam?.id,
+    })
+    setSuggestedEventTypes(result.suggestedEventTypes)
+    setSelectedTeamId(result.selectedTeamId)
+    if (result.clearPlayer) setSelectedPlayerId(null)
+  }
+
+  async function syncEvent(event: QueuedLiveEvent) {
+    setQueue((q) => q.map((e) => (e.localId === event.localId ? { ...e, status: 'syncing' } : e)))
+    try {
+      const result = await submitEventMutation.mutateAsync({
+        type: event.type,
+        playerId: event.playerId,
+        teamId: event.teamId,
+        clientTimestamp: event.clientTimestamp,
+      })
+      setLastEventId(result.data.id)
+      setQueue((q) => q.filter((e) => e.localId !== event.localId))
+      safeHaptic(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light))
+      applyPrediction(event.type)
+    } catch (err) {
+      const isRejected = err instanceof ApiError && err.status >= 400 && err.status < 500
+      setQueue((q) => q.map((e) => (e.localId === event.localId ? { ...e, status: isRejected ? 'rejected' : 'failed' } : e)))
+      if (isRejected) safeHaptic(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning))
+    }
+  }
+
+  // Optimistic: queued immediately so the event pad never waits on the
+  // network, then synced in the background. Local-first per the live game
+  // stat capture spec's "Offline/sync status always visible" requirement —
+  // does not persist across an app restart, just across network blips
+  // during one session (see CLAUDE.md).
+  // overridePlayerId lets a caller submit for a specific player other than
+  // the sticky selection — used by the substitution picker, which needs to
+  // submit SUBSTITUTION_OUT/SUBSTITUTION_IN for two different players in a
+  // row without disturbing whichever player is currently selected for scoring.
+  async function submitEvent(type: GameEventType, overridePlayerId?: string) {
+    const playerId = overridePlayerId ?? selectedPlayerId
+    if (!playerId || !selectedTeamId) return
+    const event: QueuedLiveEvent = {
+      localId: makeLocalId(),
+      type,
+      playerId,
+      teamId: selectedTeamId,
+      clientTimestamp: nextClientTimestamp(),
+      status: 'pending',
+    }
+    setQueue((q) => [...q, event])
+    await syncEvent(event)
+  }
+
+  function retrySync() {
+    for (const event of queueRef.current) {
+      if (event.status === 'failed') syncEvent(event)
+    }
+  }
+
+  function dismissQueuedEvent(localId: string) {
+    setQueue((q) => q.filter((e) => e.localId !== localId))
+  }
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (queueRef.current.some((e) => e.status === 'failed')) retrySync()
+    }, RETRY_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [])
 
   async function undoLastEvent() {
     if (!lastEventId) return
     await undoEvent.mutateAsync(lastEventId)
     setLastEventId(null)
+    setSuggestedEventTypes([])
   }
 
   function selectTeam(teamId: string) {
@@ -67,9 +229,13 @@ export function useLiveScoringSession(gameId: string) {
     awayTeam,
     roster: rosterQuery.data?.data ?? [],
     score,
+    reporterCount,
+    mode,
+    setMode,
     joinedRole,
     selectedTeamId,
     selectedPlayerId,
+    suggestedEventTypes,
     lastEventId,
     join,
     joinAsRole,
@@ -81,6 +247,12 @@ export function useLiveScoringSession(gameId: string) {
     finalize,
     selectTeam,
     setSelectedPlayerId,
+    isManager,
+    openConflictCount,
+    queue,
+    retrySync,
+    dismissQueuedEvent,
     isLoading: gameQuery.isLoading,
+    isError: gameQuery.isError,
   }
 }

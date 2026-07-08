@@ -72,11 +72,17 @@
 | Endpoint | Description | Auth | Success |
 |---|---|---|---|
 | `POST /games/{gameId}/reporters` | Join a game as a scorekeeper/broadcaster/spectator reporter | Auth required | `201` |
+| `POST /games/{gameId}/reporters/invite` | Invite or assign a reporter to a game (game manager only) | Auth required | `201` |
+| `PATCH /games/{gameId}/reporters/{reporterId}` | Change a reporter role or team assignment (game manager only) | Auth required | `200` |
+| `DELETE /games/{gameId}/reporters/{reporterId}` | Remove a reporter from a game (game manager only) | Auth required | `200` |
 | `POST /games/{gameId}/start-live` | Transition a game to LIVE (official scorer or admin reporter only) | Auth required | `200` |
 | `POST /games/{gameId}/events` | Submit a raw live-game event (offline-queueable by the client) | Auth required | `201` |
 | `DELETE /games/{gameId}/events/{eventId}` | Undo an event submitted by the calling reporter | Auth required | `200` |
 | `GET /games/{gameId}/snapshot` | Live score, recent events, and reporter presence (poll for realtime-lite updates) | Public | `200` |
 | `POST /games/{gameId}/finalize` | Run end-of-game reconciliation and publish the final box score | Auth required | `200` |
+| `GET /games/{gameId}/conflicts` | List open live-scoring conflicts for a game | Auth required | `200` |
+| `POST /games/{gameId}/conflicts/{conflictId}/resolve` | Resolve a live-scoring conflict by selecting the accepted event | Auth required | `200` |
+| `POST /games/{gameId}/conflicts/{conflictId}/mark-disputed` | Mark a live-scoring conflict as disputed instead of resolved | Auth required | `200` |
 
 ## Media
 

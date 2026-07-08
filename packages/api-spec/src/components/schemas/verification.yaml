@@ -1,6 +1,22 @@
 ReferenceSourceType:
   type: string
-  enum: [IMPORTED_SOURCE, SCRAPED_PUBLIC, MANUAL]
+  enum:
+    - VERIFIED_TEAM_ACCOUNT
+    - TEAM_MANAGER
+    - OFFICIAL_SCORER
+    - PLAYER_REPORT
+    - SPECTATOR_REPORT
+    - MULTI_SPECTATOR_REPORT
+    - TEAM_WEBSITE
+    - LEAGUE_WEBSITE
+    - MAXPREPS
+    - HUDL
+    - YOUTUBE
+    - NEWS_ARTICLE
+    - BOXSCORE_PDF
+    - SCOREBOOK_PHOTO
+    - PUBLIC_SCRAPE
+    - OTHER
 
 SourceReference:
   type: object

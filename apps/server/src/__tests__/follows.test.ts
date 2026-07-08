@@ -9,7 +9,7 @@ const app = buildTestApp()
 async function seedPlayer() {
   const sport = await db.sport.create({ data: { slug: 'basketball', name: 'Basketball' } })
   const athleteProfile = await db.athleteProfile.create({
-    data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'SELF_REPORTED' },
+    data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
   })
   return db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
 }
@@ -52,6 +52,16 @@ describe('createFollow', () => {
     })
     expect(second.statusCode).toBe(201)
     expect(second.json().data.id).toBe(first.json().data.id)
+  })
+
+  it('rejects following an unknown target', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/follows',
+      headers: asAuth(testUserId),
+      payload: { targetType: 'PLAYER', targetId: 'missing-player' },
+    })
+    expect(res.statusCode).toBe(404)
   })
 })
 

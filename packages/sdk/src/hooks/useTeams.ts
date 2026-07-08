@@ -40,6 +40,20 @@ export function useTeamRoster(teamSlug: string) {
   })
 }
 
+export function useTeamSeasonStats(teamSlug: string) {
+  return useQuery({
+    queryKey: ['team', teamSlug, 'stats'],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET('/teams/{teamSlug}/stats', {
+        params: { path: { teamSlug } },
+      })
+      if (error) throw new ApiError(response.status, (error as any).error)
+      return data!
+    },
+    enabled: Boolean(teamSlug),
+  })
+}
+
 export function useAddTeamRosterMember(teamId: string) {
   const queryClient = useQueryClient()
   return useMutation({

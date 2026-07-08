@@ -40,6 +40,24 @@ describe('createGame', () => {
     expect(res.statusCode).toBe(201)
     await validateResponse('createGame', 201, res.json())
     expect(res.json().data.gameTeams).toHaveLength(2)
+    expect(res.json().data.leagueId).toBe(homeTeam.leagueId)
+  })
+
+  it('rejects scheduling a team against itself', async () => {
+    const { sport, homeTeam } = await seedGameFixture()
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/games',
+      headers: asAuth(testUserId),
+      payload: {
+        sportSlug: sport.slug,
+        scheduledAt: new Date().toISOString(),
+        homeTeamId: homeTeam.id,
+        awayTeamId: homeTeam.id,
+      },
+    })
+    expect(res.statusCode).toBe(400)
   })
 })
 

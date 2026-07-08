@@ -6,5 +6,6 @@ export function useTeamsIndex() {
   return {
     teams: teamsQuery.data?.data ?? [],
     isLoading: teamsQuery.isLoading,
+    isError: teamsQuery.isError,
   }
 }

@@ -15,6 +15,7 @@
     "@fastify/swagger": "^8.0.0",
     "@fastify/swagger-ui": "^3.0.0",
     "@statman/db": "workspace:*",
+    "@statman/sports": "workspace:*",
     "bcryptjs": "^2.4.3",
     "fastify": "^4.0.0",
     "fastify-openapi-glue": "^4.0.0",

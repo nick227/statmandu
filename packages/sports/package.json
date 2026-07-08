@@ -1,0 +1,17 @@
+{
+  "name": "@statman/sports",
+  "version": "0.0.1",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'no lint configured for sports package'",
+    "test": "echo 'no tests for sports package'"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

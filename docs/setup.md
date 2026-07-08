@@ -18,9 +18,27 @@ Also create a **separate test database** and point `.env.test` at it — see
 every table between tests; running it against the dev DB would destroy seed
 data.
 
+Push the schema to the test database explicitly:
+
+```bash
+pnpm db:test:push
+```
+
 ```bash
 pnpm bootstrap   # install, push schema, bundle spec + generate SDK, generate tests, seed
 ```
+
+To refresh demo data later:
+
+```bash
+pnpm db:seed
+```
+
+See `docs/seeding.md` for the seeded accounts, demo personas, media fixtures,
+and rerun/idempotency notes.
+
+See `docs/sport-definitions.md` for the portable sport definition layer used
+to support basketball, football, soccer, tennis, and future sports.
 
 ## Running
 

@@ -7,5 +7,6 @@ export function useLiveScoringGames() {
   return {
     games: [...(liveGamesQuery.data?.data ?? []), ...(scheduledGamesQuery.data?.data ?? [])],
     isLoading: scheduledGamesQuery.isLoading,
+    isError: scheduledGamesQuery.isError || liveGamesQuery.isError,
   }
 }

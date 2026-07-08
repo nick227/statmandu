@@ -1,34 +1,50 @@
 import { db } from '@statman/db'
+import type { DisputeStatus, EntityType, ReferenceSourceType, SourceStatus } from '@statman/db'
 import { FeedService } from './FeedService'
+import { EntityTargetService } from './EntityTargetService'
+import { CLAIMED_BY_USER_INCLUDE, withClaimFields } from '../lib/athleteProfile'
 
 const feedService = new FeedService()
+const targetService = new EntityTargetService()
+const HUMAN_SOURCE_TYPES = new Set<ReferenceSourceType>([
+  'VERIFIED_TEAM_ACCOUNT',
+  'TEAM_MANAGER',
+  'OFFICIAL_SCORER',
+  'PLAYER_REPORT',
+  'SPECTATOR_REPORT',
+  'MULTI_SPECTATOR_REPORT',
+])
 
 export class VerificationService {
-  listSources(targetType: string, targetId: string) {
-    return db.sourceReference.findMany({ where: { targetType: targetType as any, targetId } })
+  async listSources(targetType: EntityType, targetId: string) {
+    await targetService.requireTarget(targetType, targetId)
+    return db.sourceReference.findMany({ where: { targetType, targetId } })
   }
 
-  createSource(data: { targetType: string; targetId: string; sourceType: string; url?: string; label?: string }) {
+  async createSource(data: { targetType: EntityType; targetId: string; sourceType: ReferenceSourceType; url?: string; label?: string }) {
+    await targetService.requireTarget(data.targetType, data.targetId)
     return db.sourceReference.create({
       data: {
-        targetType: data.targetType as any,
+        targetType: data.targetType,
         targetId: data.targetId,
-        sourceType: data.sourceType as any,
+        sourceType: data.sourceType,
         url: data.url,
         label: data.label,
-        importedAt: data.sourceType === 'MANUAL' ? null : new Date(),
+        importedAt: HUMAN_SOURCE_TYPES.has(data.sourceType) ? null : new Date(),
       },
     })
   }
 
-  listDisputes(targetType: string, targetId: string) {
-    return db.dispute.findMany({ where: { targetType: targetType as any, targetId }, orderBy: { createdAt: 'desc' } })
+  async listDisputes(targetType: EntityType, targetId: string) {
+    await targetService.requireTarget(targetType, targetId)
+    return db.dispute.findMany({ where: { targetType, targetId }, orderBy: { createdAt: 'desc' } })
   }
 
-  openDispute(userId: string, data: { targetType: string; targetId: string; fieldName?: string; description: string; proposedValue?: string }) {
+  async openDispute(userId: string, data: { targetType: EntityType; targetId: string; fieldName?: string; description: string; proposedValue?: string }) {
+    await targetService.requireTarget(data.targetType, data.targetId)
     return db.dispute.create({
       data: {
-        targetType: data.targetType as any,
+        targetType: data.targetType,
         targetId: data.targetId,
         fieldName: data.fieldName,
         description: data.description,
@@ -39,14 +55,14 @@ export class VerificationService {
     })
   }
 
-  async resolveDispute(adminUserId: string, disputeId: string, data: { status: string; resolutionNote?: string }) {
+  async resolveDispute(adminUserId: string, disputeId: string, data: { status: DisputeStatus; resolutionNote?: string }) {
     const dispute = await db.dispute.findUnique({ where: { id: disputeId } })
     if (!dispute) throw { statusCode: 404, message: 'Dispute not found' }
 
     const resolved = await db.dispute.update({
       where: { id: disputeId },
       data: {
-        status: data.status as any,
+        status: data.status,
         resolutionNote: data.resolutionNote,
         resolvedByUserId: adminUserId,
         resolvedAt: new Date(),
@@ -65,18 +81,19 @@ export class VerificationService {
     return resolved
   }
 
-  async verifyPlayer(playerId: string, sourceStatus: string) {
+  async verifyPlayer(playerId: string, sourceStatus: SourceStatus) {
     const player = await db.player.findUnique({ where: { id: playerId } })
     if (!player) throw { statusCode: 404, message: 'Player not found' }
 
     await db.athleteProfile.update({
       where: { id: player.athleteProfileId },
-      data: { sourceStatus: sourceStatus as any },
+      data: { sourceStatus },
     })
 
-    return db.player.findUniqueOrThrow({
+    const updated = await db.player.findUniqueOrThrow({
       where: { id: playerId },
-      include: { athleteProfile: true },
+      include: { athleteProfile: { include: CLAIMED_BY_USER_INCLUDE } },
     })
+    return { ...updated, athleteProfile: withClaimFields(updated.athleteProfile) }
   }
 }

@@ -9,7 +9,7 @@ const app = buildTestApp()
 async function seedPlayer() {
   const sport = await db.sport.create({ data: { slug: 'basketball', name: 'Basketball' } })
   const athleteProfile = await db.athleteProfile.create({
-    data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'SELF_REPORTED' },
+    data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
   })
   return db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
 }
@@ -57,6 +57,20 @@ describe('openDispute', () => {
     expect(res.statusCode).toBe(201)
     await validateResponse('openDispute', 201, res.json())
     expect(res.json().data.status).toBe('OPEN')
+  })
+
+  it('rejects a dispute for an unknown target', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/disputes',
+      headers: asAuth(testUserId),
+      payload: {
+        targetType: 'ATHLETE_PROFILE',
+        targetId: 'missing-profile',
+        description: 'Wrong hometown listed',
+      },
+    })
+    expect(res.statusCode).toBe(404)
   })
 })
 

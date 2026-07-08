@@ -2,6 +2,7 @@ import { Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
 import { ChevronLeft } from 'lucide-react-native'
 import { cn } from '@/lib/utils'
+import { useNativeColor } from '@/lib/theme'
 
 export interface BackButtonProps {
   /** 'light' for dark backgrounds (overlaid on a media hero), 'dark' for light backgrounds */
@@ -11,6 +12,7 @@ export interface BackButtonProps {
 
 export function BackButton({ tone = 'light', className }: BackButtonProps) {
   const router = useRouter()
+  const textColor = useNativeColor('text')
   return (
     <Pressable
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
@@ -21,7 +23,7 @@ export function BackButton({ tone = 'light', className }: BackButtonProps) {
         className
       )}
     >
-      <ChevronLeft size={22} color={tone === 'light' ? '#FFFFFF' : 'rgb(17 17 17)'} />
+      <ChevronLeft size={22} color={tone === 'light' ? '#FFFFFF' : textColor} />
     </Pressable>
   )
 }

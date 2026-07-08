@@ -28,6 +28,113 @@ reporters:
       '404':
         $ref: '../components/responses/common.yaml#/NotFound'
 
+inviteReporter:
+  post:
+    operationId: inviteGameReporter
+    summary: Invite or assign a reporter to a game (game manager only)
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/games.yaml#/InviteReporterInput' }
+    responses:
+      '201':
+        description: Reporter invited
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/GameReporter' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not allowed to manage reporters
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+reporter:
+  patch:
+    operationId: updateGameReporter
+    summary: Change a reporter role or team assignment (game manager only)
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: reporterId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/games.yaml#/UpdateReporterInput' }
+    responses:
+      '200':
+        description: Reporter updated
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/GameReporter' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not allowed to manage reporters
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+  delete:
+    operationId: removeGameReporter
+    summary: Remove a reporter from a game (game manager only)
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: reporterId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Reporter removed
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { type: ['object', 'null'] }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not allowed to manage reporters
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
 startLive:
   post:
     operationId: startLiveGame
@@ -59,6 +166,35 @@ startLive:
         $ref: '../components/responses/common.yaml#/NotFound'
 
 events:
+  get:
+    operationId: listGameEvents
+    summary: Full ordered event log for a game (play-by-play) — works for any game status, not just LIVE
+    security: []
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Events, ascending by clientTimestamp
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/games.yaml#/GameEvent' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
   post:
     operationId: submitGameEvent
     summary: Submit a raw live-game event (offline-queueable by the client)
@@ -175,6 +311,109 @@ finalize:
         $ref: '../components/responses/common.yaml#/Unauthorized'
       '403':
         description: Not a registered reporter with permission to finalize
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+conflicts:
+  get:
+    operationId: listGameConflicts
+    summary: List open live-scoring conflicts for a game
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Conflicts
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/games.yaml#/GameConflict' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not allowed to resolve conflicts
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
+resolveConflict:
+  post:
+    operationId: resolveGameConflict
+    summary: Resolve a live-scoring conflict by selecting the accepted event
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: conflictId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/games.yaml#/ResolveGameConflictInput' }
+    responses:
+      '200':
+        description: Conflict resolved
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/GameConflict' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not allowed to resolve conflicts
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+markConflictDisputed:
+  post:
+    operationId: markGameConflictDisputed
+    summary: Mark a live-scoring conflict as disputed instead of resolved
+    tags: [live-games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: conflictId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Conflict marked disputed
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/GameConflict' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not allowed to resolve conflicts
         content:
           application/json:
             schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }

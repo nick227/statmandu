@@ -18,3 +18,18 @@ export async function getPlayerSeasonStats(request: any, reply: any) {
   const stats = await statsService.getPlayerSeasonStats(request.params.playerId)
   return reply.send({ data: stats })
 }
+
+export async function getTeamSeasonStats(request: any, reply: any) {
+  const stats = await statsService.getTeamSeasonStats(request.params.teamSlug)
+  return reply.send({ data: stats })
+}
+
+export async function getPlayerLeaderboard(request: any, reply: any) {
+  const leaderboard = await statsService.getPlayerLeaderboard(request.query)
+  return reply.send({ data: leaderboard })
+}
+
+export async function getTeamLeaderboard(request: any, reply: any) {
+  const leaderboard = await statsService.getTeamLeaderboard(request.query)
+  return reply.send({ data: leaderboard })
+}

@@ -1,6 +1,6 @@
 PlayerPosition:
   type: string
-  enum: [PG, SG, SF, PF, C]
+  enum: [PG, SG, SF, PF, C, GK, DEF, MID, FWD, QB, RB, WR, TE, OL, DL, LB, CB, S, K, P, SINGLES, DOUBLES]
 
 PlayerStatus:
   type: string
@@ -8,7 +8,7 @@ PlayerStatus:
 
 AthleteProfile:
   type: object
-  required: [id, slug, firstName, lastName, sourceStatus]
+  required: [id, slug, firstName, lastName, sourceStatus, claimedByUsername, claimedByDisplayName]
   properties:
     id: { type: string }
     slug: { type: string }
@@ -19,6 +19,12 @@ AthleteProfile:
     avatarUrl: { type: ['string', 'null'] }
     sourceStatus: { $ref: './common.yaml#/SourceStatus' }
     claimedByUserId: { type: ['string', 'null'] }
+    # Flattened from the claiming User's account Profile (see Deviation 4 —
+    # AthleteProfile is the public sports identity, Profile is the private
+    # account identity; a claimed athlete profile borrows its @handle from
+    # the latter). Null until claimed.
+    claimedByUsername: { type: ['string', 'null'] }
+    claimedByDisplayName: { type: ['string', 'null'] }
 
 RosterTeamSummary:
   type: object
@@ -35,6 +41,7 @@ Player:
     id: { type: string }
     athleteProfileId: { type: string }
     sportId: { type: string }
+    sport: { $ref: './sports.yaml#/Sport' }
     position: { oneOf: [{ $ref: '#/PlayerPosition' }, { type: 'null' }] }
     classYear: { type: ['string', 'null'] }
     jerseyNumber: { type: ['integer', 'null'] }

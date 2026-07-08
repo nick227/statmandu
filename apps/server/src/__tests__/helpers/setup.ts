@@ -1,9 +1,17 @@
 import { db } from '@statman/db'
-import { afterEach } from 'vitest'
+import { beforeAll, beforeEach } from 'vitest'
+
+function assertTestDatabase() {
+  const databaseUrl = process.env.DATABASE_URL ?? ''
+  if (!/statman_test(?:\?|$)/.test(databaseUrl)) {
+    throw new Error(
+      `Refusing to run server tests against non-test database: ${databaseUrl || '(unset DATABASE_URL)'}`
+    )
+  }
+}
 
 // Clean between tests — order matters for FK constraints (children before parents).
-// Extend this list as new models are added in later iterations.
-afterEach(async () => {
+export async function resetTestDatabase() {
   await db.feedItem.deleteMany()
   await db.mediaAsset.deleteMany()
   await db.reaction.deleteMany()
@@ -30,4 +38,12 @@ afterEach(async () => {
   await db.session.deleteMany()
   await db.profile.deleteMany()
   await db.user.deleteMany()
+}
+
+beforeAll(() => {
+  assertTestDatabase()
+})
+
+beforeEach(async () => {
+  await resetTestDatabase()
 })

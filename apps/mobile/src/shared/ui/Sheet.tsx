@@ -1,5 +1,6 @@
 import { forwardRef, type ReactNode } from 'react'
-import GorhomBottomSheet, { BottomSheetScrollView, type BottomSheetProps } from '@gorhom/bottom-sheet'
+import GorhomBottomSheet, { BottomSheetScrollView, useBottomSheetTimingConfigs, type BottomSheetProps } from '@gorhom/bottom-sheet'
+import { useNativeColor, motion } from '@/lib/theme'
 
 // Collapsed / half / expanded sliding sheet — the entity profile shell's
 // core interaction per the brand style guide's "UI language" section.
@@ -22,13 +23,17 @@ export const Sheet = forwardRef<GorhomBottomSheet, SheetProps>(function Sheet(
   { snaps = ['collapsed', 'half', 'expanded'], children, ...props },
   ref
 ) {
+  const surfaceColor = useNativeColor('surface')
+  const borderColor = useNativeColor('border')
+  const animationConfigs = useBottomSheetTimingConfigs({ duration: motion.sheetSnapMs })
   return (
     <GorhomBottomSheet
       ref={ref}
       index={0}
       snapPoints={snaps.map((s) => SNAP_POINTS[s])}
-      backgroundStyle={{ backgroundColor: 'rgb(255 255 255)' }}
-      handleIndicatorStyle={{ backgroundColor: 'rgb(229 231 235)' }}
+      backgroundStyle={{ backgroundColor: surfaceColor }}
+      handleIndicatorStyle={{ backgroundColor: borderColor }}
+      animationConfigs={animationConfigs}
       {...props}
     >
       {children}

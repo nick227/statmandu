@@ -4,16 +4,30 @@ import { Radio } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { EmptyState } from '@/shared/ui/EmptyState'
+import { ErrorState } from '@/shared/ui/ErrorState'
+import { SignInPrompt } from '@/shared/ui/SignInPrompt'
 import { Screen } from '@/shared/layout'
 import { GameStatusBadge } from '@/modules/games/GameStatusBadge'
+import { useAuthGate } from '@/modules/auth/useAuthGate'
 import { useLiveScoringGames } from '@/modules/live-scoring/useLiveScoringGames'
 
 export function LiveScoringIndexScreen() {
-  const { games, isLoading } = useLiveScoringGames()
+  const { isAuthenticated, isAuthLoading } = useAuthGate()
+  const { games, isError, isLoading } = useLiveScoringGames()
+
+  if (!isAuthLoading && !isAuthenticated) {
+    return (
+      <Screen title="Enter">
+        <SignInPrompt message="Sign in to enter stats for a game." />
+      </Screen>
+    )
+  }
 
   return (
     <Screen title="Enter">
-      {isLoading ? (
+      {isError ? (
+        <ErrorState message="Games couldn't be loaded." />
+      ) : isLoading ? (
         <View className="gap-sm px-lg">
           {[0, 1].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
         </View>

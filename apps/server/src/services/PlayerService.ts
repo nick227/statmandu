@@ -1,8 +1,10 @@
 import { db } from '@statman/db'
 import { decodeCursor, encodeCursor, normalizeLimit } from '../lib/pagination'
+import { CLAIMED_BY_USER_INCLUDE, withClaimFields } from '../lib/athleteProfile'
 
 const PLAYER_INCLUDE = {
-  athleteProfile: true,
+  sport: true,
+  athleteProfile: { include: CLAIMED_BY_USER_INCLUDE },
   rosterMemberships: {
     where: { isActive: true },
     include: { team: true },
@@ -12,8 +14,12 @@ const PLAYER_INCLUDE = {
 }
 
 function serialize(player: any) {
-  const { rosterMemberships, ...rest } = player
-  return { ...rest, currentTeam: rosterMemberships?.[0]?.team ?? null }
+  const { rosterMemberships, athleteProfile, ...rest } = player
+  return {
+    ...rest,
+    athleteProfile: withClaimFields(athleteProfile),
+    currentTeam: rosterMemberships?.[0]?.team ?? null,
+  }
 }
 
 export class PlayerService {

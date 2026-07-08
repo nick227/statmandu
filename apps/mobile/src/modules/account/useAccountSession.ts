@@ -7,6 +7,7 @@ export function useAccountSession() {
   return {
     user: currentUserQuery.data?.data,
     isLoading: currentUserQuery.isLoading,
+    isError: currentUserQuery.isError,
     logout,
   }
 }

@@ -17,6 +17,7 @@ Game:
   properties:
     id: { type: string }
     sportId: { type: string }
+    sport: { $ref: './sports.yaml#/Sport' }
     leagueId: { type: ['string', 'null'] }
     seasonId: { type: ['string', 'null'] }
     scheduledAt: { type: string, format: date-time }
@@ -50,6 +51,20 @@ JoinReporterInput:
     role: { $ref: '#/GameReporterRole' }
     teamId: { type: string }
 
+InviteReporterInput:
+  type: object
+  required: [userId, role]
+  properties:
+    userId: { type: string }
+    role: { $ref: '#/GameReporterRole' }
+    teamId: { type: string }
+
+UpdateReporterInput:
+  type: object
+  properties:
+    role: { $ref: '#/GameReporterRole' }
+    teamId: { type: ['string', 'null'] }
+
 GameReporter:
   type: object
   required: [id, gameId, userId, role]
@@ -78,6 +93,25 @@ GameEventType:
     - FOUL
     - SUBSTITUTION_IN
     - SUBSTITUTION_OUT
+    - SOCCER_GOAL
+    - SOCCER_ASSIST
+    - SOCCER_SHOT
+    - SOCCER_SAVE
+    - SOCCER_YELLOW_CARD
+    - SOCCER_RED_CARD
+    - FOOTBALL_PASS_TD
+    - FOOTBALL_RUSH_TD
+    - FOOTBALL_REC_TD
+    - FOOTBALL_FIELD_GOAL_MADE
+    - FOOTBALL_EXTRA_POINT_MADE
+    - FOOTBALL_SACK
+    - FOOTBALL_INTERCEPTION
+    - TENNIS_MATCH_WIN
+    - TENNIS_MATCH_LOSS
+    - TENNIS_SET_WIN
+    - TENNIS_SET_LOSS
+    - TENNIS_ACE
+    - TENNIS_DOUBLE_FAULT
 
 GameEventStatus:
   type: string
@@ -107,11 +141,35 @@ GameEvent:
     clientTimestamp: { type: string, format: date-time }
     consensusGroupId: { type: ['string', 'null'] }
 
+GameConflictStatus:
+  type: string
+  enum: [PENDING, CONFIRMED, CONFLICTING, RESOLVED]
+
+GameConflict:
+  type: object
+  required: [id, gameId, groupKey, status, events]
+  properties:
+    id: { type: string }
+    gameId: { type: string }
+    groupKey: { type: string }
+    status: { $ref: '#/GameConflictStatus' }
+    resolvedEventId: { type: ['string', 'null'] }
+    events:
+      type: array
+      items: { $ref: '#/GameEvent' }
+
+ResolveGameConflictInput:
+  type: object
+  required: [resolvedEventId]
+  properties:
+    resolvedEventId: { type: string }
+
 GameSnapshot:
   type: object
   required: [gameId, status, score, recentEvents, reporterCount]
   properties:
     gameId: { type: string }
+    youtubeVideoId: { type: ['string', 'null'] }
     status: { $ref: '#/GameStatus' }
     score:
       type: array
@@ -148,11 +206,22 @@ GameStatLine:
     - ftMade
     - ftAttempted
     - sourceStatus
+    - playerName
+    - gameOpponentName
+    - gameScheduledAt
   properties:
     id: { type: string }
     gameId: { type: string }
     playerId: { type: string }
     teamId: { type: string }
+    # Flattened context so a stat line is self-identifying and linkable
+    # without the caller needing a second fetch — a box-score row (many
+    # players, one game) needs the player's name; a player's game-log row
+    # (one player, many games) needs the opponent + date. Both are always
+    # populated regardless of which direction the query came from.
+    playerName: { type: string }
+    gameOpponentName: { type: string }
+    gameScheduledAt: { type: string, format: date-time }
     points: { type: integer }
     offRebounds: { type: integer }
     defRebounds: { type: integer }
@@ -167,6 +236,9 @@ GameStatLine:
     threeAttempted: { type: integer }
     ftMade: { type: integer }
     ftAttempted: { type: integer }
+    stats:
+      type: object
+      additionalProperties: true
     sourceStatus: { $ref: './common.yaml#/SourceStatus' }
     disputeNote: { type: ['string', 'null'] }
 
@@ -210,3 +282,48 @@ PlayerSeasonStat:
     threeAttempted: { type: integer }
     ftMade: { type: integer }
     ftAttempted: { type: integer }
+    stats:
+      type: object
+      additionalProperties: true
+
+TeamSeasonStat:
+  type: object
+  required:
+    - id
+    - teamId
+    - seasonId
+    - wins
+    - losses
+    - pointsFor
+    - pointsAgainst
+  properties:
+    id: { type: string }
+    teamId: { type: string }
+    seasonId: { type: string }
+    wins: { type: integer }
+    losses: { type: integer }
+    pointsFor: { type: integer }
+    pointsAgainst: { type: integer }
+    stats:
+      type: object
+      additionalProperties: true
+
+PlayerLeaderboardEntry:
+  type: object
+  required: [rank, stat, value, player, seasonStat]
+  properties:
+    rank: { type: integer }
+    stat: { type: string }
+    value: { type: number }
+    player: { $ref: './players.yaml#/Player' }
+    seasonStat: { $ref: '#/PlayerSeasonStat' }
+
+TeamLeaderboardEntry:
+  type: object
+  required: [rank, stat, value, team, seasonStat]
+  properties:
+    rank: { type: integer }
+    stat: { type: string }
+    value: { type: number }
+    team: { $ref: './sports.yaml#/Team' }
+    seasonStat: { $ref: '#/TeamSeasonStat' }

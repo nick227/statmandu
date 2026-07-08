@@ -1,6 +1,7 @@
 import { View } from 'react-native'
 import { Input } from '@/shared/ui/Input'
 import { Button } from '@/shared/ui/Button'
+import { SignInPrompt } from '@/shared/ui/SignInPrompt'
 import { useYouTubeMediaAttach } from '@/modules/media/useYouTubeMediaAttach'
 
 export interface YouTubeMediaAttachFormProps {
@@ -11,7 +12,13 @@ export interface YouTubeMediaAttachFormProps {
 }
 
 export function YouTubeMediaAttachForm({ targetType, targetId, onAttached, className }: YouTubeMediaAttachFormProps) {
-  const { attach, attachVideo, setTitle, setUrl, title, url } = useYouTubeMediaAttach(targetType, targetId, onAttached)
+  const { attach, attachVideo, isAuthenticated, isAuthLoading, setTitle, setUrl, title, url } = useYouTubeMediaAttach(targetType, targetId, onAttached)
+
+  if (isAuthLoading) return null
+
+  if (!isAuthenticated) {
+    return <SignInPrompt message="Sign in to attach media" className={className ?? 'py-sm'} />
+  }
 
   return (
     <View className={className ?? 'gap-sm'}>

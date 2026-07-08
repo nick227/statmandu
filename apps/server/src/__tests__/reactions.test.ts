@@ -9,7 +9,7 @@ const app = buildTestApp()
 async function seedPlayer() {
   const sport = await db.sport.create({ data: { slug: 'basketball', name: 'Basketball' } })
   const athleteProfile = await db.athleteProfile.create({
-    data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'SELF_REPORTED' },
+    data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
   })
   return db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
 }
@@ -55,6 +55,16 @@ describe('createReaction', () => {
     expect(second.json().data.id).toBe(first.json().data.id)
     expect(second.json().data.type).toBe('FIRE')
     expect(await db.reaction.count({ where: { userId: testUserId, targetId: player.id } })).toBe(1)
+  })
+
+  it('rejects reacting to an unknown target', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/reactions',
+      headers: asAuth(testUserId),
+      payload: { targetType: 'PLAYER', targetId: 'missing-player', type: 'LIKE' },
+    })
+    expect(res.statusCode).toBe(404)
   })
 })
 

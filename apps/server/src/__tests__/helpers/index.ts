@@ -8,6 +8,7 @@ import addFormats from 'ajv-formats'
 import { resolve } from 'path'
 import { db } from '@statman/db'
 import * as handlers from '../../handlers'
+import { resetTestDatabase } from './setup'
 
 // Two seeded users available in every test — use testOtherUserId for
 // cross-user permission tests (e.g. "user A cannot delete user B's resource")
@@ -26,7 +27,7 @@ const ajv = new Ajv({ allErrors: true, strict: false })
 addFormats(ajv)
 
 // Seeds minimal user + profile rows before each test.
-// setup.ts deletes them in afterEach — this re-creates them for the next test.
+// setup.ts deletes rows in beforeEach — this re-creates auth users for the test.
 async function seedTestUsers() {
   await db.user.createMany({
     data: [
@@ -73,7 +74,7 @@ export function buildTestApp() {
 
     await app.register(openapiGlue, {
       specification: specPath,
-      service: handlers,
+      serviceHandlers: handlers,
       securityHandlers: {
         // Test auth: accept "Bearer <userId>" directly — no session lookup or bcrypt.
         // Tests are not testing the auth transport; they're testing business logic.
@@ -102,6 +103,7 @@ export function buildTestApp() {
 
   // Seed test users before every test so asAuth() works without per-test setup.
   beforeEach(async () => {
+    await resetTestDatabase()
     await seedTestUsers()
   })
 

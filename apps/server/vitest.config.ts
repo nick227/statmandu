@@ -3,7 +3,7 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
 // Tests run against a dedicated database (never the dev DB) — setup.ts
-// truncates every table in afterEach, which would otherwise wipe out
+// truncates every table in beforeEach, which would otherwise wipe out
 // `pnpm db:seed` demo data on every `pnpm test` run.
 function loadTestEnv(): Record<string, string> {
   const path = resolve(__dirname, '../../.env.test')
@@ -26,7 +26,7 @@ export default defineConfig({
     setupFiles: ['./src/__tests__/helpers/setup.ts'],
     testTimeout: 15000,
     // Test files share one real MySQL database (no per-file isolation), and
-    // afterEach truncates every table — running files concurrently causes
+    // beforeEach truncates every table — running files concurrently causes
     // cross-file unique-constraint collisions and races. Force sequential.
     fileParallelism: false,
   },
