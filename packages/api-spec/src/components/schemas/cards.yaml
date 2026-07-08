@@ -20,12 +20,12 @@ CardIssueStatus:
 
 CardAthleteSummary:
   type: object
-  required: [id, slug, firstName, lastName]
+  required: [athleteProfileId, playerId, displayName, teamName, avatarUrl]
   properties:
-    id: { type: string }
-    slug: { type: string }
-    firstName: { type: string }
-    lastName: { type: string }
+    athleteProfileId: { type: string }
+    playerId: { type: ['string', 'null'] }
+    displayName: { type: string }
+    teamName: { type: ['string', 'null'] }
     avatarUrl: { type: ['string', 'null'] }
 
 CardTeamSummary:

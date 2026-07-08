@@ -7,7 +7,20 @@ import { FeedService } from './FeedService'
 const feedService = new FeedService()
 
 const CARD_INCLUDE = {
-  athleteProfile: true,
+  athleteProfile: {
+    include: {
+      players: {
+        include: {
+          rosterMemberships: {
+            where: { isActive: true },
+            include: { team: true },
+            orderBy: { joinedAt: 'desc' as const },
+            take: 1,
+          },
+        },
+      },
+    },
+  },
   team: true,
   game: { include: { gameTeams: { include: { team: true } } } },
   frontImageAsset: true,
@@ -75,6 +88,25 @@ function validateEdition(mode: CardEditionMode, size?: number | null) {
   return null
 }
 
+// Route-safe summary: playerId lets the frontend link straight to the
+// player profile route (Player.id), which athleteProfileId alone can't do
+// since AthleteProfile:Player isn't 1:1 in the schema. Picks the first
+// Player row (fine for the single-sport demo scope) and that player's
+// current active roster team, matching PlayerService's own currentTeam
+// derivation so the two stay consistent.
+function serializeAthlete(athleteProfile: any) {
+  if (!athleteProfile) return null
+  const player = athleteProfile.players?.[0]
+  const team = player?.rosterMemberships?.[0]?.team
+  return {
+    athleteProfileId: athleteProfile.id,
+    playerId: player?.id ?? null,
+    displayName: `${athleteProfile.firstName} ${athleteProfile.lastName}`,
+    teamName: team?.name ?? null,
+    avatarUrl: athleteProfile.avatarUrl,
+  }
+}
+
 function serialize(card: any, viewerUserId?: string | null) {
   const currentUserIssue = viewerUserId
     ? card.issues?.find((issue: any) => issue.claimedByUserId === viewerUserId && issue.status !== 'REVOKED')
@@ -100,15 +132,7 @@ function serialize(card: any, viewerUserId?: string | null) {
     createdAt: card.createdAt,
     updatedAt: card.updatedAt,
     publishedAt: card.publishedAt,
-    athlete: card.athleteProfile
-      ? {
-          id: card.athleteProfile.id,
-          slug: card.athleteProfile.slug,
-          firstName: card.athleteProfile.firstName,
-          lastName: card.athleteProfile.lastName,
-          avatarUrl: card.athleteProfile.avatarUrl,
-        }
-      : null,
+    athlete: serializeAthlete(card.athleteProfile),
     team: card.team
       ? {
           id: card.team.id,

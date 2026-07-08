@@ -1875,11 +1875,11 @@ export interface components {
         /** @enum {string} */
         CardVisibility: "PRIVATE" | "PUBLIC";
         CardAthleteSummary: {
-            id: string;
-            slug: string;
-            firstName: string;
-            lastName: string;
-            avatarUrl?: string | null;
+            athleteProfileId: string;
+            playerId: string | null;
+            displayName: string;
+            teamName: string | null;
+            avatarUrl: string | null;
         };
         CardTeamSummary: {
             id: string;
