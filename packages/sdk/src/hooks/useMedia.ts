@@ -15,6 +15,19 @@ export function useMedia(targetType: string, targetId: string) {
   })
 }
 
+export function useRecentMedia(limit = 20) {
+  return useQuery({
+    queryKey: ['media', 'recent', limit],
+    queryFn: async () => {
+      const { data, error, response } = await getApiClient().GET('/media/recent', {
+        params: { query: { limit } },
+      })
+      if (error) throw new ApiError(response.status, (error as any).error)
+      return data!
+    },
+  })
+}
+
 export function useAttachYouTubeMedia() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -25,6 +38,7 @@ export function useAttachYouTubeMedia() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['media', variables.targetType, variables.targetId] })
+      queryClient.invalidateQueries({ queryKey: ['media', 'recent'] })
     },
   })
 }

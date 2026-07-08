@@ -1,6 +1,8 @@
+import { useMemo, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { Rss } from 'lucide-react-native'
 import { ContentSection } from '@/shared/layout/ContentSection'
+import { FullScreenMediaViewer } from '@/shared/media'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { Screen } from '@/shared/layout'
@@ -16,6 +18,8 @@ import {
 import { GameSpotlightCardLink } from '@/modules/feed/SpotlightCardLinks'
 import { useHomeFeed } from '@/modules/feed/useHomeFeed'
 import { HOME_EMPTY_COPY, HOME_PLAYER_STAT, HOME_SCREEN, HOME_SPORT_SLUG } from '@/modules/feed/homeContent'
+import { ConnectedVideoCard } from '@/modules/media/ConnectedVideoCard'
+import { VideoRail } from '@/modules/media/VideoRail'
 import { RankingsSkeleton } from '@/modules/leaderboards/RankingsSkeleton'
 import { ChampionRibbon, PodiumStrip, ShowcaseMosaic } from '@/modules/leaderboards/RankingsShowcase'
 import { AthleteSpotlightCardLink, TeamSpotlightCardLink } from '@/modules/leaderboards/SpotlightCardLinks'
@@ -23,6 +27,12 @@ import { AthleteSpotlightCardLink, TeamSpotlightCardLink } from '@/modules/leade
 export function HomeFeedScreen() {
   const home = useHomeFeed()
   const copy = home.sectionCopy
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null)
+
+  const viewerItems = useMemo(
+    () => home.recentVideos.map((item) => ({ id: item.id, youtubeVideoId: item.youtubeVideoId, title: item.title })),
+    [home.recentVideos]
+  )
 
   if (home.isError) {
     return (
@@ -48,9 +58,20 @@ export function HomeFeedScreen() {
   const hasFeed = home.communityActivity.length > 0 || home.mockActivity.length > 0
 
   return (
+    <>
     <Screen title={HOME_SCREEN.title} scroll contentClassName={`${home.layout.sectionGap} px-lg`}>
       <PlatformAuthorityBand {...home.authority} />
       {topAd ? <AdPlaceholder slot={topAd} /> : null}
+
+      {home.featuredVideo ? (
+        <ContentSection title={copy.videos.featured.title} subtitle={copy.videos.featured.subtitle}>
+          <ConnectedVideoCard
+            item={home.featuredVideo}
+            variant="hero"
+            onPress={() => setViewerIndex(0)}
+          />
+        </ContentSection>
+      ) : null}
 
       {home.featuredAthlete ? (
         <ContentSection
@@ -78,6 +99,15 @@ export function HomeFeedScreen() {
       {home.podiumPlayers.length > 0 ? (
         <ContentSection title={copy.athletes.podium} subtitle={copy.athletes.podiumSubtitle}>
           <PodiumStrip entries={home.podiumPlayers} sportSlug={HOME_SPORT_SLUG} />
+        </ContentSection>
+      ) : null}
+
+      {home.latestVideos.length > 0 ? (
+        <ContentSection title={copy.videos.latest.title} subtitle={copy.videos.latest.subtitle}>
+          <VideoRail
+            items={home.latestVideos}
+            onItemPress={(index) => setViewerIndex(index + 1)}
+          />
         </ContentSection>
       ) : null}
 
@@ -131,6 +161,16 @@ export function HomeFeedScreen() {
         </ScrollView>
       ) : null}
 
+      {home.moreVideos.length > 0 ? (
+        <ContentSection title={copy.videos.rail.title} subtitle={copy.videos.rail.subtitle}>
+          <VideoRail
+            items={home.moreVideos}
+            variant="tile"
+            onItemPress={(index) => setViewerIndex(index + 1 + home.latestVideos.length)}
+          />
+        </ContentSection>
+      ) : null}
+
       {home.featuredTeam ? (
         <ContentSection
           title={copy.teams.title}
@@ -173,5 +213,13 @@ export function HomeFeedScreen() {
         <UsageCtaRow ctas={home.usageCtas} />
       </ContentSection>
     </Screen>
+
+    <FullScreenMediaViewer
+      visible={viewerIndex != null}
+      items={viewerItems}
+      initialIndex={viewerIndex ?? 0}
+      onClose={() => setViewerIndex(null)}
+    />
+    </>
   )
 }

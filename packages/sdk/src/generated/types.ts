@@ -174,6 +174,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/teams/{teamSlug}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a team's season stat aggregates */
+        get: operations["getTeamSeasonStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/teams/{teamId}/roster/members": {
         parameters: {
             query?: never;
@@ -347,6 +364,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/games/{gameId}/reporters/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invite or assign a reporter to a game (game manager only) */
+        post: operations["inviteGameReporter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/games/{gameId}/reporters/{reporterId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a reporter from a game (game manager only) */
+        delete: operations["removeGameReporter"];
+        options?: never;
+        head?: never;
+        /** Change a reporter role or team assignment (game manager only) */
+        patch: operations["updateGameReporter"];
+        trace?: never;
+    };
     "/games/{gameId}/start-live": {
         parameters: {
             query?: never;
@@ -371,7 +423,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Full ordered event log for a game (play-by-play) — works for any game status, not just LIVE */
+        get: operations["listGameEvents"];
         put?: never;
         /** Submit a raw live-game event (offline-queueable by the client) */
         post: operations["submitGameEvent"];
@@ -432,6 +485,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/games/{gameId}/conflicts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List open live-scoring conflicts for a game */
+        get: operations["listGameConflicts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/games/{gameId}/conflicts/{conflictId}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve a live-scoring conflict by selecting the accepted event */
+        post: operations["resolveGameConflict"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/games/{gameId}/conflicts/{conflictId}/mark-disputed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a live-scoring conflict as disputed instead of resolved */
+        post: operations["markGameConflictDisputed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/games/{gameId}/stats": {
         parameters: {
             query?: never;
@@ -449,6 +553,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/leaderboards/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rank players by a sport stat */
+        get: operations["getPlayerLeaderboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/leaderboards/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rank teams by a sport stat */
+        get: operations["getTeamLeaderboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media": {
         parameters: {
             query?: never;
@@ -458,6 +596,23 @@ export interface paths {
         };
         /** List media attached to a target (player, team, or game) */
         get: operations["listMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recently attached YouTube media across the platform */
+        get: operations["listRecentMedia"];
         put?: never;
         post?: never;
         delete?: never;
@@ -721,6 +876,7 @@ export interface components {
             city?: string | null;
             logoUrl?: string | null;
             sportId: string;
+            sport?: components["schemas"]["Sport"];
             leagueId: string;
             league?: components["schemas"]["League"];
         };
@@ -734,11 +890,14 @@ export interface components {
             avatarUrl?: string | null;
             sourceStatus: components["schemas"]["SourceStatus"];
             claimedByUserId?: string | null;
+            claimedByUsername: string | null;
+            claimedByDisplayName: string | null;
         };
         Player: {
             id: string;
             athleteProfileId: string;
             sportId: string;
+            sport?: components["schemas"]["Sport"];
             position?: components["schemas"]["PlayerPosition"] | null;
             classYear?: string | null;
             jerseyNumber?: number | null;
@@ -790,6 +949,7 @@ export interface components {
         Game: {
             id: string;
             sportId: string;
+            sport?: components["schemas"]["Sport"];
             leagueId?: string | null;
             seasonId?: string | null;
             /** Format: date-time */
@@ -844,6 +1004,7 @@ export interface components {
         };
         GameSnapshot: {
             gameId: string;
+            youtubeVideoId?: string | null;
             status: components["schemas"]["GameStatus"];
             score: {
                 teamId: string;
@@ -857,6 +1018,10 @@ export interface components {
             gameId: string;
             playerId: string;
             teamId: string;
+            playerName: string;
+            gameOpponentName: string;
+            /** Format: date-time */
+            gameScheduledAt: string;
             points: number;
             offRebounds: number;
             defRebounds: number;
@@ -871,6 +1036,9 @@ export interface components {
             threeAttempted: number;
             ftMade: number;
             ftAttempted: number;
+            stats?: {
+                [key: string]: unknown;
+            };
             sourceStatus: components["schemas"]["SourceStatus"];
             disputeNote?: string | null;
         };
@@ -893,6 +1061,35 @@ export interface components {
             threeAttempted: number;
             ftMade: number;
             ftAttempted: number;
+            stats?: {
+                [key: string]: unknown;
+            };
+        };
+        TeamSeasonStat: {
+            id: string;
+            teamId: string;
+            seasonId: string;
+            wins: number;
+            losses: number;
+            pointsFor: number;
+            pointsAgainst: number;
+            stats?: {
+                [key: string]: unknown;
+            };
+        };
+        PlayerLeaderboardEntry: {
+            rank: number;
+            stat: string;
+            value: number;
+            player: components["schemas"]["Player"];
+            seasonStat: components["schemas"]["PlayerSeasonStat"];
+        };
+        TeamLeaderboardEntry: {
+            rank: number;
+            stat: string;
+            value: number;
+            team: components["schemas"]["Team"];
+            seasonStat: components["schemas"]["TeamSeasonStat"];
         };
         MediaAsset: {
             id: string;
@@ -1010,11 +1207,11 @@ export interface components {
             sourceStatus: components["schemas"]["SourceStatus"];
         };
         /** @enum {string} */
-        PlayerPosition: "PG" | "SG" | "SF" | "PF" | "C";
+        PlayerPosition: "PG" | "SG" | "SF" | "PF" | "C" | "GK" | "DEF" | "MID" | "FWD" | "QB" | "RB" | "WR" | "TE" | "OL" | "DL" | "LB" | "CB" | "S" | "K" | "P" | "SINGLES" | "DOUBLES";
         /** @enum {string} */
         PlayerStatus: "ACTIVE" | "INACTIVE" | "GRADUATED";
         /** @enum {string} */
-        SourceStatus: "SELF_REPORTED" | "TEAM_ENTERED" | "MANAGER_APPROVED" | "IMPORTED_SOURCE" | "SCRAPED_PUBLIC" | "VERIFIED" | "IN_DISPUTE";
+        SourceStatus: "PLAYER_REPORTED" | "SPECTATOR_REPORTED" | "MULTI_SPECTATOR_CONFIRMED" | "TEAM_MANAGER_ENTERED" | "OFFICIAL_SCORER_RECORDED" | "VERIFIED_TEAM_ACCOUNT" | "ONLINE_SOURCE_IMPORTED" | "PUBLIC_SOURCE_SCRAPED" | "IN_DISPUTE";
         RosterTeamSummary: {
             id: string;
             slug: string;
@@ -1032,10 +1229,32 @@ export interface components {
         };
         /** @enum {string} */
         GameReporterRole: "ADMIN_OWNER" | "OFFICIAL_SCORER" | "TEAM_SCORER" | "BROADCASTER" | "CONTRIBUTOR" | "SPECTATOR_REPORTER" | "VIEWER";
+        InviteReporterInput: {
+            userId: string;
+            role: components["schemas"]["GameReporterRole"];
+            teamId?: string;
+        };
+        UpdateReporterInput: {
+            role?: components["schemas"]["GameReporterRole"];
+            teamId?: string | null;
+        };
         /** @enum {string} */
-        GameEventType: "FT_MADE" | "FT_MISS" | "FG2_MADE" | "FG2_MISS" | "FG3_MADE" | "FG3_MISS" | "REBOUND_OFF" | "REBOUND_DEF" | "ASSIST" | "STEAL" | "BLOCK" | "TURNOVER" | "FOUL" | "SUBSTITUTION_IN" | "SUBSTITUTION_OUT";
+        GameEventType: "FT_MADE" | "FT_MISS" | "FG2_MADE" | "FG2_MISS" | "FG3_MADE" | "FG3_MISS" | "REBOUND_OFF" | "REBOUND_DEF" | "ASSIST" | "STEAL" | "BLOCK" | "TURNOVER" | "FOUL" | "SUBSTITUTION_IN" | "SUBSTITUTION_OUT" | "SOCCER_GOAL" | "SOCCER_ASSIST" | "SOCCER_SHOT" | "SOCCER_SAVE" | "SOCCER_YELLOW_CARD" | "SOCCER_RED_CARD" | "FOOTBALL_PASS_TD" | "FOOTBALL_RUSH_TD" | "FOOTBALL_REC_TD" | "FOOTBALL_FIELD_GOAL_MADE" | "FOOTBALL_EXTRA_POINT_MADE" | "FOOTBALL_SACK" | "FOOTBALL_INTERCEPTION" | "TENNIS_MATCH_WIN" | "TENNIS_MATCH_LOSS" | "TENNIS_SET_WIN" | "TENNIS_SET_LOSS" | "TENNIS_ACE" | "TENNIS_DOUBLE_FAULT";
         /** @enum {string} */
         GameEventStatus: "PENDING" | "ACCEPTED" | "REJECTED" | "CONFLICTING" | "CORRECTED" | "DISPUTED" | "FINALIZED";
+        /** @enum {string} */
+        GameConflictStatus: "PENDING" | "CONFIRMED" | "CONFLICTING" | "RESOLVED";
+        GameConflict: {
+            id: string;
+            gameId: string;
+            groupKey: string;
+            status: components["schemas"]["GameConflictStatus"];
+            resolvedEventId?: string | null;
+            events: components["schemas"]["GameEvent"][];
+        };
+        ResolveGameConflictInput: {
+            resolvedEventId: string;
+        };
         /**
          * @description Shared polymorphic target vocabulary (mirrors the Prisma EntityType enum).
          * @enum {string}
@@ -1044,7 +1263,7 @@ export interface components {
         /** @enum {string} */
         ReactionType: "LIKE" | "FIRE" | "CLAP";
         /** @enum {string} */
-        ReferenceSourceType: "IMPORTED_SOURCE" | "SCRAPED_PUBLIC" | "MANUAL";
+        ReferenceSourceType: "VERIFIED_TEAM_ACCOUNT" | "TEAM_MANAGER" | "OFFICIAL_SCORER" | "PLAYER_REPORT" | "SPECTATOR_REPORT" | "MULTI_SPECTATOR_REPORT" | "TEAM_WEBSITE" | "LEAGUE_WEBSITE" | "MAXPREPS" | "HUDL" | "YOUTUBE" | "NEWS_ARTICLE" | "BOXSCORE_PDF" | "SCOREBOOK_PHOTO" | "PUBLIC_SCRAPE" | "OTHER";
         /** @enum {string} */
         DisputeStatus: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
     };
@@ -1351,6 +1570,31 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["RosterMembership"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getTeamSeasonStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Season stats */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TeamSeasonStat"][];
                     };
                 };
             };
@@ -1752,6 +1996,121 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    inviteGameReporter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteReporterInput"];
+            };
+        };
+        responses: {
+            /** @description Reporter invited */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GameReporter"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Not allowed to manage reporters */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    removeGameReporter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+                reporterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reporter removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: Record<string, never> | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Not allowed to manage reporters */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateGameReporter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+                reporterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateReporterInput"];
+            };
+        };
+        responses: {
+            /** @description Reporter updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GameReporter"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Not allowed to manage reporters */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
     startLiveGame: {
         parameters: {
             query?: never;
@@ -1785,6 +2144,40 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    listGameEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Events, ascending by clientTimestamp */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GameEvent"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     submitGameEvent: {
@@ -1922,6 +2315,116 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listGameConflicts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conflicts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GameConflict"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Not allowed to resolve conflicts */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    resolveGameConflict: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+                conflictId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveGameConflictInput"];
+            };
+        };
+        responses: {
+            /** @description Conflict resolved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GameConflict"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Not allowed to resolve conflicts */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    markGameConflictDisputed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+                conflictId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conflict marked disputed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GameConflict"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Not allowed to resolve conflicts */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
     getGameStats: {
         parameters: {
             query?: never;
@@ -1947,6 +2450,78 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getPlayerLeaderboard: {
+        parameters: {
+            query: {
+                sportSlug: string;
+                stat: string;
+                seasonId?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Player leaderboard */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PlayerLeaderboardEntry"][];
+                    };
+                };
+            };
+            /** @description Unsupported sport or stat */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getTeamLeaderboard: {
+        parameters: {
+            query: {
+                sportSlug: string;
+                stat: string;
+                seasonId?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Team leaderboard */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TeamLeaderboardEntry"][];
+                    };
+                };
+            };
+            /** @description Unsupported sport or stat */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listMedia: {
         parameters: {
             query: {
@@ -1960,6 +2535,39 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Media assets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["MediaAsset"][];
+                    };
+                };
+            };
+            /** @description Unexpected error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listRecentMedia: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent media assets */
             200: {
                 headers: {
                     [name: string]: unknown;

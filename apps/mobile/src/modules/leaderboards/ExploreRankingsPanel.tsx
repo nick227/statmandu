@@ -10,6 +10,8 @@ import { EXPLORE_COPY, exploreAuthorityBand } from '@/modules/leaderboards/explo
 import { RankingsSkeleton } from '@/modules/leaderboards/RankingsSkeleton'
 import { ChampionRibbon, PodiumStrip, ShowcaseMosaic } from '@/modules/leaderboards/RankingsShowcase'
 import { AthleteSpotlightCardLink, TeamSpotlightCardLink } from '@/modules/leaderboards/SpotlightCardLinks'
+import { ConnectedVideoCard } from '@/modules/media/ConnectedVideoCard'
+import { VideoRail } from '@/modules/media/VideoRail'
 import type { useExploreRankings } from '@/modules/leaderboards/useExploreRankings'
 
 function FilterChip({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
@@ -76,6 +78,15 @@ export function ExploreRankingsPanel({ rankings }: { rankings: RankingsState }) 
                 eyebrow={copy.sections.featuredPlayer.eyebrow}
               />
               <ChampionRibbon sportSlug={rankings.sportSlug} stat={rankings.playerStat} entry={rankings.featuredPlayer} />
+              {rankings.championVideo ? (
+                <ConnectedVideoCard item={rankings.championVideo} variant="hero" />
+              ) : null}
+            </ContentSection>
+          ) : null}
+
+          {rankings.leaderVideos.length > 0 ? (
+            <ContentSection title={copy.sections.videos.board.title} subtitle={copy.sections.videos.board.subtitle}>
+              <VideoRail items={rankings.leaderVideos} />
             </ContentSection>
           ) : null}
 

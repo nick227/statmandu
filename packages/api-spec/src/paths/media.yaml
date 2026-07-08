@@ -31,6 +31,34 @@ collection:
           application/json:
             schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
 
+recent:
+  get:
+    operationId: listRecentMedia
+    summary: List recently attached YouTube media across the platform
+    security: []
+    tags: [media]
+    parameters:
+      - in: query
+        name: limit
+        schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+    responses:
+      '200':
+        description: Recent media assets
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/social.yaml#/MediaAsset' }
+      default:
+        description: Unexpected error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+
 youtube:
   post:
     operationId: attachYouTubeMedia

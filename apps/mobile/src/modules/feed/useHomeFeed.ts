@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useFeed, useGames, usePlayerLeaderboard, useTeamLeaderboard } from '@statman/sdk'
+import { useFeed, useGames, usePlayerLeaderboard, useRecentMedia, useTeamLeaderboard } from '@statman/sdk'
 import type { ShowcaseList } from '@/modules/leaderboards/showcaseTypes'
 import {
   HOME_AD_SLOTS,
@@ -21,6 +21,7 @@ export function useHomeFeed() {
   const reboundLeadersQuery = usePlayerLeaderboard({ sportSlug: HOME_SPORT_SLUG, stat: 'rebounds', limit: 3 })
   const teamLeaderboardQuery = useTeamLeaderboard({ sportSlug: HOME_SPORT_SLUG, stat: HOME_TEAM_STAT, limit: 6 })
   const gamesQuery = useGames()
+  const recentMediaQuery = useRecentMedia(20)
 
   const feedItems = feedQuery.data?.pages.flatMap((p) => p.data) ?? []
   const playerEntries = playerLeaderboardQuery.data?.data ?? []
@@ -76,6 +77,11 @@ export function useHomeFeed() {
 
   const mockActivity = useMemo(() => HOME_MOCK_ACTIVITY.slice(0, HOME_LAYOUT.maxMockActivity), [])
 
+  const recentVideos = recentMediaQuery.data?.data ?? []
+  const featuredVideo = recentVideos[0] ?? null
+  const latestVideos = useMemo(() => recentVideos.slice(1, 7), [recentVideos])
+  const moreVideos = useMemo(() => recentVideos.slice(7, 13), [recentVideos])
+
   const ads = HOME_AD_SLOTS
 
   return {
@@ -96,8 +102,12 @@ export function useHomeFeed() {
     liveShowcase,
     communityActivity,
     mockActivity,
+    recentVideos,
+    featuredVideo,
+    latestVideos,
+    moreVideos,
     layout: HOME_LAYOUT,
-    isLoading: feedQuery.isLoading || playerLeaderboardQuery.isLoading || teamLeaderboardQuery.isLoading || gamesQuery.isLoading,
-    isError: feedQuery.isError || playerLeaderboardQuery.isError || gamesQuery.isError,
+    isLoading: feedQuery.isLoading || playerLeaderboardQuery.isLoading || teamLeaderboardQuery.isLoading || gamesQuery.isLoading || recentMediaQuery.isLoading,
+    isError: feedQuery.isError || playerLeaderboardQuery.isError || gamesQuery.isError || recentMediaQuery.isError,
   }
 }

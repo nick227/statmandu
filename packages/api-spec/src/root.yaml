@@ -29,6 +29,7 @@ tags:
   - name: sources
   - name: disputes
   - name: claims
+  - name: leaderboards
 
 components:
   securitySchemes:
@@ -108,6 +109,12 @@ components:
       $ref: './components/schemas/games.yaml#/GameStatLine'
     PlayerSeasonStat:
       $ref: './components/schemas/games.yaml#/PlayerSeasonStat'
+    TeamSeasonStat:
+      $ref: './components/schemas/games.yaml#/TeamSeasonStat'
+    PlayerLeaderboardEntry:
+      $ref: './components/schemas/games.yaml#/PlayerLeaderboardEntry'
+    TeamLeaderboardEntry:
+      $ref: './components/schemas/games.yaml#/TeamLeaderboardEntry'
 
     MediaAsset:
       $ref: './components/schemas/social.yaml#/MediaAsset'
@@ -171,6 +178,8 @@ paths:
     $ref: './paths/teams.yaml#/get'
   /teams/{teamSlug}/roster:
     $ref: './paths/teams.yaml#/roster'
+  /teams/{teamSlug}/stats:
+    $ref: './paths/stats.yaml#/teamSeasonStats'
   /teams/{teamId}/roster/members:
     $ref: './paths/teams.yaml#/addRosterMember'
 
@@ -193,6 +202,10 @@ paths:
     $ref: './paths/games.yaml#/item'
   /games/{gameId}/reporters:
     $ref: './paths/live-games.yaml#/reporters'
+  /games/{gameId}/reporters/invite:
+    $ref: './paths/live-games.yaml#/inviteReporter'
+  /games/{gameId}/reporters/{reporterId}:
+    $ref: './paths/live-games.yaml#/reporter'
   /games/{gameId}/start-live:
     $ref: './paths/live-games.yaml#/startLive'
   /games/{gameId}/events:
@@ -203,11 +216,24 @@ paths:
     $ref: './paths/live-games.yaml#/snapshot'
   /games/{gameId}/finalize:
     $ref: './paths/live-games.yaml#/finalize'
+  /games/{gameId}/conflicts:
+    $ref: './paths/live-games.yaml#/conflicts'
+  /games/{gameId}/conflicts/{conflictId}/resolve:
+    $ref: './paths/live-games.yaml#/resolveConflict'
+  /games/{gameId}/conflicts/{conflictId}/mark-disputed:
+    $ref: './paths/live-games.yaml#/markConflictDisputed'
   /games/{gameId}/stats:
     $ref: './paths/stats.yaml#/gameStats'
 
+  /leaderboards/players:
+    $ref: './paths/leaderboards.yaml#/players'
+  /leaderboards/teams:
+    $ref: './paths/leaderboards.yaml#/teams'
+
   /media:
     $ref: './paths/media.yaml#/collection'
+  /media/recent:
+    $ref: './paths/media.yaml#/recent'
   /media/youtube:
     $ref: './paths/media.yaml#/youtube'
 

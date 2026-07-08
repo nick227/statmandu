@@ -100,6 +100,20 @@ export const HOME_SECTION_COPY = {
     title: 'Join the board',
     subtitle: 'Three entry points for athletes and teams.',
   },
+  videos: {
+    featured: {
+      title: 'Featured film',
+      subtitle: 'The latest upload across the Statman network.',
+    },
+    latest: {
+      title: 'Latest uploads',
+      subtitle: 'Athlete, team, and game film from the last week.',
+    },
+    rail: {
+      title: 'More film',
+      subtitle: 'Swipe through recent highlights and recaps.',
+    },
+  },
   linkLabels: {
     seeAll: 'Rankings',
   },

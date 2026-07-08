@@ -54,6 +54,16 @@ export const EXPLORE_COPY = {
       title: 'Search results',
       subtitle: 'Players matching your query.',
     },
+    videos: {
+      champion: {
+        title: 'Leader film',
+        subtitle: 'Video attached to the current #1 player.',
+      },
+      board: {
+        title: 'Film from the board',
+        subtitle: 'Recent uploads from ranked athletes and programs.',
+      },
+    },
   },
   filters: {
     verifiedOnly: 'Verified only',

@@ -1,3 +1,4 @@
+import { View } from 'react-native'
 import { Gavel, Trophy, TrendingUp, UserCheck, UserPlus, Video } from 'lucide-react-native'
 import type { HomeActivityIcon, HomeMockActivity } from '@/modules/feed/homeContent'
 import { Text } from '@/shared/ui/Text'

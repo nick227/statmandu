@@ -9,7 +9,7 @@ const app = buildTestApp()
 async function seedPlayer() {
   const sport = await db.sport.create({ data: { slug: 'basketball', name: 'Basketball' } })
   const athleteProfile = await db.athleteProfile.create({
-    data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'SELF_REPORTED' },
+    data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
   })
   return db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
 }
@@ -25,6 +25,20 @@ describe('listMedia', () => {
     expect(res.statusCode).toBe(200)
     await validateResponse('listMedia', 200, res.json())
     expect(res.json().data).toHaveLength(1)
+  })
+})
+
+describe('listRecentMedia', () => {
+  it('GET /media/recent', async () => {
+    const player = await seedPlayer()
+    await db.mediaAsset.create({
+      data: { type: 'YOUTUBE', youtubeVideoId: 'dQw4w9WgXcQ', targetType: 'PLAYER', targetId: player.id },
+    })
+
+    const res = await app.inject({ method: 'GET', url: '/media/recent?limit=5' })
+    expect(res.statusCode).toBe(200)
+    await validateResponse('listRecentMedia', 200, res.json())
+    expect(res.json().data.length).toBeGreaterThanOrEqual(1)
   })
 })
 
@@ -62,5 +76,19 @@ describe('attachYouTubeMedia', () => {
       payload: { targetType: 'PLAYER', targetId: player.id, youtubeUrl: 'https://example.com/not-youtube' },
     })
     expect(res.statusCode).toBe(400)
+  })
+
+  it('rejects media for an unknown target', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/media/youtube',
+      headers: asAuth(testUserId),
+      payload: {
+        targetType: 'PLAYER',
+        targetId: 'missing-player',
+        youtubeUrl: 'https://youtu.be/dQw4w9WgXcQ',
+      },
+    })
+    expect(res.statusCode).toBe(404)
   })
 })

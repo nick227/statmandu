@@ -1,7 +1,10 @@
 import { db } from '@statman/db'
+import type { EntityType } from '@statman/db'
 import { FeedService } from './FeedService'
+import { EntityTargetService } from './EntityTargetService'
 
 const feedService = new FeedService()
+const targetService = new EntityTargetService()
 
 // Accepts youtu.be short links, watch?v=, and embed URLs.
 function extractYouTubeId(url: string): string | null {
@@ -18,23 +21,34 @@ function extractYouTubeId(url: string): string | null {
 }
 
 export class MediaService {
-  list(targetType: string, targetId: string) {
+  async list(targetType: EntityType, targetId: string) {
+    await targetService.requireTarget(targetType, targetId)
     return db.mediaAsset.findMany({
-      where: { targetType: targetType as any, targetId, deletedAt: null },
+      where: { targetType, targetId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
     })
   }
 
-  async attachYouTube(userId: string, data: { targetType: string; targetId: string; youtubeUrl: string; title?: string }) {
+  async listRecent(limit = 20) {
+    const take = Math.min(Math.max(limit, 1), 50)
+    return db.mediaAsset.findMany({
+      where: { deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      take,
+    })
+  }
+
+  async attachYouTube(userId: string, data: { targetType: EntityType; targetId: string; youtubeUrl: string; title?: string }) {
     const videoId = extractYouTubeId(data.youtubeUrl)
     if (!videoId) throw { statusCode: 400, message: 'Could not parse a YouTube video id from that URL' }
+    await targetService.requireTarget(data.targetType, data.targetId)
 
     const media = await db.mediaAsset.create({
       data: {
         type: 'YOUTUBE',
         youtubeVideoId: videoId,
         title: data.title,
-        targetType: data.targetType as any,
+        targetType: data.targetType,
         targetId: data.targetId,
         uploadedByUserId: userId,
       },
@@ -42,7 +56,7 @@ export class MediaService {
 
     await feedService.record({
       type: 'MEDIA_ADDED',
-      targetType: data.targetType as any,
+      targetType: data.targetType,
       targetId: data.targetId,
       summary: data.title ? `New video: ${data.title}` : 'New video added',
     })

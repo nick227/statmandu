@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { components } from '@statman/sdk'
 import { getSportDefinition } from '@statman/sports'
-import { useGames, usePlayerLeaderboard, useTeamLeaderboard } from '@statman/sdk'
+import { useGames, usePlayerLeaderboard, useRecentMedia, useTeamLeaderboard } from '@statman/sdk'
 import { EXPLORE_SPORTS, type ExploreSportSlug } from '@/modules/leaderboards/exploreContent'
 import type { ShowcaseList } from '@/modules/leaderboards/showcaseTypes'
 
@@ -37,6 +37,7 @@ export function useExploreRankings() {
   const tertiaryPlayersQuery = usePlayerLeaderboard({ sportSlug, stat: tertiaryPlayerStat, limit: 6 })
   const teamsQuery = useTeamLeaderboard({ sportSlug, stat: teamStat, limit: 6 })
   const gamesQuery = useGames()
+  const recentMediaQuery = useRecentMedia(20)
 
   const filterVerified = useMemo(() => {
     return (entries: NonNullable<typeof playersQuery.data>['data']) => {
@@ -133,6 +134,17 @@ export function useExploreRankings() {
     { key: 'fresh-finals', kind: 'games' as const, title: 'Fresh Finals', subtitle: 'Most recent results feeding the rankings.', entries: recentFinals },
   ].filter((list, index, all) => list.entries.length > 0 && all.findIndex((candidate) => candidate.key === list.key) === index)
 
+  const recentVideos = recentMediaQuery.data?.data ?? []
+  const playerIds = useMemo(() => new Set(playerEntries.map((entry) => entry.player.id)), [playerEntries])
+  const championVideo = useMemo(
+    () => (featuredPlayer ? recentVideos.find((video) => video.targetType === 'PLAYER' && video.targetId === featuredPlayer.player.id) ?? null : null),
+    [featuredPlayer, recentVideos]
+  )
+  const leaderVideos = useMemo(
+    () => recentVideos.filter((video) => video.targetType === 'PLAYER' && playerIds.has(video.targetId)).slice(0, 6),
+    [playerIds, recentVideos]
+  )
+
   return {
     sport,
     sportSlug,
@@ -156,7 +168,10 @@ export function useExploreRankings() {
     hasPlayerResults: playerEntries.length > 0,
     hasTeamResults: teamEntries.length > 0,
     isVerifiedFilterEmpty,
-    isLoading: playersQuery.isLoading || secondaryPlayersQuery.isLoading || tertiaryPlayersQuery.isLoading || teamsQuery.isLoading || gamesQuery.isLoading,
-    isError: playersQuery.isError || secondaryPlayersQuery.isError || tertiaryPlayersQuery.isError || teamsQuery.isError || gamesQuery.isError,
+    recentVideos,
+    championVideo,
+    leaderVideos,
+    isLoading: playersQuery.isLoading || secondaryPlayersQuery.isLoading || tertiaryPlayersQuery.isLoading || teamsQuery.isLoading || gamesQuery.isLoading || recentMediaQuery.isLoading,
+    isError: playersQuery.isError || secondaryPlayersQuery.isError || tertiaryPlayersQuery.isError || teamsQuery.isError || gamesQuery.isError || recentMediaQuery.isError,
   }
 }

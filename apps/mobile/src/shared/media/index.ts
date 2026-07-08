@@ -1,3 +1,7 @@
 export * from './SmartImage'
 export * from './YouTubeEmbed'
+export * from './MediaCarousel'
+export * from './FullScreenMediaViewer'
 export * from './youtube'
+export * from './YouTubeVideoCard'
+export * from './videoTarget'
