@@ -52,7 +52,7 @@ export function EntityProfileShell({
   const initialSnap = Platform.OS === 'web' ? 'half' : 'collapsed'
 
   const profile = (
-    <View className="flex-1 bg-canvas">
+    <View className="flex-1 bg-canvas" style={{ width: '100%', maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center' }}>
       <EntityHero {...hero} onShare={onShare}>
         <IdentityOverlay {...identity} />
         <StatChipRail stats={stats} tone="glass" />
@@ -81,9 +81,11 @@ export function EntityProfileShell({
   }
 
   return (
-    <View className="flex-1 flex-row bg-canvas" style={style}>
-      <View className="flex-1">{profile}</View>
-      <WideSidebarColumn>{sidebar}</WideSidebarColumn>
+    <View className="flex-1 bg-canvas" style={style}>
+      <View className="flex-row" style={{ width: '100%', maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center' }}>
+        <View className="flex-1">{profile}</View>
+        <WideSidebarColumn>{sidebar}</WideSidebarColumn>
+      </View>
     </View>
   )
 }

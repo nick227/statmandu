@@ -23,6 +23,7 @@ import { RecentPlaysStrip } from '@/modules/live-scoring/RecentPlaysStrip'
 import { useLiveScoringSession } from '@/modules/live-scoring/useLiveScoringSession'
 import { useAuthGate } from '@/modules/auth/useAuthGate'
 import { SportEventPad, SportStatStrip } from '@/modules/sports'
+import { LAYOUT } from '@/shared/layout'
 
 type GameEventType = components['schemas']['GameEventType']
 type SheetView = 'players' | 'substitution' | 'conflicts' | null
@@ -152,68 +153,84 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
 
   if (!joinedRole) {
     return (
-      <View className="flex-1 bg-canvas p-lg gap-sm">
+      <View className="flex-1 bg-canvas">
         <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
-        <Text className="text-2xl font-bold pb-xs">What are you here to do?</Text>
+        <View className="gap-sm p-lg" style={{ width: '100%', maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center' }}>
+          <Text className="text-2xl font-bold pb-xs">What are you here to do?</Text>
 
-        <JobOption
-          icon={ClipboardList}
-          title="Score the Game"
-          description="Full box score — every player, both teams."
-          isLoading={join.isPending}
-          onPress={() => joinAsRole('TEAM_SCORER')}
-        />
-        <Pressable onPress={() => joinAsRole('OFFICIAL_SCORER')} className="self-end pr-sm" hitSlop={8}>
-          <Text variant="caption" className="text-brand">I'm the assigned Official Scorer</Text>
-        </Pressable>
+          <JobOption
+            icon={ClipboardList}
+            title="Score the Game"
+            description="Full box score — every player, both teams."
+            isLoading={join.isPending}
+            onPress={() => {
+              if (!homeTeam || !awayTeam) {
+                joinAsRole('TEAM_SCORER', homeTeam?.id ?? awayTeam?.id)
+                return
+              }
+              Alert.alert(
+                'Select Team',
+                'Which team are you scoring for?',
+                [
+                  { text: homeTeam.name, onPress: () => joinAsRole('TEAM_SCORER', homeTeam.id) },
+                  { text: awayTeam.name, onPress: () => joinAsRole('TEAM_SCORER', awayTeam.id) },
+                  { text: 'Cancel', style: 'cancel' },
+                ]
+              )
+            }}
+          />
+          <Pressable onPress={() => joinAsRole('OFFICIAL_SCORER')} className="self-end pr-sm" hitSlop={8}>
+            <Text variant="caption" className="text-brand">I'm the assigned Official Scorer</Text>
+          </Pressable>
 
-        <JobOption
-          icon={Target}
-          title="Track a Player"
-          description="Follow just one player's stats — simpler, fewer taps."
-          isLoading={join.isPending}
-          onPress={() => joinAsRole('CONTRIBUTOR')}
-        />
+          <JobOption
+            icon={Target}
+            title="Track a Player"
+            description="Follow just one player's stats — simpler, fewer taps."
+            isLoading={join.isPending}
+            onPress={() => joinAsRole('CONTRIBUTOR')}
+          />
 
-        <JobOption
-          icon={Radio}
-          title="Broadcast"
-          description="Score the game and unlock the big-display Cast view."
-          isLoading={join.isPending}
-          onPress={() => joinAsRole('BROADCASTER')}
-        />
+          <JobOption
+            icon={Radio}
+            title="Broadcast"
+            description="Score the game and unlock the big-display Cast view."
+            isLoading={join.isPending}
+            onPress={() => joinAsRole('BROADCASTER')}
+          />
 
-        <JobOption
-          icon={Eye}
-          title="Watch"
-          description="Follow along live — no stat entry."
-          onPress={() => router.push({ pathname: '/games/[gameId]/spectate', params: { gameId } })}
-        />
+          <JobOption
+            icon={Eye}
+            title="Watch"
+            description="Follow along live — no stat entry."
+            onPress={() => router.push({ pathname: '/games/[gameId]/spectate', params: { gameId } })}
+          />
 
-        <View className="flex-row gap-sm pt-md border-t border-border mt-sm">
-          <Button
-            variant={mode === 'live' ? 'primary' : 'secondary'}
-            size="sm"
-            className="flex-1"
-            onPress={() => setMode('live')}
-          >
-            Live Now
-          </Button>
-          <Button
-            variant={mode === 'catchUp' ? 'primary' : 'secondary'}
-            size="sm"
-            className="flex-1"
-            onPress={() => setMode('catchUp')}
-          >
-            Catch-Up Entry
-          </Button>
+          <View className="flex-row gap-sm pt-md border-t border-border mt-sm">
+            <Button
+              variant={mode === 'live' ? 'primary' : 'secondary'}
+              size="sm"
+              className="flex-1"
+              onPress={() => setMode('live')}
+            >
+              Live Now
+            </Button>
+            <Button
+              variant={mode === 'catchUp' ? 'primary' : 'secondary'}
+              size="sm"
+              className="flex-1"
+              onPress={() => setMode('catchUp')}
+            >
+              Catch-Up Entry
+            </Button>
+          </View>
+          {mode === 'catchUp' ? (
+            <Text variant="caption">
+              Catch-up mode is for logging plays that already happened on an already-live game (e.g. joining after
+              tip-off) — timestamps are spaced automatically so play order stays correct even if you pause mid-batch.
+            </Text>
+          ) : null}
         </View>
-        {mode === 'catchUp' ? (
-          <Text variant="caption">
-            Catch-up mode is for logging plays that already happened on an already-live game (e.g. joining after
-            tip-off) — timestamps are spaced automatically so play order stays correct even if you pause mid-batch.
-          </Text>
-        ) : null}
       </View>
     )
   }
@@ -275,6 +292,7 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
       {/* One compact context band, not four stacked ones — score/status on
           top, team+player selection below as a single bordered card, so the
           pad (the actual job) owns the rest of the screen. */}
+      <View style={{ width: '100%', maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center' }}>
       <View className="px-lg pt-sm gap-xs">
         <View className="flex-row items-start justify-between gap-sm">
           <ReporterPresencePill count={reporterCount} />
@@ -402,6 +420,7 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
         ) : null}
         {sheetView === 'conflicts' ? <ConnectedConflictQueue gameId={game.id} className="gap-md px-lg pt-sm" /> : null}
       </Sheet>
+      </View>
     </View>
   )
 }
