@@ -22,12 +22,12 @@
     "db:studio": "pnpm --filter @statman/db db:studio"
   },
   "devDependencies": {
-    "@redocly/cli": "^1.25.0",
+    "@redocly/cli": "^2.39.0",
     "@types/js-yaml": "^4.0.0",
-    "eslint": "^8.0.0",
-    "js-yaml": "^4.0.0",
-    "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "eslint": "^10.7.0",
+    "js-yaml": "^5.2.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
   },
   "packageManager": "pnpm@10.12.1+sha512.f0dda8580f0ee9481c5c79a1d927b9164f2c478e90992ad268bbb2465a736984391d6333d2c327913578b2804af33474ca554ba29c04a8b13060a717675ae3ac"
 }
