@@ -150,7 +150,8 @@ export interface paths {
         /** List teams */
         get: operations["listTeams"];
         put?: never;
-        post?: never;
+        /** Create a team in an existing league */
+        post: operations["createTeam"];
         delete?: never;
         options?: never;
         head?: never;
@@ -181,7 +182,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a team's active roster for its current season */
+        /** Get a team's active roster for a season (defaults to current) */
         get: operations["getTeamRoster"];
         put?: never;
         post?: never;
@@ -361,7 +362,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Record or correct the final score for a non-live game */
+        patch: operations["recordGameScore"];
         trace?: never;
     };
     "/games/{gameId}/reporters": {
@@ -1086,6 +1088,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/import/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List sports import providers and quota status */
+        get: operations["adminListImportProviders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fetch, normalize, and preview a sports import */
+        post: operations["adminPreviewSportsImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/import/runs/{runId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an import run and its records */
+        get: operations["adminGetSportsImportRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/import/runs/{runId}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Execute a resolved import preview */
+        post: operations["adminExecuteSportsImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/import/runs/{runId}/records/{recordId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Resolve an import conflict */
+        patch: operations["adminResolveSportsImportRecord"];
+        trace?: never;
+    };
     "/cards": {
         parameters: {
             query?: never;
@@ -1206,6 +1293,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/athlete-profiles/{athleteProfileId}/cards/generate-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate a sport-standard pose set of cards from an athlete's reference photo */
+        post: operations["generateCardBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/athlete-profiles/{athleteProfileId}/cards/distribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Owner-only card download distribution analytics for an athlete */
+        get: operations["getCardDistribution"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/cards": {
         parameters: {
             query?: never;
@@ -1218,6 +1339,57 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/card-saves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Statman Cards saved by the current user */
+        get: operations["listMyCardSaves"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/card-saves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save (collect) a Statman Card — idempotent, safe to call while already saved */
+        post: operations["createCardSave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/card-saves/{saveId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unsave a Statman Card */
+        delete: operations["deleteCardSave"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1316,6 +1488,13 @@ export interface components {
             leagueId: string;
             league?: components["schemas"]["League"];
         };
+        CreateTeamInput: {
+            name: string;
+            leagueId: string;
+            city?: string;
+            /** Format: uri */
+            logoUrl?: string;
+        };
         AthleteProfile: {
             id: string;
             slug: string;
@@ -1406,6 +1585,10 @@ export interface components {
             venue?: string;
             homeTeamId: string;
             awayTeamId: string;
+        };
+        RecordGameScoreInput: {
+            homeScore: number;
+            awayScore: number;
         };
         GameReporter: {
             id: string;
@@ -1515,6 +1698,9 @@ export interface components {
             stats?: {
                 [key: string]: unknown;
             };
+            seasonName: string;
+            seasonSlug: string;
+            seasonIsActive: boolean;
         };
         PlayerLeaderboardEntry: {
             rank: number;
@@ -1996,6 +2182,100 @@ export interface components {
         };
         /** @enum {string} */
         AdminAuditAction: "ADMIN_IMPERSONATE_SET" | "ADMIN_IMPERSONATE_CLEAR" | "ADMIN_BULK_CREATE_PLAYERS" | "ADMIN_BULK_ADD_ROSTER" | "ADMIN_CREATE_FEED_ITEM" | "ADMIN_MUTATION";
+        ImportCapabilities: {
+            teamStats: boolean;
+            playerBoxScores: boolean;
+            seasonTotals: boolean;
+        };
+        ImportProvider: {
+            /** @enum {string} */
+            id: "API_SPORTS_BASKETBALL";
+            name: string;
+            sportSlug: string;
+            scopes: ("teams" | "games" | "standings" | "stats")[];
+            capabilities?: components["schemas"]["ImportCapabilities"];
+            plan?: string;
+            supportsBatchIds?: boolean;
+            detailBatchSize?: number;
+            quota: {
+                usedToday: number;
+                limit: number;
+                remaining: number;
+                usedThisMinute: number;
+                minuteLimit: number;
+                minuteRemaining: number;
+                /** Format: date-time */
+                minuteResetsAt: string;
+            };
+        };
+        DetailImportFilters: {
+            /** Format: date */
+            dateFrom?: string;
+            /** Format: date */
+            dateTo?: string;
+            teamId?: string;
+            gameIds?: string[];
+            recentCompletedGames?: number;
+        };
+        SportsImportPreviewInput: {
+            leagueId: string;
+            season: string;
+            scopes: ("teams" | "games" | "standings" | "stats")[];
+            detailFilters?: components["schemas"]["DetailImportFilters"];
+        };
+        SportsImportRecord: {
+            id: string;
+            entityType: string;
+            externalId: string;
+            externalName?: string | null;
+            /** @enum {string} */
+            action: "CREATE" | "UPDATE" | "UNCHANGED" | "CONFLICT" | "SKIP" | "ERROR";
+            localId?: string | null;
+            normalized: {
+                [key: string]: unknown;
+            };
+            differences?: {
+                [key: string]: unknown;
+            } | null;
+            errorMessage?: string | null;
+        };
+        quota: {
+            usedToday: number;
+            limit: number;
+            remaining: number;
+            usedThisMinute: number;
+            minuteLimit: number;
+            minuteRemaining: number;
+            /** Format: date-time */
+            minuteResetsAt: string;
+        };
+        SportsImportRun: {
+            id: string;
+            provider: string;
+            /** @enum {string} */
+            status: "PREVIEWING" | "READY" | "RUNNING" | "COMPLETED" | "FAILED" | "PARTIAL";
+            leagueExternalId: string;
+            seasonExternalId: string;
+            scopes: string[];
+            requestedCount: number;
+            createdCount: number;
+            updatedCount: number;
+            unchangedCount: number;
+            conflictCount: number;
+            errorCount: number;
+            capabilities?: components["schemas"]["ImportCapabilities"] | null;
+            estimatedRequestCost?: number;
+            detailRequestCap?: number;
+            detailRequestsCompleted?: number;
+            errorSummary?: string | null;
+            records: components["schemas"]["SportsImportRecord"][];
+            quota: components["schemas"]["quota"];
+        };
+        ResolveImportRecordInput: {
+            /** @enum {string} */
+            resolution: "MATCH" | "CREATE" | "SKIP";
+            localId?: string;
+        };
         /** @enum {string} */
         CardType: "PROFILE" | "BIG_GAME" | "MILESTONE" | "SEASON" | "HIGHLIGHT";
         /** @enum {string} */
@@ -2027,6 +2307,7 @@ export interface components {
             scheduledAt: string;
             status: string;
             teams: components["schemas"]["CardGameTeamSummary"][];
+            seasonName: string | null;
         };
         CardImageSummary: {
             id: string;
@@ -2035,6 +2316,41 @@ export interface components {
         };
         /** @enum {string} */
         CardIssueStatus: "CLAIMED" | "DOWNLOADED" | "REVOKED";
+        GenerateCardBatchInput: {
+            sourceImageAssetId: string;
+            poseIds?: string[];
+            batchRequestId?: string;
+        };
+        /** @enum {string} */
+        CardDownloadContext: "PROFILE" | "HOME" | "EXPLORE" | "CARD_STUDIO" | "SHARED_LINK" | "DIRECT";
+        CardDistributionContextCount: {
+            context: components["schemas"]["CardDownloadContext"];
+            count: number;
+        };
+        CardDistributionCardCount: {
+            card: components["schemas"]["Card"];
+            count: number;
+        };
+        CardDistribution: {
+            totalDownloads: number;
+            uniqueDownloaders: number;
+            byContext: components["schemas"]["CardDistributionContextCount"][];
+            byCard: components["schemas"]["CardDistributionCardCount"][];
+        };
+        CardSave: {
+            id: string;
+            userId: string;
+            cardTemplateId: string;
+            /** Format: date-time */
+            createdAt: string;
+            card?: components["schemas"]["Card"] | null;
+        };
+        CreateCardSaveInput: {
+            cardTemplateId: string;
+        };
+        MarkCardDownloadedInput: {
+            context?: components["schemas"]["CardDownloadContext"];
+        };
         CardAuthenticityJson: {
             /** @enum {string} */
             schema: "statman.card.authenticity.v1";
@@ -2339,6 +2655,34 @@ export interface operations {
             };
         };
     };
+    createTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTeamInput"];
+            };
+        };
+        responses: {
+            /** @description Team created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Team"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getTeam: {
         parameters: {
             query?: never;
@@ -2366,7 +2710,10 @@ export interface operations {
     };
     getTeamRoster: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Defaults to the team's current (isActive) season when omitted. */
+                seasonId?: string;
+            };
             header?: never;
             path: {
                 teamSlug: string;
@@ -2698,6 +3045,7 @@ export interface operations {
             query?: {
                 status?: components["schemas"]["GameStatus"];
                 teamSlug?: string;
+                seasonId?: string;
             };
             header?: never;
             path?: never;
@@ -2776,6 +3124,36 @@ export interface operations {
                     };
                 };
             };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    recordGameScore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordGameScoreInput"];
+            };
+        };
+        responses: {
+            /** @description Game score recorded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Game"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -4549,6 +4927,131 @@ export interface operations {
             };
         };
     };
+    adminListImportProviders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Import providers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ImportProvider"][];
+                    };
+                };
+            };
+        };
+    };
+    adminPreviewSportsImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SportsImportPreviewInput"];
+            };
+        };
+        responses: {
+            /** @description Import preview */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SportsImportRun"];
+                    };
+                };
+            };
+        };
+    };
+    adminGetSportsImportRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Import run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SportsImportRun"];
+                    };
+                };
+            };
+        };
+    };
+    adminExecuteSportsImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Completed import run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SportsImportRun"];
+                    };
+                };
+            };
+        };
+    };
+    adminResolveSportsImportRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: string;
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveImportRecordInput"];
+            };
+        };
+        responses: {
+            /** @description Resolved import record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SportsImportRecord"];
+                    };
+                };
+            };
+        };
+    };
     createCard: {
         parameters: {
             query?: never;
@@ -4578,7 +5081,10 @@ export interface operations {
     };
     listRecentPublicCards: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description recent (default, newest published first) or popular (most downloaded first) */
+                sort?: "recent" | "popular";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4773,6 +5279,62 @@ export interface operations {
             };
         };
     };
+    generateCardBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                athleteProfileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateCardBatchInput"];
+            };
+        };
+        responses: {
+            /** @description Draft cards created (one per pose), generation kicked off for each */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Card"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCardDistribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                athleteProfileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Distribution analytics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardDistribution"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listMyCards: {
         parameters: {
             query?: never;
@@ -4796,6 +5358,92 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    listMyCardSaves: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved cards */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardSave"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createCardSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCardSaveInput"];
+            };
+        };
+        responses: {
+            /** @description Card saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardSave"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteCardSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                saveId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unsaved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Not the owner of this save */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
     markCardDownloaded: {
         parameters: {
             query?: never;
@@ -4805,7 +5453,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MarkCardDownloadedInput"];
+            };
+        };
         responses: {
             /** @description Card issue marked downloaded with authenticity metadata */
             200: {

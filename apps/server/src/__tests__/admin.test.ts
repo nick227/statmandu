@@ -16,6 +16,12 @@ const specPath = resolve(__dirname, '../../../../packages/api-spec/openapi.yaml'
 async function resetAdminTestDatabase() {
   // order matters for FK constraints (children before parents).
   await db.adminAuditLog.deleteMany()
+  await db.importRecord.deleteMany()
+  await db.importRawSnapshot.deleteMany()
+  await db.importRun.deleteMany()
+  await db.importRequestLog.deleteMany()
+  await db.importedStatLine.deleteMany()
+  await db.externalEntityMapping.deleteMany()
   await db.feedItem.deleteMany()
   await db.cardIssue.deleteMany()
   await db.cardGenerationJob.deleteMany()
@@ -330,4 +336,3 @@ describe('admin endpoints: bulk + audit', () => {
     expect(audit?.note).toBe('seed feed item')
   })
 })
-

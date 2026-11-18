@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getApiClient, ApiError } from '../client'
 
-export function useGames(params?: { status?: string; teamSlug?: string }) {
+export function useGames(params?: { status?: string; teamSlug?: string; seasonId?: string }) {
   return useQuery({
     queryKey: ['games', params],
     queryFn: async () => {
@@ -11,7 +11,6 @@ export function useGames(params?: { status?: string; teamSlug?: string }) {
     },
   })
 }
-
 export function useGame(gameId: string) {
   return useQuery({
     queryKey: ['game', gameId],
@@ -45,6 +44,24 @@ export function useCreateGame() {
   })
 }
 
+export function useRecordGameScore(gameId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: { homeScore: number; awayScore: number }) => {
+      const { data, error, response } = await getApiClient().PATCH('/games/{gameId}', {
+        params: { path: { gameId } },
+        body,
+      })
+      if (error) throw new ApiError(response.status, (error as any).error)
+      return data!
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['game', gameId] })
+      queryClient.invalidateQueries({ queryKey: ['games'] })
+    },
+  })
+}
+
 export function useGameStats(gameId: string) {
   return useQuery({
     queryKey: ['game', gameId, 'stats'],
@@ -54,5 +71,18 @@ export function useGameStats(gameId: string) {
       return data!
     },
     enabled: Boolean(gameId),
+  })
+}
+
+export function useGameSpectator(gameId: string) {
+  return useQuery({
+    queryKey: ['games', gameId, 'spectator'],
+    queryFn: async () => {
+      const client = getApiClient()
+      const { data, error } = await client.GET('/games/{gameId}/spectator', { params: { path: { gameId } } })
+      if (error) throw error
+      return data
+    },
+    staleTime: 10 * 1000, // 10 seconds for spectator data
   })
 }

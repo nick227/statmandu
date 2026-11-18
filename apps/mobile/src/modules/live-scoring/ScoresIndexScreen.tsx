@@ -1,6 +1,6 @@
 import { ScrollView, View, Pressable } from 'react-native'
-import { Link, useRouter } from 'expo-router'
-import { Radio, ClipboardList, Eye, MonitorPlay } from 'lucide-react-native'
+import { Link, useLocalSearchParams } from 'expo-router'
+import { Radio } from 'lucide-react-native'
 import type { components } from '@statman/sdk'
 import { Text } from '@/shared/ui/Text'
 import { Skeleton } from '@/shared/ui/Skeleton'
@@ -12,7 +12,7 @@ import { GameStatusBadge } from '@/modules/games/GameStatusBadge'
 import { useAuthGate } from '@/modules/auth/useAuthGate'
 import { useLiveScoringGames } from '@/modules/live-scoring/useLiveScoringGames'
 import { EnterSidebar } from '@/modules/live-scoring/EnterSidebar'
-import { useNativeColor } from '@/lib/theme'
+import { ConnectedAddGamePanel } from '@/modules/live-scoring/ConnectedAddGamePanel'
 
 type Game = components['schemas']['Game']
 
@@ -25,38 +25,21 @@ function formatKickoff(iso: string) {
   })
 }
 
-function JobRow({
-  label,
-  icon: Icon,
-  onPress,
-}: {
-  label: string
-  icon: typeof ClipboardList
-  onPress: () => void
-}) {
-  const brandColor = useNativeColor('brand')
-  return (
-    <Pressable
-      onPress={onPress}
-      className="min-h-[44px] flex-row items-center gap-sm rounded-sm border border-border bg-surface px-sm py-sm active:opacity-70"
-    >
-      <View className="h-9 w-9 items-center justify-center rounded-full bg-brand/10">
-        <Icon size={16} color={brandColor} />
-      </View>
-      <Text className="flex-1 font-semibold">{label}</Text>
-    </Pressable>
-  )
-}
-
-function GameCard({ item }: { item: Game }) {
+function GameCard({ item, action }: { item: Game; action?: 'broadcast' | 'score' }) {
   const homeTeam = item.gameTeams.find((gt) => gt.isHome)?.team
   const awayTeam = item.gameTeams.find((gt) => !gt.isHome)?.team
-  const router = useRouter()
-  const canEnter = item.status !== 'FINAL' && item.status !== 'DISPUTED'
+
+  const href = action === 'broadcast'
+    ? { pathname: '/games/[gameId]/live', params: { gameId: item.id, intent: 'BROADCASTER' } }
+    : action === 'score'
+      ? item.status === 'FINAL' || item.status === 'DISPUTED'
+        ? { pathname: '/games/[gameId]/score', params: { gameId: item.id } }
+        : { pathname: '/games/[gameId]/live', params: { gameId: item.id, intent: 'TEAM_SCORER' } }
+      : { pathname: '/games/[gameId]', params: { gameId: item.id } }
 
   return (
     <View className="overflow-hidden rounded-md border border-border bg-surface">
-      <Link href={{ pathname: '/games/[gameId]/live', params: { gameId: item.id } }} asChild>
+      <Link href={href as never} asChild>
         <Pressable className="gap-xs p-md active:opacity-70">
           <View className="flex-row items-start justify-between gap-sm">
             <View className="min-w-0 flex-1 gap-xs">
@@ -69,45 +52,26 @@ function GameCard({ item }: { item: Game }) {
           </View>
         </Pressable>
       </Link>
-
-      {canEnter ? (
-        <View className="gap-sm border-t border-border bg-canvas/40 p-sm">
-          <JobRow
-            label="Score the Game"
-            icon={ClipboardList}
-            onPress={() => router.push({ pathname: '/games/[gameId]/live', params: { gameId: item.id, intent: 'TEAM_SCORER' } })}
-          />
-          <JobRow
-            label="Broadcast"
-            icon={MonitorPlay}
-            onPress={() => router.push({ pathname: '/games/[gameId]/live', params: { gameId: item.id, intent: 'BROADCASTER' } })}
-          />
-          <JobRow
-            label="Watch"
-            icon={Eye}
-            onPress={() => router.push({ pathname: '/games/[gameId]/spectate', params: { gameId: item.id } })}
-          />
-        </View>
-      ) : null}
     </View>
   )
 }
 
-function GameSection({ title, games }: { title: string; games: Game[] }) {
+function GameSection({ title, games, action }: { title: string; games: Game[]; action?: 'broadcast' | 'score' }) {
   if (games.length === 0) return null
   return (
     <View className="gap-sm">
       <Text className="text-base font-bold text-text">{title}</Text>
       <View className="gap-sm">
         {games.map((game) => (
-          <GameCard key={game.id} item={game} />
+          <GameCard key={game.id} item={game} action={action} />
         ))}
       </View>
     </View>
   )
 }
 
-export function ScoresIndexScreen() {
+export function GamesIndexScreen() {
+  const { action, create } = useLocalSearchParams<{ action?: 'broadcast' | 'score'; create?: string }>()
   const { isAuthenticated, isAuthLoading } = useAuthGate()
   const { games, isError, isLoading } = useLiveScoringGames()
 
@@ -130,6 +94,7 @@ export function ScoresIndexScreen() {
   const liveGames = games.filter((g) => g.status === 'LIVE')
   const scheduledGames = games.filter((g) => g.status === 'SCHEDULED')
   const finalGames = games.filter((g) => g.status === 'FINAL' || g.status === 'DISPUTED')
+  const isBroadcastSelection = action === 'broadcast'
 
   return (
     <Screen title="Games" insetTop={false}>
@@ -142,20 +107,40 @@ export function ScoresIndexScreen() {
               {[0, 1].map((i) => <Skeleton key={i} className="h-28 w-full rounded-md" />)}
             </View>
           ) : games.length === 0 ? (
-            <EmptyState
-              icon={Radio}
-              title="No games available"
-              description="There are no scheduled, live, or recent games."
-            />
+            <View className="gap-lg">
+              {!action ? <ConnectedAddGamePanel defaultExpanded={create === '1'} /> : (
+                <View className="rounded-md border border-brand/30 bg-brand/10 p-md">
+                  <Text className="font-semibold">{isBroadcastSelection ? 'No games available to broadcast' : 'No games available to score'}</Text>
+                  <Text variant="caption">Add a game first, then return to this action.</Text>
+                </View>
+              )}
+              <EmptyState
+                icon={Radio}
+                title="No games available"
+                description="Use Create → Game to add one."
+              />
+            </View>
           ) : (
             <ScrollView contentContainerClassName="gap-lg pb-xxl" showsVerticalScrollIndicator={false}>
               <GlobalFilterBar />
+              {!action ? <ConnectedAddGamePanel defaultExpanded={create === '1'} /> : null}
+              {action ? (
+                <View className="rounded-md border border-brand/30 bg-brand/10 p-md">
+                  <Text className="font-semibold">{isBroadcastSelection ? 'Choose a game to broadcast' : 'Choose a game to score'}</Text>
+                  <Text variant="caption">
+                    {isBroadcastSelection ? 'Only scheduled and live games can be broadcast.' : 'Historical games open final-score entry.'}
+                  </Text>
+                </View>
+              ) : null}
               <Text variant="caption">
-                Pick a game, then score, broadcast, or watch from the sidelines.
+                Open a game for its score, coverage, scoring tools, and live broadcast controls.
               </Text>
-              <GameSection title="Live now" games={liveGames} />
-              <GameSection title="Upcoming" games={scheduledGames} />
-              <GameSection title="Recent" games={finalGames} />
+              <GameSection title="Live now" games={liveGames} action={action} />
+              <GameSection title="Upcoming" games={scheduledGames} action={action} />
+              {!isBroadcastSelection ? <GameSection title="Recent" games={finalGames} action={action} /> : null}
+              {isBroadcastSelection && liveGames.length + scheduledGames.length === 0 ? (
+                <EmptyState icon={Radio} title="No broadcastable games" description="Only scheduled and live games can start a broadcast." />
+              ) : null}
             </ScrollView>
           )
         }

@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { Dimensions, FlatList, Pressable, View, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native'
 import { VideoStage } from './VideoStage'
+import { SmartImage } from './SmartImage'
 
-export interface MediaCarouselItem {
-  id: string
-  youtubeVideoId: string
-  title?: string | null
-}
+export type MediaCarouselItem =
+  | { id: string; kind: 'video'; youtubeVideoId: string; title?: string | null }
+  | { id: string; kind: 'photo'; imageUri: string; title?: string | null }
 
 export interface MediaCarouselProps {
   items: MediaCarouselItem[]
@@ -34,15 +33,21 @@ export function MediaCarousel({ items, height = 420, className, onItemPress }: M
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleMomentumEnd}
-        renderItem={({ item, index }) => (
-          <VideoStage
-            videoId={item.youtubeVideoId}
-            mode="chrome"
-            width={width}
-            height={height}
-            onPlayRequest={() => onItemPress?.(index)}
-          />
-        )}
+        renderItem={({ item, index }) =>
+          item.kind === 'video' ? (
+            <VideoStage
+              videoId={item.youtubeVideoId}
+              mode="chrome"
+              width={width}
+              height={height}
+              onPlayRequest={() => onItemPress?.(index)}
+            />
+          ) : (
+            <Pressable onPress={() => onItemPress?.(index)} style={{ width, height }}>
+              <SmartImage uri={item.imageUri} style={{ width, height }} resizeMode="cover" />
+            </Pressable>
+          )
+        }
       />
       {items.length > 1 ? (
         <View pointerEvents="none" className="absolute inset-x-0 bottom-4 flex-row items-center justify-center gap-xs">

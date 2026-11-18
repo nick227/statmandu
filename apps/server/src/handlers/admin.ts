@@ -1,6 +1,28 @@
 import { AdminService } from '../services/AdminService'
+import { SportsImportService } from '../services/SportsImportService'
 
 const adminService = new AdminService()
+const sportsImportService = new SportsImportService()
+
+export async function adminListImportProviders(_request: any, reply: any) {
+  return reply.send({ data: await sportsImportService.providers() })
+}
+
+export async function adminPreviewSportsImport(request: any, reply: any) {
+  return reply.status(201).send({ data: await sportsImportService.preview(request.user.id, request.body) })
+}
+
+export async function adminGetSportsImportRun(request: any, reply: any) {
+  return reply.send({ data: await sportsImportService.getRun(request.params.runId) })
+}
+
+export async function adminResolveSportsImportRecord(request: any, reply: any) {
+  return reply.send({ data: await sportsImportService.resolveRecord(request.params.runId, request.params.recordId, request.body) })
+}
+
+export async function adminExecuteSportsImport(request: any, reply: any) {
+  return reply.send({ data: await sportsImportService.execute(request.params.runId) })
+}
 
 export async function getAdminMetrics(_request: any, reply: any) {
   const metrics = await adminService.metrics()
@@ -39,4 +61,3 @@ export async function adminListAuditLog(request: any, reply: any) {
   const result = await adminService.listAuditLog(request.query ?? {})
   return reply.send(result)
 }
-

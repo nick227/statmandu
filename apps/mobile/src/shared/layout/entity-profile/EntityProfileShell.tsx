@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { Platform, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native'
 import type GorhomBottomSheet from '@gorhom/bottom-sheet'
-import { Sheet, SheetScrollView } from '@/shared/ui/Sheet'
+import { Sheet, SheetScrollView, type SheetSnapPoint } from '@/shared/ui/Sheet'
 import { Avatar } from '@/shared/ui/Avatar'
 import { Text } from '@/shared/ui/Text'
 import { LAYOUT } from '../layoutConstants'
@@ -9,13 +9,13 @@ import { WideSidebarColumn } from '../WideSidebarColumn'
 import { EntityHero, type EntityHeroProps } from './EntityHero'
 import { IdentityOverlay, type IdentityOverlayProps } from './IdentityOverlay'
 import { StatChipRail, type StatChipRailProps } from './StatChipRail'
-import { EntityProfileTabs } from './EntityProfileTabs'
+import { EntityProfileTabs, type EntityProfileTab } from './EntityProfileTabs'
 
 export interface EntityProfileShellProps {
   hero: Pick<EntityHeroProps, 'youtubeVideoId' | 'fallbackImageUri' | 'mediaItems' | 'onMediaPress' | 'height' | 'scrimHeight'>
   identity: IdentityOverlayProps
   stats: StatChipRailProps['stats']
-  tabs: string[]
+  tabs: EntityProfileTab[]
   activeTab: string
   onTabChange: (tab: string) => void
   children: ReactNode
@@ -30,6 +30,10 @@ export interface EntityProfileShellProps {
   sidebar?: ReactNode
   /** e.g. useSportTheme(sport) — scopes --color-sport-accent to this screen. */
   style?: StyleProp<ViewStyle>
+  /** Overrides the sheet's default open state (native defaults to
+   *  'collapsed', a ~12% sliver — fine for a hero-first browse screen, too
+   *  little for one whose content should be visible without a drag). */
+  initialSnap?: SheetSnapPoint
 }
 
 export function EntityProfileShell({
@@ -44,13 +48,14 @@ export function EntityProfileShell({
   onShare,
   sidebar,
   style,
+  initialSnap,
 }: EntityProfileShellProps) {
   const sheetRef = useRef<GorhomBottomSheet>(null)
   const [isExpanded, setIsExpanded] = useState(false)
   const { width } = useWindowDimensions()
   const sheetBottomPad = 48
   const showSidebar = Boolean(sidebar) && width >= LAYOUT.wideBreakpoint
-  const initialSnap = Platform.OS === 'web' ? 'half' : 'collapsed'
+  const resolvedInitialSnap = initialSnap ?? (Platform.OS === 'web' ? 'half' : 'collapsed')
 
   const profile = (
     <View className="flex-1 bg-canvas" style={{ width: '100%', maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center' }}>
@@ -59,7 +64,7 @@ export function EntityProfileShell({
         <StatChipRail stats={stats} tone="glass" />
       </EntityHero>
 
-      <Sheet ref={sheetRef} initialSnap={initialSnap} onChange={(index) => setIsExpanded(index === 2)}>
+      <Sheet ref={sheetRef} initialSnap={resolvedInitialSnap} onChange={(index) => setIsExpanded(index === 2)}>
         {isExpanded ? (
           <View className="flex-row items-center gap-sm px-lg pb-sm">
             <Avatar uri={identity.avatarUri} fallback={identity.name} size="sm" />

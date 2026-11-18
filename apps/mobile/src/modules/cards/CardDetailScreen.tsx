@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, Share, View } from 'react-native'
-import { Link } from 'expo-router'
+import { Link, useLocalSearchParams } from 'expo-router'
 import { Text } from '@/shared/ui/Text'
 import { Button } from '@/shared/ui/Button'
 import { Badge } from '@/shared/ui/Badge'
@@ -8,22 +8,30 @@ import { BackButton } from '@/shared/ui/BackButton'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { Screen } from '@/shared/layout'
-import { SmartImage } from '@/shared/media/SmartImage'
+import { Card1AStage } from './Card1A'
 import { ConnectedCardClaimButton } from './ConnectedCardClaimButton'
+import { ConnectedCardSaveButton } from './ConnectedCardSaveButton'
 import { CardAuthenticitySheet } from './CardAuthenticitySheet'
+import { CardRail } from './CardRail'
 import { useCardDetail } from './useCardDetail'
+import { sharePublicEntity } from '@/shared/share/sharePublicEntity'
 import {
   CARD_STATUS_LABEL,
   CARD_STATUS_TONE,
   CARD_TYPE_LABEL,
   athleteFullName,
-  cardImageUri,
+  cardFaceDataFromCard,
   editionLabel,
 } from './cardDisplay'
 
 export function CardDetailScreen({ cardId }: { cardId: string }) {
-  const { card, isLoading, isError, markDownloaded } = useCardDetail(cardId)
+  const { card, isLoading, isError, markDownloaded, relatedCards } = useCardDetail(cardId)
   const [authenticityVisible, setAuthenticityVisible] = useState(false)
+  // Which surface linked into this card — carried through to
+  // markCardDownloaded so the athlete's distribution panel can show
+  // downloads broken down by where they actually came from. No param (a
+  // bookmarked/typed URL) reports DIRECT server-side.
+  const { source } = useLocalSearchParams<{ source?: 'PROFILE' | 'HOME' | 'EXPLORE' | 'CARD_STUDIO' | 'SHARED_LINK' }>()
 
   if (isError) {
     return (
@@ -43,13 +51,12 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
     )
   }
 
-  const imageUri = cardImageUri(card)
   const issueId = card.currentUserIssue?.id
   const alreadyDownloaded = card.currentUserIssue?.status === 'DOWNLOADED'
 
   async function handleDownload() {
     if (!issueId) return
-    const result = await markDownloaded.mutateAsync(issueId)
+    const result = await markDownloaded.mutateAsync({ issueId, context: source })
     // No on-device file-save yet — expo-file-system/expo-media-library
     // aren't installed in this app. Share sheet (image URL + authenticity
     // text) is the UI/action boundary for MVP; swap in a real save-to-disk
@@ -57,19 +64,23 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
     await Share.share({ message: result.data.authenticity.text, url: card!.frontImage?.url ?? undefined })
   }
 
+  // Independent of download — sharing doesn't require a claimed issue or
+  // the authenticity payload, just the card's own public info.
+  function handleShare() {
+    void sharePublicEntity({
+      title: card!.title,
+      message: [athleteFullName(card!), card!.team?.name].filter(Boolean).join(' · '),
+      path: `/cards/${card!.id}`,
+    })
+  }
+
   return (
     <>
       <Screen scroll>
         <View className="px-lg pb-md"><BackButton tone="dark" /></View>
 
-        <View className="mx-lg overflow-hidden rounded-lg bg-black" style={{ height: 420 }}>
-          {imageUri ? (
-            <SmartImage uri={imageUri} className="h-full w-full" resizeMode="cover" />
-          ) : (
-            <View className="flex-1 items-center justify-center">
-              <Text className="text-white/60">No image yet</Text>
-            </View>
-          )}
+        <View className="items-center px-sm">
+          <Card1AStage data={cardFaceDataFromCard(card)} />
         </View>
 
         <View className="gap-md px-lg pt-lg">
@@ -101,10 +112,19 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
             ) : null}
           </View>
 
+          <View className="flex-row flex-wrap gap-sm">
+            <Button variant="secondary" size="sm" onPress={handleShare}>Share</Button>
+            <ConnectedCardSaveButton cardTemplateId={card.id} compact />
+          </View>
+
           <View className="gap-xs rounded-md border border-border bg-surface p-md">
             <Text variant="caption">Edition</Text>
             <Text className="font-semibold">{editionLabel(card)}</Text>
           </View>
+
+          {card.game?.seasonName ? (
+            <Text variant="caption">{card.game.seasonName} season</Text>
+          ) : null}
 
           {card.originHash ? (
             <Pressable
@@ -126,7 +146,15 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
               {alreadyDownloaded ? 'Share again' : 'Download'}
             </Button>
           ) : null}
+
         </View>
+
+        {relatedCards.length > 0 ? (
+          <View className="gap-sm pt-xl">
+            <Text className="px-lg text-lg font-semibold">More from {athleteFullName(card)}</Text>
+            <CardRail cards={relatedCards} />
+          </View>
+        ) : null}
       </Screen>
 
       <CardAuthenticitySheet

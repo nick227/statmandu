@@ -3,6 +3,34 @@
 @tailwind utilities;
 
 /*
+ * Web scrolling belongs to the browser document. Expo/React Navigation
+ * otherwise leaves the app root at viewport height, which clips long pages
+ * and encourages nested page-level overflow:auto containers.
+ */
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    height: auto;
+  }
+
+  html {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  body,
+  #root {
+    overflow: visible;
+  }
+
+  body {
+    margin: 0;
+  }
+}
+
+/*
  * Design tokens — sourced from
  * statman_project_docs/statman_docs_bundle/19_DESIGN_TOKEN_SHEET.json
  * Do not hand-tune values here without updating that sheet too.

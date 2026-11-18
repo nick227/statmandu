@@ -7,13 +7,18 @@ export async function listTeams(request: any, reply: any) {
   return reply.send({ data: teams })
 }
 
+export async function createTeam(request: any, reply: any) {
+  const team = await teamService.createTeam(request.body)
+  return reply.status(201).send({ data: team })
+}
+
 export async function getTeam(request: any, reply: any) {
   const team = await teamService.getTeam(request.params.teamSlug)
   return reply.send({ data: team })
 }
 
 export async function getTeamRoster(request: any, reply: any) {
-  const roster = await teamService.getRoster(request.params.teamSlug)
+  const roster = await teamService.getRoster(request.params.teamSlug, request.query?.seasonId)
   return reply.send({ data: roster })
 }
 

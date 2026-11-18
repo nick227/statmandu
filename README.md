@@ -28,6 +28,36 @@ pnpm db:push                                             # dev db, from .env
 DATABASE_URL=<test-db-url> pnpm --filter @statman/db exec prisma db push   # test db
 ```
 
+## Seed data and test logins
+
+The project includes seed scripts for both users and content. Run `pnpm db:seed`
+to populate the development database with the default full dataset: demo accounts,
+players, teams, games and stats, media, articles, social activity, cards, and
+verification/admin workflow examples. `pnpm bootstrap` also runs the seed.
+
+On a fresh seed, all accounts below use the development-only password
+**`password123`**:
+
+| Email | App role | Demo persona |
+|---|---|---|
+| `admin@statman.dev` | `ADMIN` | Administrator; claims and article review |
+| `scorer@statman.dev` | `USER` | Official scorer; joined the live demo game |
+| `teamscorer@statman.dev` | `USER` | Eastside team scorer; joined the live demo game |
+| `broadcaster@statman.dev` | `USER` | Broadcaster; joined the live demo game |
+| `athlete@statman.dev` | `USER` | Athlete with a claimed profile |
+| `fan1@statman.dev` | `USER` | Fan/collector with follows, reactions, and a pending claim |
+| `fan2@statman.dev` | `USER` | Fan following Westview; reviewer workflow examples |
+
+Scorer and broadcaster personas are game reporter roles; their app role is `USER`.
+Re-running the seed preserves existing account passwords, so it does not reset
+changed credentials. New accounts reuse the existing admin password hash when
+available.
+
+For a smaller dataset, `pnpm db:seed:minimal` creates only the admin and `fan1`
+accounts plus the core sport, league, season, and two teams. Other scenarios and
+validation commands are documented in the [seed guide](packages/db/prisma/seed/README.md).
+Use the development database; server tests clear the separate test database.
+
 ## Dev
 
 ```bash
@@ -56,7 +86,7 @@ for what's done and what's next.
 | `pnpm lint` | Lint all packages |
 | `pnpm test` | Run all tests (against the test DB) |
 | `pnpm db:push` | Push Prisma schema to the dev DB |
-| `pnpm db:seed` | Seed dev DB with demo data (1 league, 2 teams, 20 players) |
+| `pnpm db:seed` | Seed dev DB with the full users and content dataset |
 | `pnpm db:studio` | Open Prisma Studio |
 
 ## Architecture

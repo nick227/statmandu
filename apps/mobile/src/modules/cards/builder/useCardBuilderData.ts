@@ -38,7 +38,7 @@ export function useCardBuilderData(
   const playersQuery = usePlayers({ q: athleteQuery || undefined, limit: 20 })
   const players = useMemo(() => playersQuery.data?.pages.flatMap((p) => p.data) ?? [], [playersQuery.data])
   const selectedPlayer = useMemo(
-    () => players.find((p) => p.athleteProfileId === state.athleteProfileId) ?? players[0] ?? null,
+    () => players.find((p) => p.athleteProfileId === state.athleteProfileId) ?? null,
     [players, state.athleteProfileId]
   )
 
@@ -49,9 +49,9 @@ export function useCardBuilderData(
         athleteProfileId: player.athleteProfileId,
         name: athleteName(player) ?? 'Athlete',
         teamName: teamName(player) ?? 'Athlete profile',
-        selected: player.athleteProfileId === state.athleteProfileId || (!state.athleteProfileId && player.id === selectedPlayer?.id),
+        selected: Boolean(state.athleteProfileId && player.athleteProfileId === state.athleteProfileId),
       })),
-    [players, selectedPlayer?.id, state.athleteProfileId]
+    [players, state.athleteProfileId]
   )
 
   const athleteProfileId = state.athleteProfileId ?? ''
@@ -66,16 +66,6 @@ export function useCardBuilderData(
       athleteName: option.name,
       athleteTeamName: option.teamName,
     })
-  }
-
-  function selectDefaultPlayer() {
-    if (!selectedPlayer?.athleteProfileId) return false
-    updateState({
-      athleteProfileId: selectedPlayer.athleteProfileId,
-      athleteName: athleteName(selectedPlayer),
-      athleteTeamName: teamName(selectedPlayer),
-    })
-    return true
   }
 
   async function pickAndUploadPhoto() {
@@ -117,9 +107,9 @@ export function useCardBuilderData(
     athleteQuery,
     setAthleteQuery,
     playerOptions,
-    hasSelectablePlayer: Boolean(selectedPlayer?.athleteProfileId),
+    hasSelectedPlayer: Boolean(state.athleteProfileId),
+    selectedPlayer,
     selectPlayer,
-    selectDefaultPlayer,
     gallery,
     galleryQuery,
     selectedGalleryImage,

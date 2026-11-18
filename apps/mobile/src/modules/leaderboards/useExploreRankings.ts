@@ -4,6 +4,7 @@ import { getSportDefinition } from '@statman/sports'
 import { useGames, usePlayerLeaderboard, useRecentMedia, useTeamLeaderboard } from '@statman/sdk'
 import { EXPLORE_SPORTS, type ExploreSportSlug } from '@/modules/leaderboards/exploreContent'
 import type { ShowcaseList } from '@/modules/leaderboards/showcaseTypes'
+import { selectDiscoveryGames } from '@/modules/leaderboards/discoverySelection'
 
 type Game = components['schemas']['Game']
 type PlayerLeaderboardEntry = components['schemas']['PlayerLeaderboardEntry']
@@ -107,6 +108,7 @@ export function useExploreRankings() {
     () => [...finalGames].sort((a, b) => new Date(b.finalizedAt ?? b.scheduledAt).getTime() - new Date(a.finalizedAt ?? a.scheduledAt).getTime()).slice(0, 3),
     [finalGames]
   )
+  const discoveryGames = useMemo(() => selectDiscoveryGames(sportGames), [sportGames])
   const showcaseLists: ShowcaseList[] = [
     {
       key: secondaryPlayerStat,
@@ -172,6 +174,7 @@ export function useExploreRankings() {
     risingPlayers,
     featuredTeam,
     risingTeams,
+    discoveryGames,
     hasPlayerResults: playerEntries.length > 0,
     hasTeamResults: teamEntries.length > 0,
     isVerifiedFilterEmpty,

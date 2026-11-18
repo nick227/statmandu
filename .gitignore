@@ -22,3 +22,7 @@ apps/mobile/android/
 *.p12
 *.key
 *.mobileprovision
+
+# Generated/user-derived server media. Runtime creates this directory when needed.
+apps/server/uploads/*
+!apps/server/uploads/.gitkeep

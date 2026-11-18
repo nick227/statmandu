@@ -44,10 +44,13 @@ model User {
   mediaAssets       MediaAsset[]
   imageAssets       ImageAsset[]
   cardTemplates     CardTemplate[]  @relation("CreatedCardTemplates")
+  cardSaves         CardSave[]
   ownedCardIssues   CardIssue[]     @relation("OwnedCardIssues")
   claimedCardIssues CardIssue[]     @relation("ClaimedCardIssues")
+  cardDownloadEvents CardDownloadEvent[]
   adminActions      AdminAuditLog[] @relation("AdminActionActor")
   adminActionsAs    AdminAuditLog[] @relation("AdminActionSubject")
+  importRuns        ImportRun[]
 
   @@index([createdAt])
 }
@@ -570,6 +573,171 @@ model TeamSeasonStat {
   @@unique([teamId, seasonId])
 }
 
+// Provider-neutral import ledger. Imported aggregates intentionally remain
+// separate from reporter-authored GameEvent and reconciled GameStatLine data.
+enum ImportProvider {
+  API_SPORTS_BASKETBALL
+}
+
+enum ImportRunStatus {
+  PREVIEWING
+  READY
+  RUNNING
+  COMPLETED
+  FAILED
+  PARTIAL
+}
+
+enum ImportStatAvailability {
+  AVAILABLE
+  UNSUPPORTED
+  NOT_AVAILABLE
+}
+
+enum ImportRecordAction {
+  CREATE
+  UPDATE
+  UNCHANGED
+  CONFLICT
+  SKIP
+  ERROR
+}
+
+enum ImportEntityType {
+  LEAGUE
+  SEASON
+  TEAM
+  PLAYER
+  GAME
+  STANDING
+  STAT_LINE
+}
+
+model ExternalEntityMapping {
+  id           String           @id @default(cuid())
+  provider     ImportProvider
+  entityType   ImportEntityType
+  externalId   String
+  localId      String
+  externalName String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([provider, entityType, externalId])
+  @@index([entityType, localId])
+}
+
+model ImportRun {
+  id             String          @id @default(cuid())
+  provider       ImportProvider
+  status         ImportRunStatus @default(PREVIEWING)
+  requestedById  String
+  leagueExternalId String
+  seasonExternalId String
+  scopes         Json
+  options        Json?
+  capabilities   Json?
+  estimatedRequestCost Int       @default(0)
+  detailRequestCap Int            @default(10)
+  detailRequestsCompleted Int     @default(0)
+  requestedCount Int             @default(0)
+  createdCount   Int             @default(0)
+  updatedCount   Int             @default(0)
+  unchangedCount Int             @default(0)
+  conflictCount  Int             @default(0)
+  errorCount     Int             @default(0)
+  errorSummary   String?         @db.Text
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  requestedBy User                @relation(fields: [requestedById], references: [id])
+  records     ImportRecord[]
+  snapshots   ImportRawSnapshot[]
+
+  @@index([provider, createdAt])
+  @@index([requestedById])
+}
+
+model ImportRecord {
+  id            String             @id @default(cuid())
+  importRunId   String
+  entityType    ImportEntityType
+  externalId    String
+  externalName  String?
+  action        ImportRecordAction
+  localId       String?
+  normalized    Json
+  differences   Json?
+  resolution    Json?
+  errorMessage  String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  importRun ImportRun @relation(fields: [importRunId], references: [id], onDelete: Cascade)
+
+  @@unique([importRunId, entityType, externalId])
+  @@index([importRunId, action])
+}
+
+model ImportRawSnapshot {
+  id          String         @id @default(cuid())
+  importRunId String
+  provider    ImportProvider
+  requestKey  String
+  endpoint    String
+  parameters  Json
+  payload     Json
+  payloadHash String
+  fetchedAt   DateTime       @default(now())
+  expiresAt   DateTime
+
+  importRun ImportRun @relation(fields: [importRunId], references: [id], onDelete: Cascade)
+
+  @@unique([importRunId, requestKey])
+  @@index([provider, requestKey, expiresAt])
+}
+
+model ImportRequestLog {
+  id             String         @id @default(cuid())
+  provider       ImportProvider
+  requestKey     String
+  endpoint       String
+  responseStatus Int
+  cacheHit       Boolean        @default(false)
+  quotaLimit     Int?
+  quotaRemaining Int?
+  requestedAt    DateTime       @default(now())
+  durationMs     Int
+
+  @@index([provider, requestedAt])
+}
+
+model ImportedStatLine {
+  id             String           @id @default(cuid())
+  provider       ImportProvider
+  externalId     String
+  sportSlug      String
+  leagueId       String?
+  seasonId       String?
+  gameId         String?
+  teamId         String?
+  playerId       String?
+  subjectType    ImportEntityType
+  statKind       String
+  availability   ImportStatAvailability @default(AVAILABLE)
+  stats          Json
+  sourceUpdatedAt DateTime?
+  importedAt     DateTime         @default(now())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([gameId, teamId])
+  @@index([seasonId, teamId])
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Media (YouTube-only for MVP)
 // ─────────────────────────────────────────────────────────────────────────
@@ -632,6 +800,7 @@ model ImageAsset {
 
   @@index([targetType, targetId, usage])
   @@index([createdAt])
+  @@index([objectKey])
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -674,6 +843,7 @@ enum CardIssueStatus {
 
 enum CardGenerationProvider {
   STUB
+  GEMINI
 }
 
 enum CardGenerationStatus {
@@ -681,6 +851,20 @@ enum CardGenerationStatus {
   PROCESSING
   READY
   FAILED
+}
+
+// Which in-app surface a card download was initiated from — "waste not
+// want not" retention means an athlete can accumulate many private
+// generations, so knowing where their *public* cards actually get
+// downloaded from is the useful signal, not IP geolocation (deliberately
+// out of scope, see plan doc).
+enum CardDownloadContext {
+  PROFILE
+  HOME
+  EXPLORE
+  CARD_STUDIO
+  SHARED_LINK
+  DIRECT
 }
 
 model CardTemplate {
@@ -701,6 +885,11 @@ model CardTemplate {
   sourceImageAssetId String?
   statsSnapshotJson  Json
   originHash         String?
+  // Client-supplied idempotency key for batch generation — a retried or
+  // double-tapped POST /cards/generate-batch with the same key returns the
+  // existing batch instead of creating a second one. Null for cards made
+  // through the single-card manual builder.
+  batchRequestId     String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   publishedAt        DateTime?
@@ -713,10 +902,13 @@ model CardTemplate {
   sourceImageAsset ImageAsset?         @relation("CardSourceImage", fields: [sourceImageAssetId], references: [id])
   issues           CardIssue[]
   generationJobs   CardGenerationJob[]
+  downloadEvents   CardDownloadEvent[]
+  saves            CardSave[]
 
   @@index([athleteProfileId, status])
   @@index([visibility, status, publishedAt])
   @@index([createdByUserId])
+  @@index([athleteProfileId, batchRequestId])
 }
 
 model CardIssue {
@@ -731,13 +923,48 @@ model CardIssue {
   status          CardIssueStatus @default(CLAIMED)
   createdAt       DateTime        @default(now())
 
-  cardTemplate  CardTemplate @relation(fields: [cardTemplateId], references: [id])
-  ownerUser     User?        @relation("OwnedCardIssues", fields: [ownerUserId], references: [id])
-  claimedByUser User?        @relation("ClaimedCardIssues", fields: [claimedByUserId], references: [id])
+  cardTemplate   CardTemplate        @relation(fields: [cardTemplateId], references: [id])
+  ownerUser      User?               @relation("OwnedCardIssues", fields: [ownerUserId], references: [id])
+  claimedByUser  User?               @relation("ClaimedCardIssues", fields: [claimedByUserId], references: [id])
+  downloadEvents CardDownloadEvent[]
 
   @@unique([cardTemplateId, issueNumber])
   @@unique([issueHash])
   @@index([claimedByUserId, createdAt])
+}
+
+model CardDownloadEvent {
+  id                 String              @id @default(cuid())
+  cardTemplateId     String
+  cardIssueId        String
+  downloadedByUserId String
+  context            CardDownloadContext @default(DIRECT)
+  createdAt          DateTime            @default(now())
+
+  cardTemplate     CardTemplate @relation(fields: [cardTemplateId], references: [id])
+  cardIssue        CardIssue    @relation(fields: [cardIssueId], references: [id])
+  downloadedByUser User         @relation(fields: [downloadedByUserId], references: [id])
+
+  @@index([cardTemplateId, createdAt])
+  @@index([downloadedByUserId, createdAt])
+}
+
+// Lightweight save/collect — deliberately a dedicated model with a direct
+// FK, not the polymorphic Follow/Reaction EntityType pattern, since saves
+// are single-purpose (cards only), unlike Follow/Reaction which span
+// multiple target kinds. The prerequisite for a "Collections" surface
+// (saved + claimed cards) — see Follow for the equivalent toggle shape.
+model CardSave {
+  id             String   @id @default(cuid())
+  userId         String
+  cardTemplateId String
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  cardTemplate CardTemplate @relation(fields: [cardTemplateId], references: [id])
+
+  @@unique([userId, cardTemplateId])
+  @@index([cardTemplateId])
 }
 
 model CardGenerationJob {
@@ -748,6 +975,9 @@ model CardGenerationJob {
   inputJson      Json
   outputJson     Json?
   error          String?
+  // Real retry state for the reconciliation sweep — a stuck job gets this
+  // incremented and re-run in place rather than spawning a new job row.
+  attempt        Int                    @default(1)
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
 

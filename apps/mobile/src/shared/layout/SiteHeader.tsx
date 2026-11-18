@@ -1,7 +1,7 @@
-import { View, Pressable, ScrollView, useWindowDimensions } from 'react-native'
+import { View, Pressable, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Link, usePathname } from 'expo-router'
-import { Search, User } from 'lucide-react-native'
+import { User } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
 import { Avatar } from '@/shared/ui/Avatar'
 import { brand } from '@/config/brand'
@@ -19,12 +19,19 @@ export interface SiteHeaderProps {
   user?: SiteHeaderUser | null
 }
 
+// Primary/supporting/utility hierarchy: Athletes and Cards are the two
+// pillars the product is built around, Games and Teams are first-class but
+// secondary destinations, Explore is the single search/discovery utility
+// (replacing a separate search icon that pointed at this same route under
+// a different label — one entry point, not two for the same screen).
+// Articles/Videos/Community are editorial — reachable from the homepage,
+// not primary nav.
 const NAV_ITEMS = [
-  { label: 'Articles', href: '/articles' },
   { label: 'Athletes', href: '/players' },
-  { label: 'Leaderboard', href: '/explore' },
-  { label: 'Games', href: '/scores' },
-  { label: 'Trading Cards', href: '/cards' },
+  { label: 'Cards', href: '/cards' },
+  { label: 'Games', href: '/games' },
+  { label: 'Teams', href: '/teams' },
+  { label: 'Explore', href: '/explore' },
 ] as const
 
 function navItemActive(pathname: string, href: string) {
@@ -35,7 +42,6 @@ export function SiteHeader({ user }: SiteHeaderProps) {
   const insets = useSafeAreaInsets()
   const pathname = usePathname()
   const { width } = useWindowDimensions()
-  const iconColor = useNativeColor('text')
   const mutedColor = useNativeColor('mutedText')
   const isWide = width >= LAYOUT.wideBreakpoint
 
@@ -65,16 +71,6 @@ export function SiteHeader({ user }: SiteHeaderProps) {
         </View>
 
         <View className="flex-row items-center gap-sm">
-          <Link href="/explore" asChild>
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel="Search"
-              className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
-            >
-              <Search size={20} color={iconColor} strokeWidth={2} />
-            </Pressable>
-          </Link>
-
           <Link href="/me" asChild>
             <Pressable accessibilityRole="link" accessibilityLabel={user ? 'Account' : 'Sign in'} className="active:opacity-70">
               {user ? (
@@ -89,17 +85,6 @@ export function SiteHeader({ user }: SiteHeaderProps) {
         </View>
       </View>
 
-      {!isWide ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="gap-xs px-lg pb-sm"
-        >
-          {NAV_ITEMS.map((item) => (
-            <NavLink key={item.href} href={item.href} label={item.label} active={navItemActive(pathname, item.href)} />
-          ))}
-        </ScrollView>
-      ) : null}
     </View>
   )
 }

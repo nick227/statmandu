@@ -83,6 +83,8 @@ components:
       $ref: './components/schemas/sports.yaml#/League'
     Team:
       $ref: './components/schemas/sports.yaml#/Team'
+    CreateTeamInput:
+      $ref: './components/schemas/sports.yaml#/CreateTeamInput'
 
     AthleteProfile:
       $ref: './components/schemas/players.yaml#/AthleteProfile'
@@ -103,6 +105,8 @@ components:
       $ref: './components/schemas/games.yaml#/Game'
     CreateGameInput:
       $ref: './components/schemas/games.yaml#/CreateGameInput'
+    RecordGameScoreInput:
+      $ref: './components/schemas/games.yaml#/RecordGameScoreInput'
     GameReporter:
       $ref: './components/schemas/games.yaml#/GameReporter'
     JoinReporterInput:
@@ -365,6 +369,16 @@ paths:
     $ref: './paths/admin.yaml#/createFeedItem'
   /admin/audit-log:
     $ref: './paths/admin.yaml#/auditLog'
+  /admin/import/providers:
+    $ref: './paths/admin.yaml#/importProviders'
+  /admin/import/preview:
+    $ref: './paths/admin.yaml#/importPreview'
+  /admin/import/runs/{runId}:
+    $ref: './paths/admin.yaml#/importRun'
+  /admin/import/runs/{runId}/execute:
+    $ref: './paths/admin.yaml#/importExecute'
+  /admin/import/runs/{runId}/records/{recordId}:
+    $ref: './paths/admin.yaml#/importRecord'
 
   /cards:
     $ref: './paths/cards.yaml#/collection'
@@ -380,7 +394,17 @@ paths:
     $ref: './paths/cards.yaml#/claim'
   /athlete-profiles/{athleteProfileId}/cards:
     $ref: './paths/cards.yaml#/athleteCards'
+  /athlete-profiles/{athleteProfileId}/cards/generate-batch:
+    $ref: './paths/cards.yaml#/generateBatch'
+  /athlete-profiles/{athleteProfileId}/cards/distribution:
+    $ref: './paths/cards.yaml#/distribution'
   /me/cards:
     $ref: './paths/cards.yaml#/mine'
+  /me/card-saves:
+    $ref: './paths/card-saves.yaml#/mine'
+  /card-saves:
+    $ref: './paths/card-saves.yaml#/collection'
+  /card-saves/{saveId}:
+    $ref: './paths/card-saves.yaml#/item'
   /card-issues/{issueId}/downloaded:
     $ref: './paths/cards.yaml#/downloaded'

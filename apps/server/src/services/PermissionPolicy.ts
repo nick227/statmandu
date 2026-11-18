@@ -2,6 +2,7 @@ import type { GameReporterRole, UserRole } from '@statman/db'
 
 export type PolicyAction =
   | 'createGame'
+  | 'recordGameScore'
   | 'editGame'
   | 'manageRoster'
   | 'inviteReporter'
@@ -40,6 +41,7 @@ export class PermissionPolicy {
 
     switch (action) {
       case 'createGame':
+      case 'recordGameScore':
       case 'attachMedia':
         return true
       case 'editGame':

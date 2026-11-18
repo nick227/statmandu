@@ -11,18 +11,17 @@ function gameTitle(game: Game) {
 
 export function EnterSidebar({ games }: { games: Game[] }) {
   const items: SidebarListItem[] = games.slice(0, 12).map((game) => ({
-    id: `enter-game:${game.id}`,
+    id: `game:${game.id}`,
     section: game.status,
     title: gameTitle(game),
     meta: new Date(game.scheduledAt).toLocaleString(),
-    href: { pathname: '/games/[gameId]/live', params: { gameId: game.id } },
+    href: { pathname: '/games/[gameId]', params: { gameId: game.id } },
   }))
 
   return (
     <SidebarRail>
-      <SidebarBrandPanel title="Enter board" subtitle="Pick a game and start logging stats fast." />
-      <SidebarSearchList title="Your games" subtitle="Scheduled and live assignments." items={items} filters={['All', 'SCHEDULED', 'LIVE']} maxItems={8} />
+      <SidebarBrandPanel title="Games" subtitle="Open a game before choosing scoring or broadcast tools." />
+      <SidebarSearchList title="Your games" subtitle="Scheduled, live, and historical games." items={items} filters={['All', 'SCHEDULED', 'LIVE', 'FINAL']} maxItems={8} />
     </SidebarRail>
   )
 }
-

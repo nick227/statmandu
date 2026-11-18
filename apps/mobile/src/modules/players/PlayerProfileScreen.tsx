@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Pressable, Share, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { Link, useRouter } from 'expo-router'
 import type { components } from '@statman/sdk'
 import Animated, { FadeIn, Layout, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -26,6 +26,7 @@ import { ConnectedFollowButton } from '@/modules/social/ConnectedFollowButton'
 import { ConnectedReactionBar } from '@/modules/social/ConnectedReactionBar'
 import { SportStatStrip, SportStatTable } from '@/modules/sports'
 import { cn } from '@/lib/utils'
+import { sharePublicEntity } from '@/shared/share/sharePublicEntity'
 
 type Player = components['schemas']['Player']
 type AthleteProfile = components['schemas']['AthleteProfile']
@@ -142,7 +143,7 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
   const [statsExpanded, setStatsExpanded] = useState(false)
   const mutedTextColor = useNativeColor('mutedText')
   const sportTheme = useSportTheme(profileState.player?.sport?.slug)
-  const mediaViewer = useTargetMediaViewer(profileState.media, 'PLAYER', playerId)
+  const mediaViewer = useTargetMediaViewer(profileState.media, 'PLAYER', playerId, profileState.galleryImages)
   const chevronRotation = useSharedValue(0)
   const chevronStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${chevronRotation.value}deg` }] }))
 
@@ -182,10 +183,10 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
 
   function handleShare() {
     const headline = stats.map((s) => `${s.value} ${s.label}`).join(' · ')
-    Share.share({
-      message: [name, [player.currentTeam?.name, player.position].filter(Boolean).join(' · '), headline]
-        .filter(Boolean)
-        .join('\n'),
+    void sharePublicEntity({
+      title: name,
+      message: [[player.currentTeam?.name, player.position].filter(Boolean).join(' · '), headline].filter(Boolean).join('\n'),
+      path: `/players/${player.id}`,
     })
   }
 
@@ -193,6 +194,7 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
     <>
       <EntityProfileShell
         style={sportTheme}
+        initialSnap="half"
         hero={{ mediaItems, fallbackImageUri: profile.avatarUrl, onMediaPress: mediaViewer.setViewerIndex }}
         onShare={handleShare}
         identity={{
@@ -208,7 +210,7 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
           badge: <PlayerSourceBadge status={profile.sourceStatus} />,
         }}
         stats={stats}
-        highlights={<PlayerHighlights lastGameLine={lastGameLine} lastGame={lastGame} seasonHighPoints={seasonHighPoints} />}
+        highlights={<PlayerHighlights lastGameLine={lastGameLine} lastGame={lastGame} seasonHighPoints={seasonHighPoints} currentTeam={currentTeam} />}
         tabs={tabs}
         activeTab={tab}
         onTabChange={setTab}
@@ -281,11 +283,22 @@ export function PlayerProfileScreen({ playerId }: { playerId: string }) {
 
         <TabPanel active={tab} tab="Media" className="px-lg gap-md">
           <MediaGrid items={mediaItems} onItemPress={mediaViewer.setViewerIndex} />
+          {canEditProfile ? (
+            <ConnectedImageUploadButton
+              targetType="ATHLETE_PROFILE"
+              targetId={profile.id}
+              usage="GALLERY"
+              mode="tile"
+              label="Add Photo"
+              title="Gallery photo"
+              helperText="Add a photo to your browsable profile gallery."
+            />
+          ) : null}
           <YouTubeMediaAttachForm targetType="PLAYER" targetId={player.id} />
         </TabPanel>
 
         <TabPanel active={tab} tab="Cards">
-          <ConnectedCardProfileRail athleteProfileId={profile.id} canEdit={canEditProfile} />
+          <ConnectedCardProfileRail athleteProfileId={profile.id} athleteName={name} canEdit={canEditProfile} />
         </TabPanel>
 
         <TabPanel active={tab} tab="Sources" className="gap-lg">

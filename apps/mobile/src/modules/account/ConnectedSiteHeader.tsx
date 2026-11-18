@@ -1,4 +1,5 @@
 import { SiteHeader } from '@/shared/layout/SiteHeader'
+import { MobileTabBar } from '@/shared/layout/MobileTabBar'
 import { useAccountSession } from '@/modules/account/useAccountSession'
 
 /** Shell chrome wired to the current session. */
@@ -18,4 +19,9 @@ export function ConnectedSiteHeader() {
       }
     />
   )
+}
+
+/** Route-shell adapter keeps layout primitives out of Expo route files. */
+export function ConnectedMobileTabBar() {
+  return <MobileTabBar />
 }

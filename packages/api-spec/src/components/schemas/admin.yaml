@@ -125,4 +125,105 @@ PaginatedAdminAuditLog:
       type: array
       items: { $ref: '#/AdminAuditLogEntry' }
     meta: { $ref: './common.yaml#/PaginatedMeta' }
+ImportProvider:
+  type: object
+  required: [id, name, sportSlug, scopes, quota]
+  properties:
+    id: { type: string, enum: [API_SPORTS_BASKETBALL] }
+    name: { type: string }
+    sportSlug: { type: string }
+    scopes: { type: array, items: { type: string, enum: [teams, games, standings, stats] } }
+    capabilities: { $ref: '#/ImportCapabilities' }
+    plan: { type: string }
+    supportsBatchIds: { type: boolean }
+    detailBatchSize: { type: integer, minimum: 1, maximum: 20 }
+    quota:
+      type: object
+      required: [usedToday, limit, remaining, usedThisMinute, minuteLimit, minuteRemaining, minuteResetsAt]
+      properties:
+        usedToday: { type: integer }
+        limit: { type: integer }
+        remaining: { type: integer }
+        usedThisMinute: { type: integer }
+        minuteLimit: { type: integer }
+        minuteRemaining: { type: integer }
+        minuteResetsAt: { type: string, format: date-time }
 
+SportsImportPreviewInput:
+  type: object
+  required: [leagueId, season, scopes]
+  properties:
+    leagueId: { type: string }
+    season: { type: string }
+    scopes:
+      type: array
+      minItems: 1
+      uniqueItems: true
+      items: { type: string, enum: [teams, games, standings, stats] }
+    detailFilters:
+      $ref: '#/DetailImportFilters'
+
+DetailImportFilters:
+  type: object
+  properties:
+    dateFrom: { type: string, format: date }
+    dateTo: { type: string, format: date }
+    teamId: { type: string }
+    gameIds:
+      type: array
+      uniqueItems: true
+      items: { type: string }
+    recentCompletedGames: { type: integer, minimum: 1, maximum: 100 }
+
+SportsImportRecord:
+  type: object
+  required: [id, entityType, externalId, action, normalized]
+  properties:
+    id: { type: string }
+    entityType: { type: string }
+    externalId: { type: string }
+    externalName: { type: ['string', 'null'] }
+    action: { type: string, enum: [CREATE, UPDATE, UNCHANGED, CONFLICT, SKIP, ERROR] }
+    localId: { type: ['string', 'null'] }
+    normalized: { type: object, additionalProperties: true }
+    differences: { type: ['object', 'null'], additionalProperties: true }
+    errorMessage: { type: ['string', 'null'] }
+
+ImportCapabilities:
+  type: object
+  required: [teamStats, playerBoxScores, seasonTotals]
+  properties:
+    teamStats: { type: boolean }
+    playerBoxScores: { type: boolean }
+    seasonTotals: { type: boolean }
+
+SportsImportRun:
+  type: object
+  required: [id, provider, status, leagueExternalId, seasonExternalId, scopes, requestedCount, createdCount, updatedCount, unchangedCount, conflictCount, errorCount, records, quota]
+  properties:
+    id: { type: string }
+    provider: { type: string }
+    status: { type: string, enum: [PREVIEWING, READY, RUNNING, COMPLETED, FAILED, PARTIAL] }
+    leagueExternalId: { type: string }
+    seasonExternalId: { type: string }
+    scopes: { type: array, items: { type: string } }
+    requestedCount: { type: integer }
+    createdCount: { type: integer }
+    updatedCount: { type: integer }
+    unchangedCount: { type: integer }
+    conflictCount: { type: integer }
+    errorCount: { type: integer }
+    capabilities: { oneOf: [{ $ref: '#/ImportCapabilities' }, { type: 'null' }] }
+    estimatedRequestCost: { type: integer }
+    detailRequestCap: { type: integer }
+    detailRequestsCompleted: { type: integer }
+    errorSummary: { type: ['string', 'null'] }
+    records: { type: array, items: { $ref: '#/SportsImportRecord' } }
+    quota: { $ref: '#/ImportProvider/properties/quota' }
+
+ResolveImportRecordInput:
+  type: object
+  required: [resolution]
+  properties:
+    resolution: { type: string, enum: [MATCH, CREATE, SKIP] }
+    localId: { type: string }

@@ -27,6 +27,37 @@ describe('listTeams', () => {
   })
 })
 
+describe('createTeam', () => {
+  it('requires auth', async () => {
+    const res = await app.inject({ method: 'POST', url: '/teams', payload: { name: 'New Team', leagueId: 'missing' } })
+    expect(res.statusCode).toBe(401)
+  })
+
+  it('creates a team and infers its sport from the league', async () => {
+    const { sport, league } = await seedTeam()
+    const res = await app.inject({
+      method: 'POST',
+      url: '/teams',
+      headers: asAuth(testUserId),
+      payload: { name: 'Westview Hawks', city: 'Westview', leagueId: league.id },
+    })
+
+    expect(res.statusCode).toBe(201)
+    await validateResponse('createTeam', 201, res.json())
+    expect(res.json().data.slug).toBe('westview-hawks')
+    expect(res.json().data.sportId).toBe(sport.id)
+    expect(res.json().data.leagueId).toBe(league.id)
+  })
+
+  it('generates a unique slug when names repeat', async () => {
+    const { league } = await seedTeam()
+    const payload = { name: 'Ballers', leagueId: league.id }
+    const res = await app.inject({ method: 'POST', url: '/teams', headers: asAuth(testUserId), payload })
+    expect(res.statusCode).toBe(201)
+    expect(res.json().data.slug).toBe('ballers-2')
+  })
+})
+
 describe('getTeam', () => {
   it('GET /teams/{teamSlug}', async () => {
     await seedTeam()
@@ -35,6 +66,13 @@ describe('getTeam', () => {
     expect(res.statusCode).toBe(200)
     await validateResponse('getTeam', 200, res.json())
     expect(res.json().data.slug).toBe('ballers')
+  })
+
+  it('resolves the ID-based profile links used by the mobile app', async () => {
+    const { team } = await seedTeam()
+    const res = await app.inject({ method: 'GET', url: `/teams/${team.id}` })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().data.id).toBe(team.id)
   })
 })
 

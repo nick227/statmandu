@@ -4,53 +4,88 @@ import { Sparkles } from 'lucide-react-native'
 import { useAthleteCards } from '@statman/sdk'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
+import { ContentSection } from '@/shared/layout/ContentSection'
 import { CardRail } from './CardRail'
+import { ConnectedStatmanCard } from './ConnectedStatmanCard'
+import { ConnectedCardDistributionPanel } from './ConnectedCardDistributionPanel'
 
 export interface ConnectedCardProfileRailProps {
   athleteProfileId: string
+  athleteName: string
   /** The claiming user viewing their own profile — sees draft/generating status and a create CTA. */
   canEdit: boolean
   className?: string
 }
 
-// Athlete profile Cards section — rail of published cards for public
-// viewers, plus the owner's own in-progress cards (any status) when they're
-// looking at their own profile.
-export function ConnectedCardProfileRail({ athleteProfileId, canEdit, className }: ConnectedCardProfileRailProps) {
+// Athlete profile Cards section — the site's actual monetization surface,
+// so it gets a real storefront moment rather than a plain status list: one
+// large featured card (with its built-in claim CTA) plus a rail of the
+// rest, mirroring the exact featured+rail shape ConnectedCardDropSection
+// already uses for Home's "New Drops" module. The owner's own unpublished
+// drafts (if any) stay visible underneath via the same showStatus/editInStudio
+// rail this screen already had.
+export function ConnectedCardProfileRail({ athleteProfileId, athleteName, canEdit, className }: ConnectedCardProfileRailProps) {
   const cardsQuery = useAthleteCards(athleteProfileId)
   const cards = cardsQuery.data?.data ?? []
 
   if (cardsQuery.isLoading || cardsQuery.isError) return null
 
-  if (cards.length === 0) {
+  const published = cards.filter((c) => c.status === 'PUBLISHED')
+  const drafts = canEdit ? cards.filter((c) => c.status !== 'PUBLISHED') : []
+
+  if (published.length === 0) {
     return (
-      <View className={className ?? 'gap-sm px-lg'}>
+      <View className={className ?? 'gap-lg px-lg'}>
         <EmptyState
           icon={Sparkles}
           title={canEdit ? 'Create your first Statman Card' : 'No cards released yet'}
           description={
             canEdit
-              ? 'Turn a stat line or big moment into a collectible card fans can claim.'
+              ? 'Upload a photo and get a full set of trading-card poses for your sport — pick your favorites to publish.'
               : 'Check back after this athlete publishes a card.'
           }
         />
         {canEdit ? (
-          <Link href={'/cards/studio' as never} asChild>
-            <Button variant="secondary">Create a card</Button>
-          </Link>
+          <View className="gap-sm">
+            <Link href={'/cards/generate' as never} asChild>
+              <Button>Create Cards from Photo</Button>
+            </Link>
+            <Link href={'/cards/studio' as never} asChild>
+              <Button variant="ghost">Build one manually instead</Button>
+            </Link>
+          </View>
         ) : null}
+        {drafts.length > 0 ? <CardRail cards={drafts} showStatus editInStudio className="gap-sm" /> : null}
       </View>
     )
   }
 
+  const [featured, ...rest] = published
+
   return (
-    <View className={className ?? 'gap-sm'}>
-      <CardRail cards={cards} showStatus={canEdit} className="gap-sm px-lg" />
+    <View className={className ?? 'gap-lg'}>
+      <ContentSection
+        title={`${athleteName}'s Cards`}
+        subtitle="Own a piece of the season — collect a Statman Card."
+        className="gap-sm px-lg"
+      >
+        <ConnectedStatmanCard card={featured} size="featured" source="PROFILE" />
+        {rest.length > 0 ? <CardRail cards={rest} source="PROFILE" className="gap-sm pt-sm" /> : null}
+      </ContentSection>
       {canEdit ? (
-        <Link href={'/cards/studio' as never} asChild>
-          <Button variant="ghost" size="sm" className="mx-lg self-start">+ New card</Button>
-        </Link>
+        <View className="gap-sm px-lg">
+          <View className="flex-row flex-wrap gap-sm">
+            <Link href={'/cards/generate' as never} asChild>
+              <Button size="sm">Create Cards from Photo</Button>
+            </Link>
+            <Link href={'/cards/studio' as never} asChild>
+              <Button variant="ghost" size="sm">+ New card</Button>
+            </Link>
+          </View>
+          {drafts.length > 0 ? <CardRail cards={drafts} showStatus editInStudio className="gap-sm pt-sm" /> : null}
+        </View>
       ) : null}
+      {canEdit ? <ConnectedCardDistributionPanel athleteProfileId={athleteProfileId} /> : null}
     </View>
   )
 }

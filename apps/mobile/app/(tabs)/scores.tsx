@@ -1,5 +1,5 @@
-import { ScoresIndexScreen } from '@/modules/live-scoring/ScoresIndexScreen'
+import { Redirect } from 'expo-router'
 
 export default function ScoresRoute() {
-  return <ScoresIndexScreen />
+  return <Redirect href="/games" />
 }

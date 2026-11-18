@@ -12,8 +12,8 @@ import type { ShowcaseEntry, ShowcaseList } from '@/modules/leaderboards/showcas
 type PlayerLeaderboardEntry = components['schemas']['PlayerLeaderboardEntry']
 
 function showcaseItemKey(item: ShowcaseEntry, kind: ShowcaseList['kind']) {
-  if (kind === 'players') return (item as PlayerLeaderboardEntry).player.id
-  if (kind === 'teams') return (item as components['schemas']['TeamLeaderboardEntry']).team.id
+  if (kind === 'players') return (item as PlayerLeaderboardEntry).seasonStat.id
+  if (kind === 'teams') return (item as components['schemas']['TeamLeaderboardEntry']).seasonStat.id
   return (item as components['schemas']['Game']).id
 }
 
@@ -81,7 +81,7 @@ export function PodiumStrip({ entries, sportSlug }: { entries: PlayerLeaderboard
       {podium.map((entry) => {
         const isWinner = entry.rank === 1
         return (
-          <View key={entry.player.id} className={isWinner ? 'flex-[1.15]' : 'flex-1'}>
+          <View key={entry.seasonStat.id} className={isWinner ? 'flex-[1.15]' : 'flex-1'}>
             <AthleteSpotlightCardLink
               entry={entry}
               sportSlug={sportSlug}

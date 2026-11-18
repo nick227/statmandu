@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ScrollView, View, type ViewProps } from 'react-native'
+import { Platform, ScrollView, View, type ViewProps, type ViewStyle } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { cn } from '@/lib/utils'
 import { Text } from '@/shared/ui/Text'
@@ -9,7 +9,8 @@ import { LAYOUT } from './layoutConstants'
 export interface ScreenProps extends ViewProps {
   /** Big screen title, e.g. hubs ("Home", "Explore"). Omit for hero/detail screens that have their own identity. */
   title?: string
-  /** Content scrolls (lists compose their own scroll container — leave false for those) */
+  /** Native-only content scrolling. Web always uses the root document shell;
+   *  lists compose their own native scroll container, so leave false there. */
   scroll?: boolean
   /** Show a back control before the title — for destinations pushed from Home. */
   withBack?: boolean
@@ -30,24 +31,39 @@ export function Screen({
   className,
   contentClassName,
   children,
+  style,
   ...props
 }: ScreenProps) {
   const insets = useSafeAreaInsets()
   const showHeader = Boolean(title || withBack || headerActions)
+  const usesDocumentScroll = Platform.OS === 'web'
 
-  const body = scroll ? (
+  const body = scroll && !usesDocumentScroll ? (
     <ScrollView contentContainerClassName={cn('pb-xxl', contentClassName)}>{children}</ScrollView>
   ) : (
-    <View className={cn('flex-1', contentClassName)}>{children}</View>
+    <View className={cn(!usesDocumentScroll && 'flex-1', scroll && 'pb-xxl', contentClassName)}>{children}</View>
   )
 
   return (
     <View
-      className={cn('flex-1 bg-canvas', className)}
-      style={{ paddingTop: insetTop ? insets.top : 0 }}
+      className={cn(!usesDocumentScroll && 'flex-1', 'bg-canvas', className)}
+      style={[
+        {
+          paddingTop: insetTop ? insets.top : 0,
+          ...(usesDocumentScroll ? ({ flexGrow: 1, width: '100%' } as ViewStyle) : null),
+        },
+        style,
+      ]}
       {...props}
     >
-      <View style={{ width: '100%', maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center', flex: 1 }}>
+      <View
+        style={{
+          width: '100%',
+          maxWidth: LAYOUT.pageMaxWidth,
+          alignSelf: 'center',
+          ...(!usesDocumentScroll ? { flex: 1 } : null),
+        }}
+      >
         {showHeader ? (
           <View className="flex-row items-center gap-sm px-lg pt-md pb-sm">
             {withBack ? <BackButton tone="dark" /> : null}

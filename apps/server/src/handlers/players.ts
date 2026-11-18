@@ -22,3 +22,29 @@ export async function updatePlayer(request: any, reply: any) {
   const player = await playerService.update(request.user.id, isAdmin, request.params.playerId, request.body)
   return reply.send({ data: player })
 }
+
+import { buildShareMetadata } from '../lib/shareMetadata'
+
+export async function getPlayerAggregate(request: any, reply: any) {
+  const { playerId } = request.params
+  // For MVP aggregate we fetch player, recent games, and generate share metadata
+  const player = await playerService.get(playerId)
+  if (!player) return reply.status(404).send({ error: 'Not found' })
+
+  const recentGames: unknown[] = [] // Placeholder for recent games query if needed
+  const recentMedia: unknown[] = []
+  const relatedCards: unknown[] = []
+
+  const shareMetadata = buildShareMetadata('player', playerId, player)
+
+  return reply.send({
+    data: {
+      player,
+      recentGames,
+      recentMedia,
+      relatedCards,
+      recentActivity: [],
+      shareMetadata
+    }
+  })
+}

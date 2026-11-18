@@ -2,6 +2,7 @@ import { Pressable, View } from 'react-native'
 import { Link } from 'expo-router'
 
 import { Text } from '@/shared/ui/Text'
+import { SeasonSwitcher } from '@/shared/ui/SeasonSwitcher'
 import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
 import { ErrorScreenState, LoadingScreenState, TabPanel } from '@/shared/layout'
 import { useSportTheme } from '@/lib/theme'
@@ -9,6 +10,7 @@ import { EntityProfileShell } from '@/shared/layout/entity-profile/EntityProfile
 import { GameStatusBadge } from '@/modules/games/GameStatusBadge'
 import { MediaGrid } from '@/modules/media/MediaGrid'
 import { useTargetMediaViewer } from '@/modules/media/useTargetMediaViewer'
+import { TeamHighlights } from '@/modules/teams/TeamHighlights'
 import { TeamRosterList } from '@/modules/teams/TeamRosterList'
 import { TeamSidebar } from '@/modules/teams/TeamSidebar'
 import { useTeamProfile } from '@/modules/teams/useTeamProfile'
@@ -17,6 +19,9 @@ import { ConnectedSourcesPanel } from '@/modules/disputes/ConnectedSourcesPanel'
 import { ConnectedFollowButton } from '@/modules/social/ConnectedFollowButton'
 import { ConnectedReactionBar } from '@/modules/social/ConnectedReactionBar'
 import { SportStatStrip } from '@/modules/sports'
+import { sharePublicEntity } from '@/shared/share/sharePublicEntity'
+
+const SEASON_SCOPED_TABS = new Set(['Roster', 'Games', 'Stats'])
 
 export function TeamProfileScreen({ teamId }: { teamId: string }) {
   const teamState = useTeamProfile(teamId)
@@ -31,7 +36,21 @@ export function TeamProfileScreen({ teamId }: { teamId: string }) {
     return <LoadingScreenState withBack />
   }
 
-  const { currentSeasonStats, games, roster, setTab, stats, tab, tabs, team } = teamState
+  const {
+    availableSeasons,
+    currentSeasonStats,
+    games,
+    nextOrLastGame,
+    roster,
+    selectedSeasonId,
+    selectedSeasonStats,
+    setSelectedSeasonId,
+    setTab,
+    stats,
+    tab,
+    tabs,
+    team,
+  } = teamState
   const sport = team.sport?.slug ?? 'basketball'
   const { mediaItems } = mediaViewer
 
@@ -39,13 +58,16 @@ export function TeamProfileScreen({ teamId }: { teamId: string }) {
     <>
     <EntityProfileShell
       style={sportTheme}
+      initialSnap="half"
       hero={{ mediaItems, fallbackImageUri: team.logoUrl, onMediaPress: mediaViewer.setViewerIndex }}
+      onShare={() => void sharePublicEntity({ title: team.name, message: [team.league?.name, team.city].filter(Boolean).join(' · '), path: `/teams/${team.id}` })}
       identity={{
         name: team.name,
         metaLines: [team.league?.name, team.city],
         avatarUri: team.logoUrl,
       }}
       stats={stats}
+      highlights={<TeamHighlights currentSeasonStats={currentSeasonStats} nextOrLastGame={nextOrLastGame} teamId={team.id} />}
       tabs={tabs}
       activeTab={tab}
       onTabChange={setTab}
@@ -55,6 +77,10 @@ export function TeamProfileScreen({ teamId }: { teamId: string }) {
         <ConnectedFollowButton targetType="TEAM" targetId={team.id} />
         <ConnectedReactionBar targetType="TEAM" targetId={team.id} />
       </View>
+
+      {SEASON_SCOPED_TABS.has(tab) ? (
+        <SeasonSwitcher seasons={availableSeasons} selectedSeasonId={selectedSeasonId} onChange={setSelectedSeasonId} />
+      ) : null}
 
       <TabPanel active={tab} tab="Roster">
         <TeamRosterList memberships={roster} />
@@ -78,12 +104,12 @@ export function TeamProfileScreen({ teamId }: { teamId: string }) {
       </TabPanel>
 
       <TabPanel active={tab} tab="Stats" className="px-lg">
-          {currentSeasonStats ? (
+          {selectedSeasonStats ? (
             <SportStatStrip
               sport={sport}
               view="teamProfileHeadline"
-              source={currentSeasonStats}
-              stats={currentSeasonStats.stats as Record<string, unknown> | null}
+              source={selectedSeasonStats}
+              stats={selectedSeasonStats.stats as Record<string, unknown> | null}
             />
           ) : (
             <Text variant="caption">No team stats yet this season.</Text>

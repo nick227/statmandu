@@ -1,4 +1,5 @@
 export type {
+  CardPoseDefinition,
   DisciplineConfig,
   EventDefinition,
   EventFlow,
@@ -16,6 +17,7 @@ export { predictNext } from './core/predictNext'
 export type { PredictedNext } from './core/predictNext'
 export { computeDisciplineStatus } from './core/discipline'
 export type { DisciplineStatus } from './core/discipline'
+export { getCardPoses } from './core/cardPoses'
 export { getSportDefinition, listSportDefinitions } from './registry'
 export { basketballDefinition } from './definitions/basketball'
 export { footballDefinition } from './definitions/football'

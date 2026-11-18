@@ -10,6 +10,8 @@ import { resolve } from 'path'
 import * as handlers from './handlers'
 import * as security from './plugins/security'
 import { db } from '@statman/db'
+import { startCardGenerationReconciler } from './jobs/cardGenerationReconciler'
+import { cardGenerationExecutor } from './jobs/GenerationExecutor'
 
 import multipart from '@fastify/multipart'
 
@@ -25,6 +27,7 @@ function specForGlue() {
 }
 
 async function main() {
+  let stopReconciler: (() => void) | undefined
   // CORS — must be first so preflight OPTIONS requests are handled before routing
   // credentials: true required for httpOnly cookie auth across origins
   // In production set CORS_ORIGIN to the deployed frontend URL.
@@ -117,10 +120,31 @@ async function main() {
   server.get('/health', async () => ({ status: 'ok' }))
   server.get('/uploads/images/*', handlers.serveUploadedImage)
 
+  server.addHook('onClose', async () => {
+    stopReconciler?.()
+    const timeoutMs = Number(process.env.CARD_GENERATION_SHUTDOWN_TIMEOUT_MS ?? 15_000)
+    const drained = await cardGenerationExecutor.shutdown(timeoutMs)
+    if (!drained) {
+      server.log.warn({ active: cardGenerationExecutor.activeCount(), queued: cardGenerationExecutor.queuedCount() }, 'Card generation drain timed out; persisted jobs will be recovered by the reconciler')
+    }
+    await db.$disconnect()
+  })
+
   await server.listen({
     port: Number(process.env.PORT ?? 3001),
     host: '0.0.0.0',
   })
+
+  // Not started for tests (buildTestApp() never calls main()) — the sweep
+  // would otherwise race against tests' own precise DB state management.
+  stopReconciler = startCardGenerationReconciler()
+
+  const shutdown = async (signal: string) => {
+    server.log.info({ signal }, 'Graceful shutdown started')
+    await server.close()
+  }
+  process.once('SIGTERM', () => void shutdown('SIGTERM'))
+  process.once('SIGINT', () => void shutdown('SIGINT'))
 }
 
 main().catch((err) => {

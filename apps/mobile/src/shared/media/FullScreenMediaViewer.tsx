@@ -14,18 +14,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { X, Play, UserRound } from 'lucide-react-native'
 import { FilmLabelBadge } from './FilmLabelBadge'
 import type { MediaTargetType } from './mediaLabels'
+import { SmartImage } from './SmartImage'
 import { VideoStage } from './VideoStage'
 import { youtubeWatchUrl } from './youtube'
 import { Text } from '@/shared/ui/Text'
 
-export interface FullScreenMediaItem {
+interface FullScreenMediaItemBase {
   id: string
-  youtubeVideoId: string
   title?: string | null
   targetType?: MediaTargetType
   targetId?: string
   filmLabel?: string
 }
+
+export type FullScreenMediaItem =
+  | (FullScreenMediaItemBase & { kind: 'video'; youtubeVideoId: string })
+  | (FullScreenMediaItemBase & { kind: 'photo'; imageUri: string })
 
 export interface FullScreenMediaViewerProps {
   visible: boolean
@@ -150,17 +154,21 @@ export function FullScreenMediaViewer({
                   style={{ width, height }}
                   onPress={() => playingId !== item.id && setChromeVisible((v) => !v)}
                 >
-                  <VideoStage
-                    videoId={item.youtubeVideoId}
-                    mode="immersive"
-                    width={width}
-                    height={height}
-                    isPlaying={playingId === item.id}
-                    onPlayRequest={() => {
-                      setPlayingId(item.id)
-                      setChromeVisible(true)
-                    }}
-                  />
+                  {item.kind === 'video' ? (
+                    <VideoStage
+                      videoId={item.youtubeVideoId}
+                      mode="immersive"
+                      width={width}
+                      height={height}
+                      isPlaying={playingId === item.id}
+                      onPlayRequest={() => {
+                        setPlayingId(item.id)
+                        setChromeVisible(true)
+                      }}
+                    />
+                  ) : (
+                    <SmartImage uri={item.imageUri} style={{ width, height }} resizeMode="contain" />
+                  )}
                 </Pressable>
               )}
             />
@@ -186,13 +194,15 @@ export function FullScreenMediaViewer({
                   <Text className="font-semibold text-white">{targetActionLabel}</Text>
                 </Pressable>
               ) : null}
-              <Pressable
-                onPress={() => activeItem && Linking.openURL(youtubeWatchUrl(activeItem.youtubeVideoId))}
-                className="flex-row items-center justify-center gap-sm rounded-md border border-white/20 bg-white/15 py-md"
-              >
-                <Play size={16} color="#FFFFFF" fill="#FFFFFF" />
-                <Text className="font-semibold text-white">Open in YouTube</Text>
-              </Pressable>
+              {activeItem?.kind === 'video' ? (
+                <Pressable
+                  onPress={() => Linking.openURL(youtubeWatchUrl(activeItem.youtubeVideoId))}
+                  className="flex-row items-center justify-center gap-sm rounded-md border border-white/20 bg-white/15 py-md"
+                >
+                  <Play size={16} color="#FFFFFF" fill="#FFFFFF" />
+                  <Text className="font-semibold text-white">Open in YouTube</Text>
+                </Pressable>
+              ) : null}
             </Animated.View>
           </Animated.View>
         </GestureDetector>

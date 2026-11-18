@@ -46,4 +46,9 @@ export const footballDefinition: SportDefinition = {
       ['FOOTBALL_SACK', 'FOOTBALL_INTERCEPTION'],
     ],
   },
+  cardPoses: [
+    { id: 'portrait-stance', label: 'Portrait Stance', category: 'portrait', promptTemplate: 'Trading-card portrait pose: helmet under arm, confident expression, studio lighting, plain neutral background, football uniform.' },
+    { id: 'pass-release', label: 'Pass Release', category: 'action', promptTemplate: 'Trading-card action pose: quarterback mid-throw release, football leaving hand, dynamic follow-through, stadium background.' },
+    { id: 'stiff-arm-run', label: 'Breaking a Tackle', category: 'action', promptTemplate: 'Trading-card action pose: running back stiff-arming a defender, driving forward, stadium field background, dramatic lighting.' },
+  ],
 }

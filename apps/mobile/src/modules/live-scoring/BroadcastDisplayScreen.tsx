@@ -1,5 +1,6 @@
 import { View, Platform, useWindowDimensions } from 'react-native'
 import { Stack } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useSportTheme } from '@/lib/theme'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
@@ -11,6 +12,7 @@ import { useBroadcastDisplay } from '@/modules/live-scoring/useBroadcastDisplay'
 import { Text } from '@/shared/ui/Text'
 import { FloatingReactionsOverlay } from '@/modules/live-scoring/FloatingReactionsOverlay'
 import { SpectatorReactionToolbar } from '@/modules/live-scoring/SpectatorReactionToolbar'
+import { BackButton } from '@/shared/ui/BackButton'
 
 // Public, read-only, meant for a second/larger device (venue TV, propped-up
 // tablet, stream overlay) — not a casting protocol, just a big-type view of
@@ -18,6 +20,7 @@ import { SpectatorReactionToolbar } from '@/modules/live-scoring/SpectatorReacti
 // backend change: useGameSnapshot already returns score + recentEvents +
 // reporterCount and already polls every 4s.
 export function BroadcastDisplayScreen({ gameId }: { gameId: string }) {
+  const insets = useSafeAreaInsets()
   const { game, isError, isLoading, recentEvents, recentReactions, recentImageAssets, recentMediaAssets, reporterCount, score, youtubeVideoId } = useBroadcastDisplay(gameId)
   const sportTheme = useSportTheme(game?.sport?.slug)
   const { width: screenWidth } = useWindowDimensions()
@@ -45,6 +48,15 @@ export function BroadcastDisplayScreen({ gameId }: { gameId: string }) {
   const away = game.gameTeams.find((gt) => !gt.isHome)
   const scoreFor = (teamId?: string, fallback?: number | null) => (teamId ? score[teamId] : undefined) ?? fallback ?? 0
 
+  if (game.status === 'FINAL' || game.status === 'DISPUTED') {
+    return (
+      <View className="flex-1 bg-canvas" style={sportTheme}>
+        <Stack.Screen options={{ headerShown: true, title: 'Broadcast' }} />
+        <ErrorState message="Broadcast is only available for scheduled or live games." />
+      </View>
+    )
+  }
+
   return (
     // `dark` forces every token-based class in this subtree (including ones
     // inside reused components like GamePlayByPlay/Badge) to resolve their
@@ -54,6 +66,10 @@ export function BroadcastDisplayScreen({ gameId }: { gameId: string }) {
     // mode. Same variable-scoping mechanism useSportTheme() already relies on.
     <View className="dark flex-1 bg-canvas" style={sportTheme}>
       <Stack.Screen options={{ headerShown: false, title: 'Broadcast' }} />
+
+      <View className="absolute left-lg z-50" style={{ top: Math.max(insets.top, 16) }}>
+        <BackButton tone="light" />
+      </View>
 
       <FloatingReactionsOverlay reactions={recentReactions ?? []} />
 

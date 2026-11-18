@@ -40,6 +40,13 @@ CreateGameInput:
     homeTeamId: { type: string }
     awayTeamId: { type: string }
 
+RecordGameScoreInput:
+  type: object
+  required: [homeScore, awayScore]
+  properties:
+    homeScore: { type: integer, minimum: 0 }
+    awayScore: { type: integer, minimum: 0 }
+
 GameReporterRole:
   type: string
   enum: [ADMIN_OWNER, OFFICIAL_SCORER, TEAM_SCORER, BROADCASTER, CONTRIBUTOR, SPECTATOR_REPORTER, VIEWER]
@@ -322,6 +329,9 @@ TeamSeasonStat:
     - losses
     - pointsFor
     - pointsAgainst
+    - seasonName
+    - seasonSlug
+    - seasonIsActive
   properties:
     id: { type: string }
     teamId: { type: string }
@@ -333,6 +343,9 @@ TeamSeasonStat:
     stats:
       type: object
       additionalProperties: true
+    seasonName: { type: string }
+    seasonSlug: { type: string }
+    seasonIsActive: { type: boolean }
 
 PlayerLeaderboardEntry:
   type: object

@@ -79,21 +79,22 @@ export function GameSidebar({ game, topPerformers, media, performerMeta }: GameS
         {game.venue ? <SidebarGlanceRow label="Venue" value={game.venue} /> : null}
         {isLiveOrUpcoming ? (
           <SidebarActionRow
-            title="Enter stats"
+            title="Start scoring"
             meta="Join as scorer or contributor."
-            href={{ pathname: '/games/[gameId]/live', params: { gameId: game.id } }}
+            href={{ pathname: '/games/[gameId]/live', params: { gameId: game.id, intent: 'TEAM_SCORER' } }}
           />
-        ) : null}
-        <SidebarActionRow
-          title="Watch live"
-          meta="Spectator timeline and reactions."
-          href={{ pathname: '/games/[gameId]/spectate', params: { gameId: game.id } }}
-        />
+        ) : (
+          <SidebarActionRow
+            title="Add final score"
+            meta="Record or correct the historical result."
+            href={{ pathname: '/games/[gameId]/score', params: { gameId: game.id } }}
+          />
+        )}
         {isLiveOrUpcoming ? (
           <SidebarActionRow
-            title="Cast to display"
-            meta="Broadcast scoreboard for a second screen."
-            href={{ pathname: '/games/[gameId]/broadcast', params: { gameId: game.id } }}
+            title="Start broadcast"
+            meta="Score the game and unlock the Cast display."
+            href={{ pathname: '/games/[gameId]/live', params: { gameId: game.id, intent: 'BROADCASTER' } }}
           />
         ) : null}
       </SidebarPanel>

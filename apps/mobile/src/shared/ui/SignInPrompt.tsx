@@ -15,8 +15,12 @@ export interface SignInPromptProps {
 export function SignInPrompt({ message, className }: SignInPromptProps) {
   return (
     <Link href="/login" asChild>
-      <Pressable className={className ?? 'flex-1 items-center justify-center p-lg gap-sm'}>
-        <Text variant="caption" className="text-brand text-center">{message}</Text>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={message}
+        className={className ?? 'min-h-11 items-center justify-center rounded-md border border-border bg-surface px-md py-sm'}
+      >
+        <Text variant="caption" className="text-brand text-center font-semibold">{message}</Text>
       </Pressable>
     </Link>
   )

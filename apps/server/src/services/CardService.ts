@@ -1,10 +1,16 @@
 import { createHash } from 'crypto'
 import { db } from '@statman/db'
 import type { CardEditionMode, CardTemplateStatus, CardType, CardVisibility, UserRole } from '@statman/db'
-import { StubCardImageGenerator, type CardImageGenerator } from './CardImageGenerator'
+import { getCardPoses, getSportDefinition } from '@statman/sports'
+import { createCardImageGenerator, CardGenerationError, type CardImageGenerator } from './CardImageGenerator'
 import { FeedService } from './FeedService'
+import { cardGenerationExecutor, type GenerationExecutor } from '../jobs/GenerationExecutor'
 
 const feedService = new FeedService()
+
+// MVP cost-control defaults for batch generation — not user-configurable
+// yet, just reasonable bounds so nobody can trigger unbounded Gemini spend.
+const BATCH_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 
 const CARD_INCLUDE = {
   athleteProfile: {
@@ -22,7 +28,7 @@ const CARD_INCLUDE = {
     },
   },
   team: true,
-  game: { include: { gameTeams: { include: { team: true } } } },
+  game: { include: { gameTeams: { include: { team: true } }, season: true } },
   frontImageAsset: true,
   sourceImageAsset: true,
   issues: true,
@@ -55,6 +61,31 @@ type PublishOptions = {
   visibility?: CardVisibility
   editionMode?: CardEditionMode
   editionSize?: number | null
+}
+
+// Swallows "record to update/delete not found" (Prisma P2025) specifically
+// — used for best-effort bookkeeping writes on the fire-and-forget
+// generation path, where the row being gone shouldn't turn into an
+// unhandled rejection. Any other error still propagates.
+async function ignoreRecordNotFound(promise: Promise<unknown>): Promise<void> {
+  try {
+    await promise
+  } catch (err: any) {
+    if (err?.code !== 'P2025') throw err
+  }
+}
+
+// Batch-generated (pose-driven) cards stash their pose prompt in the same
+// statsSnapshotJson.cardStudio bag the mobile Card Studio already uses for
+// its own draft fields — mirrors cardDisplay.ts's readCardStudioSnapshot on
+// the frontend, kept as a small separate copy rather than a shared package
+// since the two sides parse the JSON for different reasons.
+function readPosePromptTemplate(statsSnapshotJson: unknown): string | null {
+  if (!statsSnapshotJson || typeof statsSnapshotJson !== 'object' || Array.isArray(statsSnapshotJson)) return null
+  const studio = (statsSnapshotJson as { cardStudio?: unknown }).cardStudio
+  if (!studio || typeof studio !== 'object' || Array.isArray(studio)) return null
+  const template = (studio as { posePromptTemplate?: unknown }).posePromptTemplate
+  return typeof template === 'string' ? template : null
 }
 
 function canonicalize(value: unknown): unknown {
@@ -153,6 +184,7 @@ function serialize(card: any, viewerUserId?: string | null) {
             isHome: gameTeam.isHome,
             finalScore: gameTeam.finalScore,
           })) ?? [],
+          seasonName: card.game.season?.name ?? null,
         }
       : null,
     frontImage: card.frontImageAsset
@@ -183,6 +215,16 @@ function serialize(card: any, viewerUserId?: string | null) {
           downloadedAt: currentUserIssue.downloadedAt,
         }
       : null,
+  }
+}
+
+function serializeSave(save: any) {
+  return {
+    id: save.id,
+    userId: save.userId,
+    cardTemplateId: save.cardTemplateId,
+    createdAt: save.createdAt,
+    card: save.cardTemplate ? serialize(save.cardTemplate, save.userId) : null,
   }
 }
 
@@ -238,7 +280,10 @@ function authenticityPayload(issue: any) {
 }
 
 export class CardService {
-  constructor(private readonly generator: CardImageGenerator = new StubCardImageGenerator()) {}
+  constructor(
+    private readonly generator: CardImageGenerator = createCardImageGenerator(),
+    private readonly executor: GenerationExecutor = cardGenerationExecutor
+  ) {}
 
   async createDraftCard(userId: string, input: CreateDraftCardInput) {
     await this.requireCardTargets(input)
@@ -261,6 +306,107 @@ export class CardService {
       include: CARD_INCLUDE,
     })
     return serialize(card, userId)
+  }
+
+  // "Athlete uploads a face photo, we generate the standard set of poses
+  // for their sport" — creates one private draft CardTemplate per pose and
+  // kicks off generation for all of them. Every generation is retained
+  // ("waste not want not" — see plan doc) as an ordinary DRAFT/PRIVATE
+  // card; nothing here auto-publishes anything, that's a separate curation
+  // step the athlete does afterward via the existing publishCard.
+  async generateBatch(
+    actor: Actor,
+    athleteProfileId: string,
+    input: { sourceImageAssetId: string; poseIds?: string[]; batchRequestId?: string }
+  ) {
+    const athleteProfile = await db.athleteProfile.findUnique({ where: { id: athleteProfileId } })
+    if (!athleteProfile) throw { statusCode: 404, message: 'Athlete profile not found' }
+    if (actor.role !== 'ADMIN' && athleteProfile.claimedByUserId !== actor.id) {
+      throw { statusCode: 403, message: 'Forbidden' }
+    }
+    await this.requireCardTargets({ athleteProfileId, sourceImageAssetId: input.sourceImageAssetId })
+
+    // Idempotency: a retried/double-tapped request carrying the same key
+    // returns the existing batch instead of creating a second one. Best
+    // effort, not airtight against two literally-simultaneous requests
+    // racing this read (would need a dedicated lock table to fully close
+    // that window) — sufficient for the actual failure modes this guards
+    // against (double-tap, client retry-on-timeout).
+    if (input.batchRequestId) {
+      const existing = await db.cardTemplate.findMany({
+        where: { athleteProfileId, batchRequestId: input.batchRequestId },
+        include: CARD_INCLUDE,
+      })
+      if (existing.length > 0) return existing.map((card) => serialize(card, actor.id))
+    }
+
+    // Rate limit: scoped to batch-created cards (batchRequestId not null)
+    // specifically so the unrelated single-card manual builder is never
+    // throttled by this.
+    const recentBatch = await db.cardTemplate.findFirst({
+      where: {
+        athleteProfileId,
+        batchRequestId: { not: null },
+        createdAt: { gt: new Date(Date.now() - BATCH_RATE_LIMIT_WINDOW_MS) },
+      },
+    })
+    if (recentBatch) {
+      throw { statusCode: 429, message: 'Please wait a few minutes before generating another card set.' }
+    }
+
+    // One active batch at a time: a direct existence check, not a flat job
+    // count — a standard batch is 5 jobs, so a count-based cap (e.g. "under
+    // 10 in-flight") would let two overlapping batches both fit under it.
+    // Scoped to batch-created jobs (batchRequestId not null) so an
+    // in-progress manual single-card generateCard() never blocks a batch.
+    const activeBatchJob = await db.cardGenerationJob.findFirst({
+      where: {
+        status: { in: ['QUEUED', 'PROCESSING'] },
+        cardTemplate: { athleteProfileId, batchRequestId: { not: null } },
+      },
+      select: { id: true },
+    })
+    if (activeBatchJob) {
+      throw { statusCode: 429, message: 'A card set is already generating for this athlete. Wait for it to finish before starting another.' }
+    }
+
+    const player = await db.player.findFirst({ where: { athleteProfileId }, include: { sport: true } })
+    const sportSlug = player?.sport.slug ?? 'basketball'
+    const definition = getSportDefinition(sportSlug)
+    const allPoses = getCardPoses(definition)
+    const poses = input.poseIds?.length ? allPoses.filter((pose) => input.poseIds!.includes(pose.id)) : allPoses
+    if (poses.length === 0) throw { statusCode: 400, message: 'No matching poses for this sport' }
+
+    const cards = await Promise.all(
+      poses.map((pose) =>
+        db.cardTemplate.create({
+          data: {
+            athleteProfileId,
+            createdByUserId: actor.id,
+            title: pose.label,
+            cardType: 'PROFILE',
+            stylePreset: 'classic-foil',
+            sourceImageAssetId: input.sourceImageAssetId,
+            batchRequestId: input.batchRequestId ?? null,
+            statsSnapshotJson: { cardStudio: { poseId: pose.id, posePromptTemplate: pose.promptTemplate } } as any,
+          },
+          include: CARD_INCLUDE,
+        })
+      )
+    )
+
+    // Persist every job before responding, then hand execution to the owned,
+    // bounded executor. The API remains polling-based without detached
+    // promises that can outlive test/server lifecycle.
+    for (const card of cards) {
+      const input = this.buildGenerationInput(card)
+      const job = await this.createGenerationJob(card.id, input)
+      this.executor.enqueue(job.id, () => this.runGenerationJob(job.id, card.id, input, actor.id).then(() => {})).catch((err) => {
+        console.error(`Batch card generation failed for card ${card.id}`, err)
+      })
+    }
+
+    return cards.map((card) => serialize(card, actor.id))
   }
 
   async updateDraftCard(actor: Actor, id: string, input: UpdateDraftCardInput) {
@@ -310,45 +456,114 @@ export class CardService {
   }
 
   async generateCard(actor: Actor, id: string) {
-    const card = await db.cardTemplate.findUnique({ where: { id }, include: { athleteProfile: true } })
+    const card = await db.cardTemplate.findUnique({ where: { id }, include: { athleteProfile: true, sourceImageAsset: true } })
     if (!card) throw { statusCode: 404, message: 'Card not found' }
     await this.requireOwner(actor, card)
     if (card.status === 'PUBLISHED' || card.status === 'ARCHIVED') {
       throw { statusCode: 409, message: 'Published or archived cards cannot be regenerated' }
     }
 
-    const input = {
+    const input = this.buildGenerationInput(card)
+    const job = await this.createGenerationJob(id, input)
+    await this.executor.enqueue(job.id, () => this.runGenerationJob(job.id, id, input, actor.id).then(() => {}))
+    return this.getCard(id, actor.id, actor.role === 'ADMIN')
+  }
+
+  // Re-runs an existing stuck job in place (increments attempt, keeps the
+  // same job row) — used by the reconciliation sweep. Not part of the
+  // public API; the sweep calls this directly, not through an HTTP route.
+  //
+  // The claim itself is a conditional atomic update, not a read-then-write:
+  // updateMany's `where` repeats the exact status/updatedAt just read, so if
+  // two processes (e.g. two server instances both running the sweep) race
+  // to retry the same stale job, only the first one's updateMany matches a
+  // row (updatedAt is auto-bumped by Prisma's @updatedAt on that write) —
+  // the loser's `count` comes back 0 and it bails out without ever calling
+  // the generator or touching the card.
+  async retryGenerationJob(jobId: string) {
+    const job = await db.cardGenerationJob.findUnique({ where: { id: jobId }, include: { cardTemplate: { include: { athleteProfile: true, sourceImageAsset: true } } } })
+    if (!job) return
+    const card = job.cardTemplate
+    if (card.status === 'PUBLISHED' || card.status === 'ARCHIVED') return
+
+    const claim = await db.cardGenerationJob.updateMany({
+      where: { id: jobId, status: job.status, updatedAt: job.updatedAt },
+      data: { status: 'PROCESSING', attempt: { increment: 1 }, provider: process.env.GEMINI_API_KEY ? 'GEMINI' : 'STUB' },
+    })
+    if (claim.count === 0) return // lost the race — another process already claimed this job
+
+    const input = this.buildGenerationInput(card)
+    await this.executor.enqueue(jobId, () => this.runGenerationJob(jobId, card.id, input, card.createdByUserId).then(() => {})).catch((err) => {
+      console.error(`Reconciliation retry failed for job ${jobId}`, err)
+    })
+  }
+
+  private createGenerationJob(cardTemplateId: string, input: ReturnType<CardService['buildGenerationInput']>) {
+    return db.cardGenerationJob.create({
+      data: {
+        cardTemplateId,
+        provider: process.env.GEMINI_API_KEY ? 'GEMINI' : 'STUB',
+        status: 'QUEUED',
+        attempt: 1,
+        inputJson: input as any,
+      },
+    })
+  }
+
+  private buildGenerationInput(card: { id: string; title: string; cardType: string; stylePreset: string; createdByUserId: string; statsSnapshotJson: unknown; athleteProfile: { firstName: string; lastName: string }; sourceImageAsset: { url: string } | null }) {
+    return {
       cardTemplateId: card.id,
       title: card.title,
       cardType: card.cardType,
       stylePreset: card.stylePreset,
       athleteName: `${card.athleteProfile.firstName} ${card.athleteProfile.lastName}`,
       createdByUserId: card.createdByUserId,
+      sourceImageUrl: card.sourceImageAsset?.url ?? null,
+      posePromptTemplate: readPosePromptTemplate(card.statsSnapshotJson),
     }
+  }
 
-    const job = await db.cardGenerationJob.create({
-      data: { cardTemplateId: id, provider: 'STUB', status: 'PROCESSING', inputJson: input as any },
-    })
-
+  // The actual generate → update-job → update-card sequence, shared by a
+  // fresh generateCard() call (attempt 1) and retryGenerationJob() (attempt
+  // N, same job row) — this is the one place that talks to the provider and
+  // records what happened, so observability (latency, model, failure
+  // category) can't drift between the two call paths.
+  private async runGenerationJob(jobId: string, cardId: string, input: ReturnType<CardService['buildGenerationInput']>, actorId: string) {
+    const startedAt = Date.now()
     try {
-      await db.cardTemplate.update({ where: { id }, data: { status: 'GENERATING' } })
+      await db.cardGenerationJob.update({ where: { id: jobId }, data: { status: 'PROCESSING' } })
+      await db.cardTemplate.update({ where: { id: cardId }, data: { status: 'GENERATING' } })
       const output = await this.generator.generate(input)
+      const latencyMs = Date.now() - startedAt
       await db.cardGenerationJob.update({
-        where: { id: job.id },
-        data: { status: 'READY', outputJson: output as any },
+        where: { id: jobId },
+        data: { status: 'READY', outputJson: { ...output, latencyMs } as any },
       })
       const updated = await db.cardTemplate.update({
-        where: { id },
+        where: { id: cardId },
         data: { status: 'READY', frontImageAssetId: output.frontImageAssetId },
         include: CARD_INCLUDE,
       })
-      return serialize(updated, actor.id)
+      return serialize(updated, actorId)
     } catch (err: any) {
-      await db.cardGenerationJob.update({
-        where: { id: job.id },
-        data: { status: 'FAILED', error: err?.message ?? 'Generation failed' },
-      })
-      await db.cardTemplate.update({ where: { id }, data: { status: 'FAILED' } })
+      const latencyMs = Date.now() - startedAt
+      const failureCategory = err instanceof CardGenerationError ? err.category : 'UNKNOWN'
+      // Best-effort bookkeeping: this runs on a fire-and-forget background
+      // path (see generateBatch), so if the job/card row is already gone
+      // (P2025 — e.g. deleted out from under an in-flight generation) that
+      // shouldn't surface as an unhandled rejection on top of the real
+      // generation error we're already about to (re)throw.
+      await ignoreRecordNotFound(
+        db.cardGenerationJob.update({
+          where: { id: jobId },
+          data: {
+            status: 'FAILED',
+            error: err?.message ?? 'Generation failed',
+            outputJson: { latencyMs, failureCategory } as any,
+          },
+        })
+      )
+      await ignoreRecordNotFound(db.cardTemplate.update({ where: { id: cardId }, data: { status: 'FAILED' } }))
       throw err
     }
   }
@@ -396,10 +611,14 @@ export class CardService {
     return serialize(card, actor.id)
   }
 
-  async listRecentPublicCards(viewerUserId?: string | null) {
+  async listRecentPublicCards(viewerUserId?: string | null, sort: 'recent' | 'popular' = 'recent') {
+    const orderBy =
+      sort === 'popular'
+        ? [{ downloadEvents: { _count: 'desc' as const } }, { publishedAt: 'desc' as const }, { id: 'desc' as const }]
+        : [{ publishedAt: 'desc' as const }, { id: 'desc' as const }]
     const cards = await db.cardTemplate.findMany({
       where: { status: 'PUBLISHED', visibility: 'PUBLIC' },
-      orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
+      orderBy,
       take: 20,
       include: CARD_INCLUDE,
     })
@@ -505,7 +724,7 @@ export class CardService {
     return serializeIssue(issue)
   }
 
-  async markCardDownloaded(issueId: string, userId: string, isAdmin = false) {
+  async markCardDownloaded(issueId: string, userId: string, isAdmin = false, context?: string) {
     const issue = await db.cardIssue.findUnique({ where: { id: issueId } })
     if (!issue) throw { statusCode: 404, message: 'Card issue not found' }
     if (issue.claimedByUserId !== userId && !isAdmin) throw { statusCode: 403, message: 'Forbidden' }
@@ -515,6 +734,18 @@ export class CardService {
       where: { id: issueId },
       data: { downloadedAt: new Date(), status: 'DOWNLOADED' },
       include: { cardTemplate: { include: { athleteProfile: true } } },
+    })
+
+    // Every download call is logged, even repeat downloads of the same
+    // issue — CardIssue.downloadedAt only ever holds the most recent one,
+    // this is the actual distribution history behind the analytics panel.
+    await db.cardDownloadEvent.create({
+      data: {
+        cardTemplateId: updated.cardTemplateId,
+        cardIssueId: updated.id,
+        downloadedByUserId: userId,
+        context: (context as any) ?? 'DIRECT',
+      },
     })
 
     await feedService.record({
@@ -530,19 +761,96 @@ export class CardService {
     }
   }
 
+  // "Athletes want to know how many cards were downloaded and from
+  // where" — owner-only (same permission shape as generateBatch: ADMIN or
+  // the claiming user), aggregated from every CardDownloadEvent ever
+  // logged for this athlete's cards, not just the latest per issue.
+  async getDistribution(actor: Actor, athleteProfileId: string) {
+    const athleteProfile = await db.athleteProfile.findUnique({ where: { id: athleteProfileId } })
+    if (!athleteProfile) throw { statusCode: 404, message: 'Athlete profile not found' }
+    if (actor.role !== 'ADMIN' && athleteProfile.claimedByUserId !== actor.id) {
+      throw { statusCode: 403, message: 'Forbidden' }
+    }
+
+    const events = await db.cardDownloadEvent.findMany({
+      where: { cardTemplate: { athleteProfileId } },
+      include: { cardTemplate: { include: CARD_INCLUDE } },
+    })
+
+    const totalDownloads = events.length
+    const uniqueDownloaders = new Set(events.map((event) => event.downloadedByUserId)).size
+
+    const contextCounts = new Map<string, number>()
+    for (const event of events) {
+      contextCounts.set(event.context, (contextCounts.get(event.context) ?? 0) + 1)
+    }
+    const byContext = Array.from(contextCounts.entries()).map(([context, count]) => ({ context, count }))
+
+    const cardCounts = new Map<string, { card: (typeof events)[number]['cardTemplate']; count: number }>()
+    for (const event of events) {
+      const existing = cardCounts.get(event.cardTemplateId)
+      if (existing) existing.count += 1
+      else cardCounts.set(event.cardTemplateId, { card: event.cardTemplate, count: 1 })
+    }
+    const byCard = Array.from(cardCounts.values())
+      .sort((a, b) => b.count - a.count)
+      .map(({ card, count }) => ({ card: serialize(card, actor.id), count }))
+
+    return { totalDownloads, uniqueDownloaders, byContext, byCard }
+  }
+
+  // Lightweight save/collect — idempotent (upsert), same toggle shape as
+  // SocialService.createFollow. The prerequisite for a personal
+  // "Collections" view before any trading/rarity/marketplace concept.
+  async saveCard(userId: string, cardTemplateId: string) {
+    const card = await db.cardTemplate.findUnique({ where: { id: cardTemplateId }, select: { id: true } })
+    if (!card) throw { statusCode: 404, message: 'Card not found' }
+    const save = await db.cardSave.upsert({
+      where: { userId_cardTemplateId: { userId, cardTemplateId } },
+      update: {},
+      create: { userId, cardTemplateId },
+      include: { cardTemplate: { include: CARD_INCLUDE } },
+    })
+    return serializeSave(save)
+  }
+
+  async unsaveCard(userId: string, saveId: string) {
+    const save = await db.cardSave.findUnique({ where: { id: saveId } })
+    if (!save) throw { statusCode: 404, message: 'Card save not found' }
+    if (save.userId !== userId) throw { statusCode: 403, message: 'Not the owner of this save' }
+    await db.cardSave.delete({ where: { id: saveId } })
+  }
+
+  async listMySavedCards(userId: string) {
+    const saves = await db.cardSave.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: { cardTemplate: { include: CARD_INCLUDE } },
+    })
+    return saves.map((save) => serializeSave(save))
+  }
+
   private async requireCardTargets(input: Pick<CreateDraftCardInput, 'athleteProfileId' | 'teamId' | 'gameId' | 'sourceImageAssetId'>) {
     const [athlete, team, game, image] = await Promise.all([
       db.athleteProfile.findUnique({ where: { id: input.athleteProfileId }, select: { id: true } }),
       input.teamId ? db.team.findUnique({ where: { id: input.teamId }, select: { id: true } }) : Promise.resolve(true),
       input.gameId ? db.game.findUnique({ where: { id: input.gameId }, select: { id: true } }) : Promise.resolve(true),
       input.sourceImageAssetId
-        ? db.imageAsset.findUnique({ where: { id: input.sourceImageAssetId }, select: { id: true } })
+        ? db.imageAsset.findUnique({ where: { id: input.sourceImageAssetId }, select: { id: true, targetType: true, targetId: true } })
         : Promise.resolve(true),
     ])
     if (!athlete) throw { statusCode: 404, message: 'Athlete profile not found' }
     if (!team) throw { statusCode: 404, message: 'Team not found' }
     if (!game) throw { statusCode: 404, message: 'Game not found' }
     if (!image) throw { statusCode: 404, message: 'Source image not found' }
+    // Existence alone isn't authorization — without this, any authenticated
+    // user could point sourceImageAssetId at an image that belongs to a
+    // different athlete (or a non-photo target entirely) and generate cards
+    // from it. The frontend has only ever offered the athlete's own gallery,
+    // so this can't reject a legitimate flow.
+    if (typeof image === 'object' && (image.targetType !== 'ATHLETE_PROFILE' || image.targetId !== input.athleteProfileId)) {
+      throw { statusCode: 403, message: 'Source image does not belong to this athlete profile' }
+    }
   }
 
   private async requireOwner(actor: Actor, card: { createdByUserId: string; athleteProfile?: { claimedByUserId: string | null } | null }) {

@@ -27,6 +27,12 @@ recent:
     summary: List recent public Statman Cards
     security: []
     tags: [cards]
+    parameters:
+      - in: query
+        name: sort
+        required: false
+        description: 'recent (default, newest published first) or popular (most downloaded first)'
+        schema: { type: string, enum: [recent, popular] }
     responses:
       '200':
         description: Recent public cards
@@ -198,6 +204,63 @@ athleteCards:
           application/json:
             schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
 
+generateBatch:
+  post:
+    operationId: generateCardBatch
+    summary: Generate a sport-standard pose set of cards from an athlete's reference photo
+    tags: [cards]
+    parameters:
+      - in: path
+        name: athleteProfileId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/cards.yaml#/GenerateCardBatchInput' }
+    responses:
+      '201':
+        description: Draft cards created (one per pose), generation kicked off for each
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/cards.yaml#/Card' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+distribution:
+  get:
+    operationId: getCardDistribution
+    summary: Owner-only card download distribution analytics for an athlete
+    tags: [cards]
+    parameters:
+      - in: path
+        name: athleteProfileId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Distribution analytics
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/cards.yaml#/CardDistribution' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
 mine:
   get:
     operationId: listMyCards
@@ -227,6 +290,10 @@ downloaded:
         name: issueId
         required: true
         schema: { type: string }
+    requestBody:
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/cards.yaml#/MarkCardDownloadedInput' }
     responses:
       '200':
         description: Card issue marked downloaded with authenticity metadata

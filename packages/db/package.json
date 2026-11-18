@@ -4,11 +4,21 @@
   "main": "./src/client.ts",
   "scripts": {
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:status": "prisma migrate status",
+    "db:seed": "tsx prisma/seed/index.ts",
+    "db:seed:minimal": "SEED_SCENARIO=minimal tsx prisma/seed/index.ts",
+    "db:seed:demo": "SEED_SCENARIO=demo tsx prisma/seed/index.ts",
+    "db:seed:full": "SEED_SCENARIO=full tsx prisma/seed/index.ts",
+    "db:seed:cards": "SEED_SCENARIO=cards tsx prisma/seed/index.ts",
+    "db:seed:live": "SEED_SCENARIO=live-game tsx prisma/seed/index.ts",
+    "db:seed:verification": "SEED_SCENARIO=verification tsx prisma/seed/index.ts",
+    "db:seed:validate": "SEED_SCENARIO=full SEED_VALIDATE_ONLY=true tsx prisma/seed/index.ts",
+    "db:seed:reset": "tsx prisma/seed/reset.ts",
     "db:studio": "prisma studio",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'no lint configured for db package'",
-    "test": "echo 'no tests for db package'"
+    "test": "tsx --test prisma/seed/seed.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",

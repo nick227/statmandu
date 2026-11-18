@@ -11,6 +11,9 @@ collection:
       - in: query
         name: teamSlug
         schema: { type: string }
+      - in: query
+        name: seasonId
+        schema: { type: string }
     responses:
       '200':
         description: Games
@@ -72,5 +75,34 @@ item:
               required: [data]
               properties:
                 data: { $ref: '../components/schemas/games.yaml#/Game' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+  patch:
+    operationId: recordGameScore
+    summary: Record or correct the final score for a non-live game
+    tags: [games]
+    parameters:
+      - in: path
+        name: gameId
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/games.yaml#/RecordGameScoreInput' }
+    responses:
+      '200':
+        description: Game score recorded
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/games.yaml#/Game' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
       '404':
         $ref: '../components/responses/common.yaml#/NotFound'

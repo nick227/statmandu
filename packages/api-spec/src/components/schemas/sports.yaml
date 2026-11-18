@@ -29,3 +29,12 @@ Team:
     sport: { $ref: '#/Sport' }
     leagueId: { type: string }
     league: { $ref: '#/League' }
+
+CreateTeamInput:
+  type: object
+  required: [name, leagueId]
+  properties:
+    name: { type: string, minLength: 1, maxLength: 120 }
+    leagueId: { type: string }
+    city: { type: string, maxLength: 120 }
+    logoUrl: { type: string, format: uri }

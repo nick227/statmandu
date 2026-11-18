@@ -14,15 +14,15 @@ export interface ContentSectionProps {
 
 export function ContentSection({ title, subtitle, href, linkLabel = 'See all', children, className }: ContentSectionProps) {
   return (
-    <View className={className ?? 'gap-sm'}>
-      <View className="flex-row items-end justify-between gap-md">
+    <View className={className ?? 'gap-md'}>
+      <View className="min-h-11 flex-row items-center justify-between gap-md">
         <View className="flex-1 gap-xs">
-          <Text className="text-lg font-semibold">{title}</Text>
-          {subtitle ? <Text variant="caption">{subtitle}</Text> : null}
+          <Text accessibilityRole="header" className="text-lg font-semibold" numberOfLines={2}>{title}</Text>
+          {subtitle ? <Text variant="caption" numberOfLines={2}>{subtitle}</Text> : null}
         </View>
         {href ? (
-          <Link href={href as never}>
-            <Text variant="caption" className="text-brand font-semibold">{linkLabel}</Text>
+          <Link href={href as never} className="min-h-11 justify-center py-sm">
+            <Text variant="caption" className="text-brand font-semibold" numberOfLines={1}>{linkLabel}</Text>
           </Link>
         ) : null}
       </View>

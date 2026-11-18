@@ -4,14 +4,13 @@ import { LAYOUT } from './layoutConstants'
 
 /** Sticky right rail for wide web layouts (entity profiles, game detail). */
 export function WideSidebarColumn({ children }: { children: ReactNode }) {
-  // `sticky` / `100vh` are web CSS values RN's ViewStyle doesn't model.
+  // Sticky within the document scroll. Never create a second vertical
+  // scrollbar inside the rail; long sidebars remain part of page flow.
   const webSticky = Platform.OS === 'web'
     ? ({
         position: 'sticky',
         top: LAYOUT.sidebarStickyTop,
         alignSelf: 'flex-start',
-        maxHeight: '100vh',
-        overflow: 'auto',
       } as unknown as ViewStyle)
     : null
 

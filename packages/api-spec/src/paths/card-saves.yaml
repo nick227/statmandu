@@ -1,0 +1,73 @@
+collection:
+  post:
+    operationId: createCardSave
+    summary: Save (collect) a Statman Card — idempotent, safe to call while already saved
+    tags: [cards]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/cards.yaml#/CreateCardSaveInput' }
+    responses:
+      '201':
+        description: Card saved
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/cards.yaml#/CardSave' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+item:
+  delete:
+    operationId: deleteCardSave
+    summary: Unsave a Statman Card
+    tags: [cards]
+    parameters:
+      - in: path
+        name: saveId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Unsaved
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data: { type: 'null' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '403':
+        description: Not the owner of this save
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
+mine:
+  get:
+    operationId: listMyCardSaves
+    summary: List Statman Cards saved by the current user
+    tags: [cards]
+    responses:
+      '200':
+        description: Saved cards
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '../components/schemas/cards.yaml#/CardSave' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'

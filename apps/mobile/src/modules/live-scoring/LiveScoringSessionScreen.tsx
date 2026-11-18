@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, View } from 'react-native'
 import { Link, Stack, useRouter, useLocalSearchParams } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type GorhomBottomSheet from '@gorhom/bottom-sheet'
 import { getSportDefinition } from '@statman/sports'
-import { ClipboardList, Eye, Radio, Target } from 'lucide-react-native'
 import type { components } from '@statman/sdk'
-import { useNativeColor } from '@/lib/theme'
 import { Text } from '@/shared/ui/Text'
 import { Button } from '@/shared/ui/Button'
+import { BackButton } from '@/shared/ui/BackButton'
 import { Badge } from '@/shared/ui/Badge'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
@@ -30,45 +30,8 @@ import { LAYOUT } from '@/shared/layout'
 type GameEventType = components['schemas']['GameEventType']
 type SheetView = 'players' | 'substitution' | 'conflicts' | null
 
-// Maps the 4 real-world jobs someone arrives at this screen to do onto the
-// backend's 7-value GameReporterRole enum. "Score the Game" defaults to
-// TEAM_SCORER (the common case — a team's own scorer) rather than
-// OFFICIAL_SCORER, which carries real manager authority (conflict
-// resolution, finalize) and stays a deliberate secondary choice, not the
-// default. "Track a Player" and "Broadcast" have no meaningfully different
-// backend behavior across CONTRIBUTOR/SPECTATOR_REPORTER, so one concrete
-// role each keeps the choice simple instead of preserving every enum value
-// as its own button. "Watch" isn't a reporter role at all — it's the
-// existing public Spectate screen, so it navigates there directly instead
-// of joining as anything.
-interface JobOptionProps {
-  icon: React.ComponentType<{ size?: number; color?: string }>
-  title: string
-  description: string
-  onPress: () => void
-  isLoading?: boolean
-}
-
-function JobOption({ icon: Icon, title, description, onPress, isLoading }: JobOptionProps) {
-  const iconColor = useNativeColor('brand')
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={isLoading}
-      className={`flex-row items-center gap-md rounded-md border border-border bg-surface p-md active:opacity-70 ${isLoading ? 'opacity-50' : ''}`}
-    >
-      <View className="h-10 w-10 items-center justify-center rounded-full bg-brand/10">
-        <Icon size={20} color={iconColor} />
-      </View>
-      <View className="flex-1">
-        <Text className="font-semibold">{title}</Text>
-        <Text variant="caption">{description}</Text>
-      </View>
-    </Pressable>
-  )
-}
-
 export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
+  const insets = useSafeAreaInsets()
   const session = useLiveScoringSession(gameId)
   const { isAuthenticated, isAuthLoading } = useAuthGate()
   const router = useRouter()
@@ -90,11 +53,9 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
     game,
     homeTeam,
     isManager,
-    join,
     joinedRole,
     joinAsRole,
     lastEventId,
-    mode,
     openConflictCount,
     playerById,
     queue,
@@ -105,7 +66,6 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
     selectedPlayerId,
     selectedTeamId,
     selectTeam,
-    setMode,
     setSelectedPlayerId,
     startLive,
     submitEvent,
@@ -119,28 +79,40 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
   // Must run before any early return — auth/loading gates below would otherwise
   // change the hook count once the game finishes loading.
   useEffect(() => {
-    if (intent && !joinedRole && game && !hasTriggeredIntent.current) {
-      hasTriggeredIntent.current = true
+    if (!isAuthenticated || joinedRole || !game || hasTriggeredIntent.current) return
+    hasTriggeredIntent.current = true
 
-      if (intent === 'TEAM_SCORER') {
-        if (!homeTeam || !awayTeam) {
-          joinAsRole('TEAM_SCORER', homeTeam?.id ?? awayTeam?.id)
-          return
-        }
+    const returnToGame = () => router.replace({ pathname: '/games/[gameId]', params: { gameId } })
+    const joinSession = (role: 'TEAM_SCORER' | 'BROADCASTER', teamId?: string) => {
+      void joinAsRole(role, teamId).catch((error) => {
         Alert.alert(
-          'Select Team',
-          'Which team are you scoring for?',
-          [
-            { text: homeTeam.name, onPress: () => joinAsRole('TEAM_SCORER', homeTeam.id) },
-            { text: awayTeam.name, onPress: () => joinAsRole('TEAM_SCORER', awayTeam.id) },
-            { text: 'Cancel', style: 'cancel' },
-          ]
+          'Unable to open session',
+          error instanceof Error ? error.message : 'Please try again.',
+          [{ text: 'Back to game', onPress: returnToGame }],
         )
-      } else {
-        joinAsRole(intent)
-      }
+      })
     }
-  }, [intent, joinedRole, game, homeTeam, awayTeam])
+
+    if (intent === 'BROADCASTER') {
+      joinSession('BROADCASTER')
+      return
+    }
+
+    if (!homeTeam || !awayTeam) {
+      Alert.alert('Teams unavailable', 'This game needs a home and away team before scoring can begin.', [{ text: 'Back to game', onPress: returnToGame }])
+      return
+    }
+
+    Alert.alert(
+      'Select team',
+      'Which team are you scoring for?',
+      [
+        { text: homeTeam.name, onPress: () => joinSession('TEAM_SCORER', homeTeam.id) },
+        { text: awayTeam.name, onPress: () => joinSession('TEAM_SCORER', awayTeam.id) },
+        { text: 'Cancel', style: 'cancel', onPress: returnToGame },
+      ],
+    )
+  }, [intent, joinedRole, game, homeTeam, awayTeam, isAuthenticated, gameId, joinAsRole, router])
 
   const followUpOptions = useMemo(() => {
     if (!followUpEventType) return []
@@ -208,82 +180,13 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
   if (!joinedRole) {
     return (
       <View className="flex-1 bg-canvas">
-        <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
-        <View className="gap-sm p-lg" style={{ width: '100%', maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center' }}>
-          <Text className="text-2xl font-bold pb-xs">What are you here to do?</Text>
-
-          <JobOption
-            icon={ClipboardList}
-            title="Score the Game"
-            description="Full box score — every player, both teams."
-            isLoading={join.isPending}
-            onPress={() => {
-              if (!homeTeam || !awayTeam) {
-                joinAsRole('TEAM_SCORER', homeTeam?.id ?? awayTeam?.id)
-                return
-              }
-              Alert.alert(
-                'Select Team',
-                'Which team are you scoring for?',
-                [
-                  { text: homeTeam.name, onPress: () => joinAsRole('TEAM_SCORER', homeTeam.id) },
-                  { text: awayTeam.name, onPress: () => joinAsRole('TEAM_SCORER', awayTeam.id) },
-                  { text: 'Cancel', style: 'cancel' },
-                ]
-              )
-            }}
-          />
-          <Pressable onPress={() => joinAsRole('OFFICIAL_SCORER')} className="self-end pr-sm" hitSlop={8}>
-            <Text variant="caption" className="text-brand">I'm the assigned Official Scorer</Text>
-          </Pressable>
-
-          <JobOption
-            icon={Target}
-            title="Track a Player"
-            description="Follow just one player's stats — simpler, fewer taps."
-            isLoading={join.isPending}
-            onPress={() => joinAsRole('CONTRIBUTOR')}
-          />
-
-          <JobOption
-            icon={Radio}
-            title="Broadcast"
-            description="Score the game and unlock the big-display Cast view."
-            isLoading={join.isPending}
-            onPress={() => joinAsRole('BROADCASTER')}
-          />
-
-          <JobOption
-            icon={Eye}
-            title="Watch"
-            description="Follow along live — no stat entry."
-            onPress={() => router.push({ pathname: '/games/[gameId]/spectate', params: { gameId } })}
-          />
-
-          <View className="flex-row gap-sm pt-md border-t border-border mt-sm">
-            <Button
-              variant={mode === 'live' ? 'primary' : 'secondary'}
-              size="sm"
-              className="flex-1"
-              onPress={() => setMode('live')}
-            >
-              Live Now
-            </Button>
-            <Button
-              variant={mode === 'catchUp' ? 'primary' : 'secondary'}
-              size="sm"
-              className="flex-1"
-              onPress={() => setMode('catchUp')}
-            >
-              Catch-Up Entry
-            </Button>
-          </View>
-          {mode === 'catchUp' ? (
-            <Text variant="caption">
-              Catch-up mode is for logging plays that already happened on an already-live game (e.g. joining after
-              tip-off) — timestamps are spaced automatically so play order stays correct even if you pause mid-batch.
-            </Text>
-          ) : null}
+        <Stack.Screen options={{ headerShown: false, title: 'Live Capture' }} />
+        <View
+          className="gap-sm p-lg"
+          style={{ width: '100%', maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center', paddingTop: Math.max(insets.top, 16) }}
+        >
+          <BackButton tone="dark" className="mb-sm" />
+          <LoadingState label={intent === 'BROADCASTER' ? 'Opening broadcast' : 'Opening scoring'} />
         </View>
       </View>
     )
@@ -298,7 +201,7 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
       ? 'Select a player'
       : 'Select a team first'
   const canCast = isManager || joinedRole === 'BROADCASTER'
-  // "Track a Player" job (see JobOption mapping above) — once a player is
+  // Contributor sessions entered through a direct assignment lock to one player; once a player is
   // picked, the team-select/switch chrome collapses to a single "Tracking"
   // line + that player's own live stat strip, reusing the exact same pad
   // and submit flow as the full-game mode. Before a player is picked, this
@@ -351,13 +254,14 @@ export function LiveScoringSessionScreen({ gameId }: { gameId: string }) {
 
   return (
     <View className="flex-1 bg-canvas">
-      <Stack.Screen options={{ headerShown: true, title: 'Live Capture' }} />
+      <Stack.Screen options={{ headerShown: false, title: 'Live Capture' }} />
 
       {/* One compact context band, not four stacked ones — score/status on
           top, team+player selection below as a single bordered card, so the
           pad (the actual job) owns the rest of the screen. */}
       <View style={{ width: '100%', maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center' }}>
-      <View className="px-lg pt-sm gap-xs">
+      <View className="px-lg pt-sm gap-xs" style={{ paddingTop: Math.max(insets.top, 8) }}>
+        <BackButton tone="dark" className="mb-xs" />
         <View className="flex-row items-start justify-between gap-sm">
           <ReporterPresencePill count={reporterCount} />
           <SyncStatusBar queue={queue} onRetry={retrySync} onDismiss={dismissQueuedEvent} className="flex-1 gap-xs" />

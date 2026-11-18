@@ -210,3 +210,84 @@ auditLog:
           application/json:
             schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
 
+importProviders:
+  get:
+    operationId: adminListImportProviders
+    summary: List sports import providers and quota status
+    security: [{ adminAuth: [] }]
+    tags: [admin]
+    responses:
+      '200':
+        description: Import providers
+        content:
+          application/json:
+            schema: { type: object, required: [data], properties: { data: { type: array, items: { $ref: '../components/schemas/admin.yaml#/ImportProvider' } } } }
+
+importPreview:
+  post:
+    operationId: adminPreviewSportsImport
+    summary: Fetch, normalize, and preview a sports import
+    security: [{ adminAuth: [] }]
+    tags: [admin]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/admin.yaml#/SportsImportPreviewInput' }
+    responses:
+      '201':
+        description: Import preview
+        content:
+          application/json:
+            schema: { type: object, required: [data], properties: { data: { $ref: '../components/schemas/admin.yaml#/SportsImportRun' } } }
+
+importRun:
+  get:
+    operationId: adminGetSportsImportRun
+    summary: Get an import run and its records
+    security: [{ adminAuth: [] }]
+    tags: [admin]
+    parameters:
+      - { in: path, name: runId, required: true, schema: { type: string } }
+    responses:
+      '200':
+        description: Import run
+        content:
+          application/json:
+            schema: { type: object, required: [data], properties: { data: { $ref: '../components/schemas/admin.yaml#/SportsImportRun' } } }
+
+importExecute:
+  post:
+    operationId: adminExecuteSportsImport
+    summary: Execute a resolved import preview
+    security: [{ adminAuth: [] }]
+    tags: [admin]
+    parameters:
+      - { in: path, name: runId, required: true, schema: { type: string } }
+    responses:
+      '200':
+        description: Completed import run
+        content:
+          application/json:
+            schema: { type: object, required: [data], properties: { data: { $ref: '../components/schemas/admin.yaml#/SportsImportRun' } } }
+
+importRecord:
+  patch:
+    operationId: adminResolveSportsImportRecord
+    summary: Resolve an import conflict
+    security: [{ adminAuth: [] }]
+    tags: [admin]
+    parameters:
+      - { in: path, name: runId, required: true, schema: { type: string } }
+      - { in: path, name: recordId, required: true, schema: { type: string } }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/admin.yaml#/ResolveImportRecordInput' }
+    responses:
+      '200':
+        description: Resolved import record
+        content:
+          application/json:
+            schema: { type: object, required: [data], properties: { data: { $ref: '../components/schemas/admin.yaml#/SportsImportRecord' } } }

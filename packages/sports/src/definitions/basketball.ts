@@ -68,4 +68,11 @@ export const basketballDefinition: SportDefinition = {
   // fouls) — a single running-game bucket, not reset per half, since there's
   // no period tracking yet. Documented simplification, see DisciplineConfig.
   discipline: { foulEventTypes: ['FOUL'], bonusThreshold: 7, foulOutThreshold: 5 },
+  cardPoses: [
+    { id: 'portrait-stance', label: 'Portrait Stance', category: 'portrait', promptTemplate: 'Trading-card portrait pose: three-quarter view, ball resting on hip, confident expression, studio lighting, plain neutral background, basketball uniform.' },
+    { id: 'jump-shot', label: 'Jump Shot', category: 'action', promptTemplate: 'Trading-card action pose: mid-air jump shot release, basketball leaving fingertips, dynamic motion, arena background, dramatic overhead lighting.' },
+    { id: 'dribble-drive', label: 'Dribble Drive', category: 'action', promptTemplate: 'Trading-card action pose: low dribble drive to the basket, defender-beating burst of speed, basketball at the hip, hardwood court background.' },
+    { id: 'dunk', label: 'Slam Dunk', category: 'action', promptTemplate: 'Trading-card action pose: explosive two-handed slam dunk at the rim, mid-air, crowd blurred in background, high-energy lighting.' },
+    { id: 'defensive-stance', label: 'Defensive Stance', category: 'action', promptTemplate: 'Trading-card action pose: low defensive stance, arms spread wide, intense focused expression, hardwood court background.' },
+  ],
 }

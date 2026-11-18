@@ -1,16 +1,40 @@
-import { Image, View, type ImageProps } from 'react-native'
+import { useState } from 'react'
+import { View } from 'react-native'
+import { Image, type ImageProps } from 'expo-image'
+import { cssInterop } from 'nativewind'
 import { cn } from '@/lib/utils'
 
-export interface SmartImageProps extends Omit<ImageProps, 'source'> {
+cssInterop(Image, { className: 'style' })
+
+export interface SmartImageProps extends Omit<ImageProps, 'source' | 'contentFit' | 'onError' | 'resizeMode'> {
   uri?: string | null
   fallback?: React.ReactNode
   className?: string
+  /** Compatibility with the former React Native Image wrapper. */
+  resizeMode?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down'
+  onError?: ImageProps['onError']
 }
 
-export function SmartImage({ uri, fallback, className, ...props }: SmartImageProps) {
-  if (!uri) {
+export function SmartImage({ uri, fallback, className, resizeMode = 'cover', onError, ...props }: SmartImageProps) {
+  const [failedUri, setFailedUri] = useState<string | null>(null)
+
+  if (!uri || failedUri === uri) {
     return <View className={cn('items-center justify-center bg-muted-text/15', className)}>{fallback}</View>
   }
 
-  return <Image source={{ uri }} className={className} {...props} />
+  return (
+    <Image
+      source={{ uri }}
+      className={className}
+      contentFit={resizeMode}
+      cachePolicy="memory-disk"
+      transition={180}
+      recyclingKey={uri}
+      onError={(event) => {
+        setFailedUri(uri)
+        onError?.(event)
+      }}
+      {...props}
+    />
+  )
 }

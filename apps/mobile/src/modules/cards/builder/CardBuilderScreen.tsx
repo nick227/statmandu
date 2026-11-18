@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Image, Pressable, ScrollView, View } from 'react-native'
+import { Pressable, ScrollView, View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Screen } from '@/shared/layout/Screen'
 import { Text } from '@/shared/ui/Text'
@@ -9,6 +9,8 @@ import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { cn } from '@/lib/utils'
 import { CardBuilderStepShell } from './CardBuilderStepShell'
+import { SubjectPicker } from './SubjectPicker'
+import { PhotoPicker } from './PhotoPicker'
 import { useCardBuilderState } from './useCardBuilderState'
 import { CardTypePicker } from './CardTypePicker'
 import { CardStylePicker } from './CardStylePicker'
@@ -17,6 +19,7 @@ import { CardReleasePicker } from './CardReleasePicker'
 import { useCardStudioSdk } from './useCardStudioSdk'
 import { useCardBuilderData } from './useCardBuilderData'
 import { useCardStudioBootstrap } from './useCardStudioBootstrap'
+import { CARD_FRAMES } from './builderConstants'
 import type { CardBuilderState } from './cardBuilderTypes'
 import type { components } from '@statman/sdk'
 
@@ -49,6 +52,7 @@ export function CardBuilderScreen() {
 
   const step = STEPS[stepIndex]
   const isBusy = studio.isBusy || builderData.isUploading
+  const progressLabel = `Step ${stepIndex + 1} of ${STEPS.length}`
 
   function next() {
     setStepIndex((v) => Math.min(v + 1, STEPS.length - 1))
@@ -90,28 +94,15 @@ export function CardBuilderScreen() {
       <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Choose Subject"
-          description="Who is this card for?"
+          description="Pick the athlete whose profile, team, and gallery will power the card."
           onNext={() => {
-            if (builderData.selectDefaultPlayer()) next()
+            if (builderData.hasSelectedPlayer) next()
           }}
           onBack={undefined}
-          isNextDisabled={!builderData.hasSelectablePlayer}
+          isNextDisabled={!builderData.hasSelectedPlayer}
+          progressLabel={progressLabel}
         >
-          <View className="gap-md">
-            <Input value={builderData.athleteQuery} onChangeText={builderData.setAthleteQuery} placeholder="Search athletes" />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-              {builderData.playerOptions.map((player) => (
-                <Pressable
-                  key={player.id}
-                  onPress={() => builderData.selectPlayer(player)}
-                  className={cn('min-w-44 rounded-md border p-sm', player.selected ? 'border-brand bg-brand/10' : 'border-border bg-canvas')}
-                >
-                  <Text className={cn('font-semibold', player.selected ? 'text-brand' : 'text-text')}>{player.name}</Text>
-                  <Text variant="caption" numberOfLines={1}>{player.teamName}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
+          <SubjectPicker builderData={builderData} />
         </CardBuilderStepShell>
       </Screen>
     )
@@ -122,32 +113,13 @@ export function CardBuilderScreen() {
       <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Select Photo"
-          description="Choose the main image for the card."
+          description="Upload to the athlete gallery or reuse an existing gallery image."
           onNext={next}
           onBack={back}
           isNextDisabled={!state.sourceImageUrl}
+          progressLabel={progressLabel}
         >
-          <View className="gap-md">
-            <Button variant="secondary" isLoading={builderData.isUploading} onPress={builderData.pickAndUploadPhoto}>
-              Upload to gallery
-            </Button>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-              {builderData.gallery.map((image) => {
-                const selected = image.id === state.sourceImageAssetId
-                return (
-                  <Pressable
-                    key={image.id}
-                    onPress={() => updateState({ sourceImageAssetId: image.id, sourceImageUrl: image.url })}
-                    className={cn('h-24 w-24 overflow-hidden rounded-md border', selected ? 'border-brand' : 'border-border')}
-                  >
-                    <Image source={{ uri: image.url }} className="h-full w-full" resizeMode="cover" />
-                  </Pressable>
-                )
-              })}
-            </ScrollView>
-            {builderData.galleryQuery.isLoading ? <Text variant="caption">Loading gallery...</Text> : null}
-            {builderData.galleryQuery.isError ? <Text variant="caption">Gallery couldn't be loaded.</Text> : null}
-          </View>
+          <PhotoPicker builderData={builderData} state={state} updateState={updateState} />
         </CardBuilderStepShell>
       </Screen>
     )
@@ -158,10 +130,11 @@ export function CardBuilderScreen() {
       <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Card Type"
-          description="What kind of card are you creating?"
+          description="Choose the story this card should tell."
           onNext={next}
           onBack={back}
           isNextDisabled={!state.cardType}
+          progressLabel={progressLabel}
         >
           <CardTypePicker selected={state.cardType} onSelect={(cardType) => updateState({ cardType })} />
         </CardBuilderStepShell>
@@ -174,12 +147,36 @@ export function CardBuilderScreen() {
       <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Card Style"
-          description="Choose a visual preset."
+          description="Choose a frame family and palette. You can still flip the preview before release."
           onNext={next}
           onBack={back}
           isNextDisabled={!state.stylePreset}
+          progressLabel={progressLabel}
         >
-          <CardStylePicker selected={state.stylePreset} onSelect={(stylePreset) => updateState({ stylePreset })} />
+          <View className="gap-md">
+            <View className="gap-sm">
+              <Text className="font-semibold text-text">Frame</Text>
+              <View className="flex-row flex-wrap gap-sm">
+                {CARD_FRAMES.map((frame) => {
+                  const selected = state.framePreset === frame.value
+                  return (
+                    <Pressable
+                      key={frame.value}
+                      onPress={() => updateState({ framePreset: frame.value })}
+                      className={cn('w-44 rounded-md border p-sm', selected ? 'border-brand bg-brand/10' : 'border-border bg-canvas')}
+                    >
+                      <Text className={cn('font-semibold', selected ? 'text-brand' : 'text-text')}>{frame.label}</Text>
+                      <Text variant="caption" numberOfLines={2}>{frame.description}</Text>
+                    </Pressable>
+                  )
+                })}
+              </View>
+            </View>
+            <View className="gap-sm">
+              <Text className="font-semibold text-text">Palette</Text>
+              <CardStylePicker selected={state.stylePreset} onSelect={(stylePreset) => updateState({ stylePreset })} />
+            </View>
+          </View>
         </CardBuilderStepShell>
       </Screen>
     )
@@ -190,10 +187,11 @@ export function CardBuilderScreen() {
       <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Preview"
-          description="Flip the card and make sure everything looks right."
+          description="Edit the front stats and card-back copy, then flip both sides."
           onNext={next}
           onBack={back}
           nextLabel="Looks Good, Continue"
+          progressLabel={progressLabel}
         >
           <View className="gap-md">
             <View className="flex-row justify-center gap-sm">
@@ -211,8 +209,12 @@ export function CardBuilderScreen() {
                 <Input className="flex-1" value={state.statTwo} onChangeText={(statTwo) => updateState({ statTwo })} placeholder="8 REB" />
                 <Input className="flex-1" value={state.statThree} onChangeText={(statThree) => updateState({ statThree })} placeholder="5 AST" />
               </View>
+              <Input value={state.setName} onChangeText={(setName) => updateState({ setName })} placeholder="Set name" />
+              <Input value={state.cardNumber} onChangeText={(cardNumber) => updateState({ cardNumber })} placeholder="Card number" />
+              <Input value={state.promptHelper} onChangeText={(promptHelper) => updateState({ promptHelper })} placeholder="Creative direction" />
+              <Input value={state.backCopy} onChangeText={(backCopy) => updateState({ backCopy })} placeholder="Back-side bio or description" />
             </View>
-            <CardPreviewStage state={state} isLoading={false} />
+            <CardPreviewStage state={state} isLoading={false} onSideChange={(side) => updateState({ side })} />
           </View>
         </CardBuilderStepShell>
       </Screen>
@@ -229,6 +231,7 @@ export function CardBuilderScreen() {
           onBack={back}
           isNextDisabled={!state.release}
           nextLabel="Review & Publish"
+          progressLabel={progressLabel}
         >
           <CardReleasePicker
             selected={state.release}
@@ -258,11 +261,12 @@ export function CardBuilderScreen() {
             router.replace('/cards')
             return
           }
-          router.replace({ pathname: '/cards/[cardId]', params: { cardId: result.id } })
+          router.replace({ pathname: '/cards/[cardId]', params: { cardId: result.id, source: 'CARD_STUDIO' } })
         }}
         onBack={back}
         nextLabel={isDraft ? 'Save Draft' : 'Generate & Publish'}
         isLoading={isBusy}
+        progressLabel={progressLabel}
       >
         <View className="gap-md">
           <CardPreviewStage state={state} isLoading={isBusy} />

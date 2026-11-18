@@ -106,6 +106,26 @@ describe('getTeamLeaderboard', () => {
     expect(res.json().data.map((entry: any) => entry.team.id)).toEqual([awayTeam.id, homeTeam.id])
     expect(res.json().data[0].value).toBe(118)
   })
+
+  it('defaults to active seasons so a team appears only once on the current board', async () => {
+    const { awayTeam, homeTeam, league, season } = await seedGameFixture()
+    const archivedSeason = await db.season.create({
+      data: { leagueId: league.id, slug: '2024-25', name: '2024-25', isActive: false },
+    })
+    await db.teamSeasonStat.createMany({
+      data: [
+        { teamId: homeTeam.id, seasonId: season.id, wins: 3 },
+        { teamId: awayTeam.id, seasonId: season.id, wins: 2 },
+        { teamId: homeTeam.id, seasonId: archivedSeason.id, wins: 99 },
+      ],
+    })
+
+    const res = await app.inject({ method: 'GET', url: '/leaderboards/teams?sportSlug=basketball&stat=wins' })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().data.map((entry: any) => entry.team.id)).toEqual([homeTeam.id, awayTeam.id])
+    expect(res.json().data.every((entry: any) => entry.seasonStat.seasonId === season.id)).toBe(true)
+  })
 })
 
 describe('getGameStats', () => {

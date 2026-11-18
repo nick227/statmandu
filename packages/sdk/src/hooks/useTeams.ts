@@ -12,6 +12,20 @@ export function useTeams(params?: { leagueSlug?: string }) {
   })
 }
 
+export function useCreateTeam() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: { name: string; leagueId: string; city?: string; logoUrl?: string }) => {
+      const { data, error, response } = await getApiClient().POST('/teams', { body })
+      if (error) throw new ApiError(response.status, (error as any).error)
+      return data!
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] })
+    },
+  })
+}
+
 export function useTeam(teamSlug: string) {
   return useQuery({
     queryKey: ['team', teamSlug],
@@ -26,12 +40,12 @@ export function useTeam(teamSlug: string) {
   })
 }
 
-export function useTeamRoster(teamSlug: string) {
+export function useTeamRoster(teamSlug: string, seasonId?: string) {
   return useQuery({
-    queryKey: ['team', teamSlug, 'roster'],
+    queryKey: ['team', teamSlug, 'roster', seasonId],
     queryFn: async () => {
       const { data, error, response } = await getApiClient().GET('/teams/{teamSlug}/roster', {
-        params: { path: { teamSlug } },
+        params: { path: { teamSlug }, query: { seasonId } },
       })
       if (error) throw new ApiError(response.status, (error as any).error)
       return data!

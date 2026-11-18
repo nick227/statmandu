@@ -50,6 +50,16 @@ export type DisciplineConfig = {
   foulOutThreshold?: number
 }
 
+export type CardPoseDefinition = {
+  id: string
+  label: string
+  category: 'portrait' | 'action'
+  // Sent to the image-generation provider alongside the athlete's
+  // reference photo — describes the pose/composition, not the athlete
+  // (identity/likeness comes from the reference photo itself).
+  promptTemplate: string
+}
+
 export type SportDefinition = {
   slug: string
   name: string
@@ -83,6 +93,10 @@ export type SportDefinition = {
   // declare this. Absent for sports where computeDisciplineStatus should
   // just return null rather than guess at an unresearched rule.
   discipline?: DisciplineConfig
+  // Trading-card pose set for the AI generation pipeline — optional, a
+  // sport with none declared gets a generic 2-pose fallback from
+  // getCardPoses() rather than an empty set.
+  cardPoses?: CardPoseDefinition[]
 }
 
 export type ReconcileEvent = {

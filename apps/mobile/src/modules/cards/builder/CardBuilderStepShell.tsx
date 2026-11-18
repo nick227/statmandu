@@ -12,6 +12,7 @@ export function CardBuilderStepShell({
   nextLabel = 'Next',
   isNextDisabled = false,
   isLoading = false,
+  progressLabel,
 }: {
   title: string
   description?: string
@@ -21,10 +22,12 @@ export function CardBuilderStepShell({
   nextLabel?: string
   isNextDisabled?: boolean
   isLoading?: boolean
+  progressLabel?: string
 }) {
   return (
     <View className="flex-1">
       <View className="px-lg pt-lg pb-md">
+        {progressLabel ? <Text variant="caption" className="mb-xs text-center">{progressLabel}</Text> : null}
         <Text variant="entityName" className="text-text text-center mb-xs">
           {title}
         </Text>
@@ -54,4 +57,3 @@ export function CardBuilderStepShell({
     </View>
   )
 }
-

@@ -44,4 +44,9 @@ export const tennisDefinition: SportDefinition = {
       ['TENNIS_ACE', 'TENNIS_DOUBLE_FAULT'],
     ],
   },
+  cardPoses: [
+    { id: 'portrait-stance', label: 'Portrait Stance', category: 'portrait', promptTemplate: 'Trading-card portrait pose: racquet resting on shoulder, confident expression, studio lighting, plain neutral background, tennis kit.' },
+    { id: 'serve-toss', label: 'Serve', category: 'action', promptTemplate: 'Trading-card action pose: mid-serve, racquet at full extension overhead, ball toss, court background, dramatic lighting.' },
+    { id: 'forehand-swing', label: 'Forehand Swing', category: 'action', promptTemplate: 'Trading-card action pose: powerful forehand follow-through, dynamic motion, tennis court background.' },
+  ],
 }

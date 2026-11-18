@@ -1,22 +1,13 @@
 import type { components } from '@statman/sdk'
+import type { CardFramePreset, CardStylePreset } from '../cardDisplay'
+
+export type { CardFramePreset, CardStylePreset }
 
 export type CardType = components['schemas']['CardType']
 
 export type ReleaseType = 'draft' | 'unlimited' | 'limited' | 'one-of-one'
 
 export type CardBuilderSide = 'front' | 'back'
-
-export type CardFramePreset = 'team-badge' | 'action-chrome' | 'stat-battle' | 'heritage-back'
-
-export interface CardStylePreset {
-  value: string
-  label: string
-  primary: string
-  secondary: string
-  text: string
-  contrast: string
-  plate: string
-}
 
 export interface CardBuilderState {
   athleteProfileId: string | null

@@ -44,4 +44,9 @@ export const soccerDefinition: SportDefinition = {
       ['SOCCER_SAVE', 'SOCCER_YELLOW_CARD', 'SOCCER_RED_CARD'],
     ],
   },
+  cardPoses: [
+    { id: 'portrait-stance', label: 'Portrait Stance', category: 'portrait', promptTemplate: 'Trading-card portrait pose: ball under foot, confident expression, studio lighting, plain neutral background, soccer kit.' },
+    { id: 'shot-strike', label: 'Shot on Goal', category: 'action', promptTemplate: 'Trading-card action pose: mid-strike shot on goal, leg fully extended, dynamic motion, pitch background, dramatic lighting.' },
+    { id: 'dribble-run', label: 'Dribble Run', category: 'action', promptTemplate: 'Trading-card action pose: dribbling at pace past a defender, ball close to the foot, pitch background.' },
+  ],
 }

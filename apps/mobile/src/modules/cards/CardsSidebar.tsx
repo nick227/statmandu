@@ -51,7 +51,12 @@ export function CardsSidebar({
           ))}
         </View>
         {isAuthenticated ? (
-          <Button onPress={() => router.push('/cards/studio')}>Create a card</Button>
+          <View className="gap-xs">
+            <Button onPress={() => router.push('/cards/studio')}>Create a card</Button>
+            <Button variant="secondary" onPress={() => router.push('/cards/generate' as never)}>
+              Generate from photo
+            </Button>
+          </View>
         ) : (
           <SignInPrompt message="Sign in to open Card Studio" className="items-start py-xs" />
         )}
@@ -90,7 +95,7 @@ export function CardsSidebar({
               key={issue.id}
               title={card.title}
               meta={card.athlete?.displayName ?? 'Claimed'}
-              href={{ pathname: '/cards/[cardId]', params: { cardId: card.id } }}
+              href={{ pathname: '/cards/[cardId]', params: { cardId: card.id, source: 'CARD_STUDIO' } }}
             />
           ))}
         </SidebarPanel>

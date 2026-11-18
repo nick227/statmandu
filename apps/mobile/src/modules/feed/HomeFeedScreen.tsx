@@ -25,6 +25,7 @@ import { ConnectedVideoCard } from '@/modules/media/ConnectedVideoCard'
 import { ConnectedCardDropSection } from '@/modules/cards/ConnectedCardDropSection'
 import { ConnectedFullScreenMediaViewer } from '@/modules/media/ConnectedFullScreenMediaViewer'
 import { Button } from '@/shared/ui/Button'
+import { Text } from '@/shared/ui/Text'
 import { RankingsSkeleton } from '@/modules/leaderboards/RankingsSkeleton'
 import { ChampionRibbon, PodiumStrip, ShowcaseMosaic } from '@/modules/leaderboards/RankingsShowcase'
 import { AthleteSpotlightCardLink, TeamSpotlightCardLink } from '@/modules/leaderboards/SpotlightCardLinks'
@@ -94,19 +95,93 @@ export function HomeFeedScreen() {
 
   const mainColumn = (
     <View className="gap-md">
-      <PlatformAuthorityBand {...home.authority} />
-
-      {home.scoreboardGames.length > 0 ? (
+      {/* Athlete-first opening: identity and performance land in the first
+          screenful before platform messaging or secondary editorial. */}
+      {home.featuredAthlete ? (
         <ContentSection
-          title={copy.scores.title}
-          subtitle={copy.scores.subtitle}
-          href={{ pathname: '/scores' }}
-          linkLabel={copy.linkLabels.scores}
+          title="Athlete to watch"
+          subtitle="The player setting the pace right now."
+          href={{ pathname: '/players' }}
+          linkLabel={copy.linkLabels.seeAll}
         >
-          <HomeScoresStrip games={home.scoreboardGames} />
+          <AthleteSpotlightCardLink
+            entry={home.featuredAthlete}
+            sportSlug={HOME_SPORT_SLUG}
+            size="large"
+            eyebrow={copy.athletes.champion}
+          />
+          {home.risingAthletes.length > 0 ? (
+            <View className="gap-sm pt-sm">
+              <Text className="font-semibold">Trending athletes</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-sm">
+                {home.risingAthletes.map((entry) => (
+                  <AthleteSpotlightCardLink key={entry.seasonStat.id} entry={entry} sportSlug={HOME_SPORT_SLUG} size="small" className="w-40" />
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
         </ContentSection>
       ) : null}
 
+      {/* Scores answer what happened before the user reaches editorial. */}
+      <ContentSection
+        title={copy.games.title}
+        subtitle={copy.games.subtitle}
+        href={{ pathname: '/games' }}
+        linkLabel={copy.linkLabels.scores}
+      >
+        {home.scoreboardGames.length > 0 ? <HomeScoresStrip games={home.scoreboardGames} /> : null}
+        {home.featuredGame ? (
+          <GameSpotlightCardLink game={home.featuredGame} size="large" />
+        ) : null}
+        {home.recentGames.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-sm">
+            {home.recentGames.map((game) => (
+              <GameSpotlightCardLink key={game.id} game={game} size="small" className={home.layout.railCardWidth} />
+            ))}
+          </ScrollView>
+        ) : null}
+      </ContentSection>
+
+      <ConnectedCardDropSection seeAllHref={{ pathname: '/cards' }} />
+
+      {home.podiumPlayers.length > 0 ? (
+        <ContentSection title="Leaderboard" subtitle="A quick look at the season's top performers." href={{ pathname: '/explore' }} linkLabel="View leaderboard">
+          <PodiumStrip entries={home.podiumPlayers} sportSlug={HOME_SPORT_SLUG} />
+        </ContentSection>
+      ) : null}
+
+      {/* 4. Featured Teams — supporting pillar: one featured item + one rail. */}
+      {home.featuredTeam ? (
+        <ContentSection
+          title={copy.teams.title}
+          subtitle={copy.teams.subtitle}
+          href={{ pathname: '/teams' }}
+          linkLabel={copy.linkLabels.allTeams}
+        >
+          <TeamSpotlightCardLink
+            entry={home.featuredTeam}
+            sportSlug={HOME_SPORT_SLUG}
+            size="large"
+            eyebrow={copy.teams.featuredEyebrow}
+          />
+          {home.risingTeams.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-sm">
+              {home.risingTeams.map((entry) => (
+                <TeamSpotlightCardLink
+                  key={entry.seasonStat.id}
+                  entry={entry}
+                  sportSlug={HOME_SPORT_SLUG}
+                  size="small"
+                  className={home.layout.railCardWidth}
+                />
+              ))}
+            </ScrollView>
+          ) : null}
+        </ContentSection>
+      ) : null}
+
+      {/* 5. Videos — editorial. */}
       <ContentSection
         title={copy.videos.featured.title}
         subtitle={copy.videos.featured.subtitle}
@@ -129,6 +204,7 @@ export function HomeFeedScreen() {
         )}
       </ContentSection>
 
+      {/* 6. Articles — editorial. */}
       <ContentSection
         title={copy.articles.title}
         subtitle={copy.articles.subtitle}
@@ -146,51 +222,7 @@ export function HomeFeedScreen() {
         )}
       </ContentSection>
 
-      {home.featuredAthlete ? (
-        <ContentSection
-          title={copy.athletes.title}
-          subtitle={copy.athletes.subtitle}
-          href={{ pathname: '/explore' }}
-          linkLabel={copy.linkLabels.seeAll}
-        >
-          <AthleteSpotlightCardLink
-            entry={home.featuredAthlete}
-            sportSlug={HOME_SPORT_SLUG}
-            size="large"
-            eyebrow={copy.athletes.champion}
-          />
-          <ChampionRibbon
-            sportSlug={HOME_SPORT_SLUG}
-            stat={HOME_PLAYER_STAT}
-            entry={home.featuredAthlete}
-            statLabel={copy.athletes.ribbonStat}
-            rankLabel={`${copy.athletes.ribbonRank} #${home.featuredAthlete.rank}`}
-          />
-        </ContentSection>
-      ) : null}
-
-      {home.podiumPlayers.length > 0 ? (
-        <ContentSection title={copy.athletes.podium} subtitle={copy.athletes.podiumSubtitle}>
-          <PodiumStrip entries={home.podiumPlayers} sportSlug={HOME_SPORT_SLUG} />
-        </ContentSection>
-      ) : null}
-
-      {home.risingAthletes.length > 0 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-sm">
-          {home.risingAthletes.map((entry) => (
-            <AthleteSpotlightCardLink
-              key={entry.player.id}
-              entry={entry}
-              sportSlug={HOME_SPORT_SLUG}
-              size="small"
-              className={home.layout.railCardWidth}
-            />
-          ))}
-        </ScrollView>
-      ) : null}
-
-      {midAd ? <AdPlaceholder slot={midAd} /> : null}
-
+      {/* 7. Community — editorial, closes out the pillar sections. */}
       <ContentSection title={copy.community.title} subtitle={copy.community.subtitle}>
         <CommunityPulseMetrics metrics={home.communityMetrics} />
         <View className="gap-sm pt-sm">
@@ -204,58 +236,6 @@ export function HomeFeedScreen() {
           )}
         </View>
       </ContentSection>
-
-      {home.liveShowcase ? (
-        <ShowcaseMosaic index={0} list={home.liveShowcase} sportSlug={HOME_SPORT_SLUG} />
-      ) : home.featuredGame ? (
-        <ContentSection title={copy.games.title} subtitle={copy.games.subtitle}>
-          <GameSpotlightCardLink game={home.featuredGame} size="large" />
-        </ContentSection>
-      ) : null}
-
-      {home.recentGames.length > 0 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-sm">
-          {home.recentGames.map((game) => (
-            <GameSpotlightCardLink key={game.id} game={game} size="small" className={home.layout.railCardWidth} />
-          ))}
-        </ScrollView>
-      ) : null}
-
-      <ConnectedCardDropSection />
-
-      {home.featuredTeam ? (
-        <ContentSection
-          title={copy.teams.title}
-          subtitle={copy.teams.subtitle}
-          href={{ pathname: '/teams' }}
-          linkLabel={copy.linkLabels.allTeams}
-        >
-          <TeamSpotlightCardLink
-            entry={home.featuredTeam}
-            sportSlug={HOME_SPORT_SLUG}
-            size="large"
-            eyebrow={copy.teams.featuredEyebrow}
-          />
-        </ContentSection>
-      ) : null}
-
-      {home.risingTeams.length > 0 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-sm">
-          {home.risingTeams.map((entry) => (
-            <TeamSpotlightCardLink
-              key={entry.team.id}
-              entry={entry}
-              sportSlug={HOME_SPORT_SLUG}
-              size="small"
-              className={home.layout.railCardWidth}
-            />
-          ))}
-        </ScrollView>
-      ) : null}
-
-      {home.reboundShowcase ? (
-        <ShowcaseMosaic index={1} list={home.reboundShowcase} sportSlug={HOME_SPORT_SLUG} />
-      ) : null}
 
       <PlatformPitchCard {...home.platformPitch} />
 

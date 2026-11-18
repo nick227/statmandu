@@ -43,7 +43,7 @@ export const HOME_USAGE_CTAS: UsageCta[] = [
     id: 'enter',
     title: 'Score a game',
     description: 'Join live capture from the sideline.',
-    href: { pathname: '/scores' },
+    href: { pathname: '/games' },
     eyebrow: 'Teams',
   },
   {
@@ -115,7 +115,7 @@ export const HOME_SECTION_COPY = {
     subtitle: 'Recaps and reporting from the community.',
   },
   linkLabels: {
-    seeAll: 'Search & rankings',
+    seeAll: 'See all athletes',
     allVideos: 'All videos',
     allArticles: 'All articles',
     allTeams: 'All teams',

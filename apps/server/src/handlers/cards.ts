@@ -14,7 +14,7 @@ export async function createCard(request: any, reply: any) {
 
 export async function listRecentPublicCards(request: any, reply: any) {
   const user = await optionalUser(request)
-  const cards = await cardService.listRecentPublicCards(user?.id)
+  const cards = await cardService.listRecentPublicCards(user?.id, request.query?.sort)
   return reply.send({ data: cards })
 }
 
@@ -56,6 +56,36 @@ export async function listMyCards(request: any, reply: any) {
 }
 
 export async function markCardDownloaded(request: any, reply: any) {
-  const issue = await cardService.markCardDownloaded(request.params.issueId, request.user.id, request.user.role === 'ADMIN')
+  const issue = await cardService.markCardDownloaded(
+    request.params.issueId,
+    request.user.id,
+    request.user.role === 'ADMIN',
+    request.body?.context
+  )
   return reply.send({ data: issue })
+}
+
+export async function generateCardBatch(request: any, reply: any) {
+  const cards = await cardService.generateBatch(actor(request), request.params.athleteProfileId, request.body)
+  return reply.status(201).send({ data: cards })
+}
+
+export async function getCardDistribution(request: any, reply: any) {
+  const distribution = await cardService.getDistribution(actor(request), request.params.athleteProfileId)
+  return reply.send({ data: distribution })
+}
+
+export async function createCardSave(request: any, reply: any) {
+  const save = await cardService.saveCard(request.user.id, request.body.cardTemplateId)
+  return reply.status(201).send({ data: save })
+}
+
+export async function deleteCardSave(request: any, reply: any) {
+  await cardService.unsaveCard(request.user.id, request.params.saveId)
+  return reply.send({ data: null })
+}
+
+export async function listMyCardSaves(request: any, reply: any) {
+  const saves = await cardService.listMySavedCards(request.user.id)
+  return reply.send({ data: saves })
 }

@@ -1,6 +1,6 @@
 import { View } from 'react-native'
 import { Stack, Link, type Href } from 'expo-router'
-import { ShieldCheck, Users, GraduationCap, CalendarClock, Newspaper, ScrollText, type LucideIcon } from 'lucide-react-native'
+import { ShieldCheck, Users, GraduationCap, CalendarClock, Newspaper, ScrollText, DatabaseZap, type LucideIcon } from 'lucide-react-native'
 import { Screen } from '@/shared/layout'
 import { Card, CardContent } from '@/shared/ui/Card'
 import { Text } from '@/shared/ui/Text'
@@ -92,6 +92,7 @@ export function AdminHubScreen() {
         <AdminLinkCard href={'/admin/games' as Href} title="Create/manage games" subtitle="Schedule, jump into capture, finalize." icon={CalendarClock} />
         <AdminLinkCard href={'/admin/feed' as Href} title="Seed feed" subtitle="Create feed items and attach media." icon={Newspaper} />
         <AdminLinkCard href={'/admin/audit' as Href} title="Audit log" subtitle="Accountability for admin actions." icon={ScrollText} />
+        <AdminLinkCard href={'/admin/import' as Href} title="Import sports data" subtitle="Preview and import provider statistics." icon={DatabaseZap} />
       </View>
 
       <Button variant="secondary" onPress={() => metrics.refetch()}>
@@ -100,4 +101,3 @@ export function AdminHubScreen() {
     </Screen>
   )
 }
-

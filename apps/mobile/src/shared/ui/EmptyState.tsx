@@ -13,10 +13,10 @@ export interface EmptyStateProps {
 export function EmptyState({ icon: Icon, title, description, className }: EmptyStateProps) {
   const mutedTextColor = useNativeColor('mutedText')
   return (
-    <View className={className ?? 'items-center justify-center py-xxl px-lg gap-sm'}>
-      <Icon size={32} color={mutedTextColor} />
-      <Text className="font-semibold text-center">{title}</Text>
-      {description ? <Text variant="caption" className="text-center">{description}</Text> : null}
+    <View className={className ?? 'min-h-56 items-center justify-center px-lg py-xxl gap-sm'}>
+      <Icon size={24} color={mutedTextColor} />
+      <Text accessibilityRole="header" className="font-semibold text-center" numberOfLines={2}>{title}</Text>
+      {description ? <Text variant="caption" className="max-w-sm text-center" numberOfLines={3}>{description}</Text> : null}
     </View>
   )
 }

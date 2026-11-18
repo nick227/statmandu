@@ -62,10 +62,20 @@ export class StatsService {
     const team = await db.team.findUnique({ where: { slug: teamSlug } })
     if (!team) throw { statusCode: 404, message: 'Team not found' }
 
-    return db.teamSeasonStat.findMany({
+    const rows = await db.teamSeasonStat.findMany({
       where: { teamId: team.id },
-      orderBy: { createdAt: 'desc' },
+      include: { season: true },
+      // createdAt alone is accidentally-correct with one season — once a
+      // team has stat history, "current first" has to come from the
+      // season itself, not insertion order.
+      orderBy: [{ season: { isActive: 'desc' } }, { season: { startDate: 'desc' } }],
     })
+    return rows.map(({ season, ...rest }) => ({
+      ...rest,
+      seasonName: season.name,
+      seasonSlug: season.slug,
+      seasonIsActive: season.isActive,
+    }))
   }
 
   async getPlayerLeaderboard(opts: { sportSlug: string; stat: string; seasonId?: string; limit?: number }) {
@@ -76,7 +86,7 @@ export class StatsService {
 
     const rows = await db.playerSeasonStat.findMany({
       where: {
-        ...(opts.seasonId ? { seasonId: opts.seasonId } : {}),
+        ...(opts.seasonId ? { seasonId: opts.seasonId } : { season: { isActive: true } }),
         player: { sport: { slug: opts.sportSlug } },
       },
       include: { player: { include: PLAYER_INCLUDE } },
@@ -102,20 +112,24 @@ export class StatsService {
 
     const rows = await db.teamSeasonStat.findMany({
       where: {
-        ...(opts.seasonId ? { seasonId: opts.seasonId } : {}),
+        ...(opts.seasonId ? { seasonId: opts.seasonId } : { season: { isActive: true } }),
         team: { sport: { slug: opts.sportSlug } },
       },
-      include: { team: { include: { league: true, sport: true } } },
+      include: { team: { include: { league: true, sport: true } }, season: true },
     })
 
     return rankRows(
       rows
-        .map((row) => ({
-          team: row.team,
-          seasonStat: row,
-          stat: opts.stat,
-          value: Number(readStatValue(definition, row as any, opts.stat) ?? 0),
-        }))
+        .map((row) => {
+          const { team, season, ...rest } = row
+          const seasonStat = { ...rest, seasonName: season.name, seasonSlug: season.slug, seasonIsActive: season.isActive }
+          return {
+            team,
+            seasonStat,
+            stat: opts.stat,
+            value: Number(readStatValue(definition, row as any, opts.stat) ?? 0),
+          }
+        })
         .sort((a, b) => b.value - a.value || a.team.name.localeCompare(b.team.name))
     ).slice(0, normalizeLeaderboardLimit(opts.limit))
   }

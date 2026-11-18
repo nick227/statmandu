@@ -40,15 +40,23 @@ export function AdminGamesScreen() {
                   <Link href={{ pathname: '/games/[gameId]', params: { gameId: g.id } }} asChild>
                     <Text variant="caption" className="underline">Detail</Text>
                   </Link>
-                  <Link href={{ pathname: '/games/[gameId]/live', params: { gameId: g.id } }} asChild>
-                    <Text variant="caption" className="underline">Live</Text>
-                  </Link>
+                  {g.status === 'SCHEDULED' || g.status === 'LIVE' ? (
+                    <Link href={{ pathname: '/games/[gameId]/live', params: { gameId: g.id, intent: 'TEAM_SCORER' } }} asChild>
+                      <Text variant="caption" className="underline">Score</Text>
+                    </Link>
+                  ) : (
+                    <Link href={{ pathname: '/games/[gameId]/score', params: { gameId: g.id } }} asChild>
+                      <Text variant="caption" className="underline">Add score</Text>
+                    </Link>
+                  )}
                   <Link href={{ pathname: '/games/[gameId]/spectate', params: { gameId: g.id } }} asChild>
                     <Text variant="caption" className="underline">Spectate</Text>
                   </Link>
-                  <Link href={{ pathname: '/games/[gameId]/broadcast', params: { gameId: g.id } }} asChild>
-                    <Text variant="caption" className="underline">Broadcast</Text>
-                  </Link>
+                  {g.status === 'SCHEDULED' || g.status === 'LIVE' ? (
+                    <Link href={{ pathname: '/games/[gameId]/live', params: { gameId: g.id, intent: 'BROADCASTER' } }} asChild>
+                      <Text variant="caption" className="underline">Broadcast</Text>
+                    </Link>
+                  ) : null}
                 </View>
               </CardContent>
             </Card>
@@ -58,4 +66,3 @@ export function AdminGamesScreen() {
     </Screen>
   )
 }
-

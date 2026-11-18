@@ -9,7 +9,6 @@ type PlayerListParams = {
   classYear?: string
   limit?: number
 }
-
 export function usePlayers(params?: PlayerListParams) {
   return useInfiniteQuery({
     queryKey: ['players', params],
@@ -80,5 +79,18 @@ export function useUpdatePlayer(playerId: string) {
       queryClient.invalidateQueries({ queryKey: ['player', playerId] })
       queryClient.invalidateQueries({ queryKey: ['players'] })
     },
+  })
+}
+
+export function usePlayerAggregate(playerId: string) {
+  return useQuery({
+    queryKey: ['players', playerId, 'aggregate'],
+    queryFn: async () => {
+      const client = getApiClient()
+      const { data, error } = await client.GET('/players/{playerId}/aggregate', { params: { path: { playerId } } })
+      if (error) throw error
+      return data
+    },
+    staleTime: 5 * 60 * 1000,
   })
 }

@@ -13,7 +13,7 @@ function gameLabel(game: Game) {
   return `${home} vs ${away}`
 }
 
-/** Compact scoreboard strip — entry jobs stay on /scores, not duplicated here. */
+/** Compact scoreboard strip — game jobs stay on /games, not duplicated here. */
 export function HomeScoresStrip({ games }: { games: Game[] }) {
   if (games.length === 0) return null
 
@@ -34,7 +34,7 @@ export function HomeScoresStrip({ games }: { games: Game[] }) {
           </Pressable>
         </Link>
       ))}
-      <Link href="/scores" asChild>
+      <Link href="/games" asChild>
         <Button variant="secondary">Score, broadcast & watch</Button>
       </Link>
     </View>

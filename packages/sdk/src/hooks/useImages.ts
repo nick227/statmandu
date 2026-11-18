@@ -28,12 +28,18 @@ export function useUploadImage() {
       width?: number
       height?: number
     }) => {
+      // Fetching the asset URI into a real Blob (rather than appending the RN
+      // {uri,name,type} shorthand directly) works identically on native and
+      // web — the browser's real FormData doesn't understand that shorthand,
+      // so appending it there silently sends no file part at all.
+      const fileBlob = await (await fetch(body.file.uri)).blob()
+
       const formData = new FormData()
       formData.append('targetType', body.targetType)
       formData.append('targetId', body.targetId)
       formData.append('usage', body.usage)
       formData.append('contentType', body.contentType)
-      formData.append('file', body.file as any)
+      formData.append('file', fileBlob, body.file.name)
       if (body.originalFilename) formData.append('originalFilename', body.originalFilename)
       if (body.width) formData.append('width', body.width.toString())
       if (body.height) formData.append('height', body.height.toString())

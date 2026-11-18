@@ -48,7 +48,7 @@ CardGameTeamSummary:
 
 CardGameSummary:
   type: object
-  required: [id, scheduledAt, status, teams]
+  required: [id, scheduledAt, status, teams, seasonName]
   properties:
     id: { type: string }
     scheduledAt: { type: string, format: date-time }
@@ -56,6 +56,7 @@ CardGameSummary:
     teams:
       type: array
       items: { $ref: '#/CardGameTeamSummary' }
+    seasonName: { type: ['string', 'null'] }
 
 CardImageSummary:
   type: object
@@ -239,3 +240,72 @@ CardIssueDownload:
   properties:
     issue: { $ref: '#/CardIssue' }
     authenticity: { $ref: '#/CardAuthenticityPayload' }
+
+GenerateCardBatchInput:
+  type: object
+  required: [sourceImageAssetId]
+  properties:
+    sourceImageAssetId: { type: string }
+    # Omit to generate the athlete's full sport-standard pose set.
+    poseIds:
+      type: array
+      items: { type: string }
+    # Client-generated idempotency key — a retried/double-tapped request
+    # with the same key returns the existing batch instead of creating a
+    # second one.
+    batchRequestId: { type: string }
+
+CardDownloadContext:
+  type: string
+  enum: [PROFILE, HOME, EXPLORE, CARD_STUDIO, SHARED_LINK, DIRECT]
+
+MarkCardDownloadedInput:
+  type: object
+  properties:
+    context: { $ref: '#/CardDownloadContext' }
+
+CardDistributionContextCount:
+  type: object
+  required: [context, count]
+  properties:
+    context: { $ref: '#/CardDownloadContext' }
+    count: { type: integer }
+
+CardDistributionCardCount:
+  type: object
+  required: [card, count]
+  properties:
+    card: { $ref: '#/Card' }
+    count: { type: integer }
+
+CardDistribution:
+  type: object
+  required: [totalDownloads, uniqueDownloaders, byContext, byCard]
+  properties:
+    totalDownloads: { type: integer }
+    uniqueDownloaders: { type: integer }
+    byContext:
+      type: array
+      items: { $ref: '#/CardDistributionContextCount' }
+    byCard:
+      type: array
+      items: { $ref: '#/CardDistributionCardCount' }
+
+CardSave:
+  type: object
+  required: [id, userId, cardTemplateId, createdAt]
+  properties:
+    id: { type: string }
+    userId: { type: string }
+    cardTemplateId: { type: string }
+    createdAt: { type: string, format: date-time }
+    card:
+      oneOf:
+        - $ref: '#/Card'
+        - type: 'null'
+
+CreateCardSaveInput:
+  type: object
+  required: [cardTemplateId]
+  properties:
+    cardTemplateId: { type: string }

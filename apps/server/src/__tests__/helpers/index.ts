@@ -10,6 +10,7 @@ import { resolve } from 'path'
 import { db } from '@statman/db'
 import * as handlers from '../../handlers'
 import { resetTestDatabase } from './setup'
+import { cardGenerationExecutor } from '../../jobs/GenerationExecutor'
 
 // Two seeded users available in every test — use testOtherUserId for
 // cross-user permission tests (e.g. "user A cannot delete user B's resource")
@@ -102,6 +103,9 @@ export function buildTestApp() {
       }
 
     app.post('/images/upload', { preHandler: securityHandlers.bearerAuth }, handlers.uploadImage)
+    // Mirrors index.ts's manual (non-glue) registration — serveUploadedImage
+    // does its own auth via optionalUser() rather than a preHandler.
+    app.get('/uploads/images/*', handlers.serveUploadedImage)
 
     const glueSpec = structuredClone(await getSpec())
     delete glueSpec.paths?.['/images/upload']
@@ -121,7 +125,10 @@ export function buildTestApp() {
     await seedTestUsers()
   })
 
-  afterAll(() => app.close())
+  afterAll(async () => {
+    await cardGenerationExecutor.drain()
+    await app.close()
+  })
 
   return app
 }

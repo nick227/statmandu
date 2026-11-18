@@ -1,6 +1,8 @@
 import { db } from '../src/client'
 import { listSportDefinitions } from '@statman/sports'
-import bcrypt from 'bcryptjs'
+import { SeedClock, DEVELOPMENT_PASSWORD, existingOrNewPasswordHash, slugify } from './seed/helpers'
+import type { SeedConfig } from './seed/config'
+import { seedIds } from './seed/ids'
 
 const FIRST_NAMES = [
   'Jayden', 'Marcus', 'Elijah', 'Noah', 'Aiden', 'Cameron', 'Isaiah', 'Xavier', 'Malik', 'Tyler',
@@ -46,16 +48,14 @@ const DEMO_VIDEO_POOL = [
   'uelHwf8o7_U',
 ] as const
 
-function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-}
+let seedClock = new SeedClock(new Date('2026-07-01T12:00:00.000Z'))
 
 function daysAgo(n: number) {
-  return new Date(Date.now() - n * 24 * 60 * 60 * 1000)
+  return seedClock.days(-n)
 }
 
 function daysFromNow(n: number) {
-  return new Date(Date.now() + n * 24 * 60 * 60 * 1000)
+  return seedClock.days(n)
 }
 
 // Deterministic-but-varied box score generator — re-running the seed script
@@ -94,13 +94,14 @@ function sourceStatusForStatLine(gameIndex: number, sideIndex: number, playerInd
   return 'OFFICIAL_SCORER_RECORDED'
 }
 
-async function main() {
-  console.log('Seeding...')
+export async function seedDemo(config: Pick<SeedConfig, 'referenceDate'>) {
+  seedClock = new SeedClock(config.referenceDate)
 
   // ── Users ──────────────────────────────────────────────────────────────
-  const passwordHash = await bcrypt.hash('password123', 12)
+  const existingDemoUser = await db.user.findUnique({ where: { email: 'admin@statman.dev' }, select: { passwordHash: true } })
+  const passwordHash = await existingOrNewPasswordHash(existingDemoUser?.passwordHash)
 
-  async function upsertDemoUser(opts: { email: string; username: string; displayName: string; role?: 'USER' | 'ADMIN' }) {
+  async function upsertDemoUser(opts: { id: string; email: string; username: string; displayName: string; role?: 'USER' | 'ADMIN' }) {
     return db.user.upsert({
       where: { email: opts.email },
       update: {
@@ -113,57 +114,65 @@ async function main() {
         },
       },
       create: {
+        id: opts.id,
         email: opts.email,
         passwordHash,
         role: opts.role ?? 'USER',
-        profile: { create: { username: opts.username, displayName: opts.displayName } },
+        profile: { create: { id: `${opts.id}-profile`, username: opts.username, displayName: opts.displayName } },
       },
     })
   }
 
   const admin = await upsertDemoUser({
+    id: seedIds.users.admin.id,
     email: 'admin@statman.dev',
     username: 'admin',
     displayName: 'Statman Admin',
     role: 'ADMIN',
   })
   const scorer = await upsertDemoUser({
+    id: seedIds.users.scorer.id,
     email: 'scorer@statman.dev',
     username: 'officialscorer',
     displayName: 'Olivia Official Scorer',
   })
   const teamScorer = await upsertDemoUser({
+    id: seedIds.users.manager.id,
     email: 'teamscorer@statman.dev',
     username: 'eastsidebook',
     displayName: 'Terry Team Scorer',
   })
   const broadcaster = await upsertDemoUser({
+    id: seedIds.users.reporter.id,
     email: 'broadcaster@statman.dev',
     username: 'riverradio',
     displayName: 'Blake Broadcaster',
   })
   const athleteUser = await upsertDemoUser({
+    id: seedIds.users.athlete.id,
     email: 'athlete@statman.dev',
     username: 'jaydenrios',
     displayName: 'Jayden Rios',
   })
   const fan1 = await upsertDemoUser({
+    id: seedIds.users.fan.id,
     email: 'fan1@statman.dev',
     username: 'hoopsfan',
     displayName: 'Sam the Superfan',
   })
   const fan2 = await upsertDemoUser({
+    id: seedIds.users.verifier.id,
     email: 'fan2@statman.dev',
     username: 'courtside',
     displayName: 'Riley Courtside',
   })
-  console.log(`✓ Users seeded: ${[admin, scorer, teamScorer, broadcaster, athleteUser, fan1, fan2].length} demo accounts (all password: password123)`)
+  console.log(`✓ Users: ${[admin, scorer, teamScorer, broadcaster, athleteUser, fan1, fan2].length} deterministic demo accounts`)
 
   // ── Sport / league / season / schools / teams ───────────────────────────
   const sport = await db.sport.upsert({
     where: { slug: 'basketball' },
     update: {},
-    create: { slug: 'basketball', name: 'Basketball' },
+    create: { id: seedIds.sport.basketball, slug: 'basketball', name: 'Basketball' },
   })
 
   const starterSports = await Promise.all(
@@ -181,43 +190,73 @@ async function main() {
   const league = await db.league.upsert({
     where: { slug: 'demo-league' },
     update: {},
-    create: { sportId: sport.id, slug: 'demo-league', name: 'Statman Demo League' },
+    create: { id: seedIds.league.basketball, sportId: sport.id, slug: 'demo-league', name: 'Statman Demo League' },
   })
 
   const season = await db.season.upsert({
     where: { slug: '2025-26' },
     update: {},
-    create: { leagueId: league.id, slug: '2025-26', name: '2025-26 Season', isActive: true },
+    create: { id: seedIds.seasons.current, leagueId: league.id, slug: '2025-26', name: '2025-26 Season', isActive: true },
   })
 
   const schools = await Promise.all([
     db.school.upsert({
       where: { slug: 'eastside-high' },
       update: {},
-      create: { slug: 'eastside-high', name: 'Eastside High', city: 'Riverton', state: 'CA' },
+      create: { id: seedIds.schools.eastside, slug: 'eastside-high', name: 'Eastside High', city: 'Riverton', state: 'CA' },
     }),
     db.school.upsert({
       where: { slug: 'westview-high' },
       update: {},
-      create: { slug: 'westview-high', name: 'Westview High', city: 'Riverton', state: 'CA' },
+      create: { id: seedIds.schools.westview, slug: 'westview-high', name: 'Westview High', city: 'Riverton', state: 'CA' },
+    }),
+    db.school.upsert({
+      where: { slug: 'lakeview-academy' },
+      update: { name: 'Lakeview Academy', city: 'Riverton', state: 'CA' },
+      create: { id: seedIds.schools.lakeview, slug: 'lakeview-academy', name: 'Lakeview Academy', city: 'Riverton', state: 'CA' },
+    }),
+    db.school.upsert({
+      where: { slug: 'cedar-ridge-prep' },
+      update: { name: 'Cedar Ridge Prep', city: 'Riverton', state: 'CA' },
+      create: { id: seedIds.schools.cedar, slug: 'cedar-ridge-prep', name: 'Cedar Ridge Prep', city: 'Riverton', state: 'CA' },
     }),
   ])
 
   const teams = await Promise.all([
     db.team.upsert({
       where: { slug: 'eastside-ballers' },
-      update: {},
+      update: { name: 'Eastside Ballers', city: 'Riverton', logoUrl: 'https://placehold.co/256x256/1d4ed8/ffffff?text=EB' },
       create: {
-        sportId: sport.id, leagueId: league.id, schoolId: schools[0].id,
+        id: seedIds.teams.comets, sportId: sport.id, leagueId: league.id, schoolId: schools[0].id,
         slug: 'eastside-ballers', name: 'Eastside Ballers', city: 'Riverton',
+        logoUrl: 'https://placehold.co/256x256/1d4ed8/ffffff?text=EB',
+      },
+    }),
+    db.team.upsert({
+      where: { slug: 'lakeview-wolves' },
+      update: { name: 'Lakeview Wolves', city: 'Riverton', logoUrl: 'https://placehold.co/256x256/243047/ffffff?text=LW' },
+      create: {
+        id: seedIds.teams.wolves, sportId: sport.id, leagueId: league.id, schoolId: schools[2].id,
+        slug: 'lakeview-wolves', name: 'Lakeview Wolves', city: 'Riverton',
+        logoUrl: 'https://placehold.co/256x256/243047/ffffff?text=LW',
+      },
+    }),
+    db.team.upsert({
+      where: { slug: 'cedar-monarchs' },
+      update: { name: 'Cedar Monarchs', city: 'Riverton', logoUrl: 'https://placehold.co/256x256/7c3d13/ffffff?text=CM' },
+      create: {
+        id: seedIds.teams.monarchs, sportId: sport.id, leagueId: league.id, schoolId: schools[3].id,
+        slug: 'cedar-monarchs', name: 'Cedar Monarchs', city: 'Riverton',
+        logoUrl: 'https://placehold.co/256x256/7c3d13/ffffff?text=CM',
       },
     }),
     db.team.upsert({
       where: { slug: 'westview-hawks' },
-      update: {},
+      update: { name: 'Westview Hawks', city: 'Riverton', logoUrl: 'https://placehold.co/256x256/b91c1c/ffffff?text=WH' },
       create: {
-        sportId: sport.id, leagueId: league.id, schoolId: schools[1].id,
+        id: seedIds.teams.falcons, sportId: sport.id, leagueId: league.id, schoolId: schools[1].id,
         slug: 'westview-hawks', name: 'Westview Hawks', city: 'Riverton',
+        logoUrl: 'https://placehold.co/256x256/b91c1c/ffffff?text=WH',
       },
     }),
   ])
@@ -227,47 +266,84 @@ async function main() {
   const players: Array<{ id: string; athleteProfileId: string; teamId: string; name: string }> = []
 
   for (let i = 0; i < 20; i++) {
-    const team = teams[i % 2]!
+    const team = teams[i % teams.length]!
     const firstName = FIRST_NAMES[i]!
     const lastName = LAST_NAMES[i]!
     const slug = slugify(`${firstName}-${lastName}`)
+    const manifestSlug = slug as keyof typeof seedIds.athleteProfiles
     const jerseyNumber = Math.floor(i / 2) + 1
 
     // Two players are pre-claimed/pre-requested so Claims screens have real content.
-    const claimedByUserId = i === 1 ? athleteUser.id : undefined
+    const claimedByUserId = i === 0 ? athleteUser.id : undefined
+
+    if (claimedByUserId) {
+      await db.athleteProfile.updateMany({
+        where: { claimedByUserId, slug: { not: slug } },
+        data: { claimedByUserId: null },
+      })
+    }
 
     const athleteProfile = await db.athleteProfile.upsert({
       where: { slug },
-      update: {},
-      create: {
-        slug, firstName, lastName,
-        hometown: 'Riverton, CA',
+      update: {
+        firstName,
+        lastName,
+        hometown: i === 19 ? null : 'Riverton, CA',
+        bio: i === 18 ? 'Two-way wing with a deliberately long development biography used to verify profile text clamping across compact mobile surfaces.' : null,
         sourceStatus: SOURCE_STATUSES[i]!,
         claimedByUserId,
+        createdAt: seedClock.days(-60 + i),
+      },
+      create: {
+        id: seedIds.athleteProfiles[manifestSlug], slug, firstName, lastName,
+        hometown: i === 19 ? null : 'Riverton, CA',
+        bio: i === 18 ? 'Two-way wing with a deliberately long development biography used to verify profile text clamping across compact mobile surfaces.' : null,
+        sourceStatus: SOURCE_STATUSES[i]!,
+        claimedByUserId,
+        createdAt: seedClock.days(-60 + i),
       },
     })
 
     const player = await db.player.upsert({
       where: { athleteProfileId_sportId: { athleteProfileId: athleteProfile.id, sportId: sport.id } },
-      update: {},
+      update: {
+        position: POSITIONS[i % POSITIONS.length],
+        classYear: CLASS_YEARS[i % CLASS_YEARS.length],
+        jerseyNumber,
+        createdAt: seedClock.days(-60 + i),
+      },
       create: {
+        id: seedIds.players[manifestSlug],
         athleteProfileId: athleteProfile.id,
         sportId: sport.id,
         position: POSITIONS[i % POSITIONS.length],
         classYear: CLASS_YEARS[i % CLASS_YEARS.length],
         jerseyNumber,
+        createdAt: seedClock.days(-60 + i),
       },
     })
 
+    await db.rosterMembership.updateMany({
+      where: { playerId: player.id, seasonId: season.id, teamId: { not: team.id } },
+      data: { isActive: false, leftAt: seedClock.days(-30) },
+    })
     await db.rosterMembership.upsert({
       where: { playerId_teamId_seasonId: { playerId: player.id, teamId: team.id, seasonId: season.id } },
-      update: {},
-      create: { playerId: player.id, teamId: team.id, seasonId: season.id, jerseyNumber },
+      update: { jerseyNumber, isActive: true, leftAt: null },
+      create: { id: `seed-roster-current-${String(i + 1).padStart(2, '0')}`, playerId: player.id, teamId: team.id, seasonId: season.id, jerseyNumber },
     })
 
     players.push({ id: player.id, athleteProfileId: athleteProfile.id, teamId: team.id, name: `${firstName} ${lastName}` })
   }
-  console.log(`✓ Players seeded: ${players.length} (10 per team)`)
+  await db.rosterMembership.upsert({
+    where: { playerId_teamId_seasonId: { playerId: players[19]!.id, teamId: teams[2]!.id, seasonId: season.id } },
+    update: { isActive: false, joinedAt: seedClock.days(-180), leftAt: seedClock.days(-30) },
+    create: {
+      id: 'seed-roster-former-transfer', playerId: players[19]!.id, teamId: teams[2]!.id, seasonId: season.id,
+      jerseyNumber: 14, isActive: false, joinedAt: seedClock.days(-180), leftAt: seedClock.days(-30),
+    },
+  })
+  console.log(`✓ Athletes: ${players.length} across ${teams.length} teams`)
 
   const eastsidePlayers = players.filter((p) => p.teamId === teams[0].id)
   const westviewPlayers = players.filter((p) => p.teamId === teams[1].id)
@@ -485,6 +561,79 @@ async function main() {
   disputeCount = await db.dispute.count({ where: { id: 'seed-dispute-final-game-2-assists' } })
   console.log(`✓ Finalized games: 2 (with season stats + team records + ${disputeCount} dispute)`)
 
+  // ── Historical season (2024-25) — proves out "scan through years" ──────
+  // Team page now supports switching between seasons for Roster/Games/Stats.
+  // Only team-level history is seeded here (season record, a roster
+  // snapshot, and a couple of lightweight final games) — no historical
+  // PlayerSeasonStat/box scores, matching the team-scoped ask this feature
+  // was built for. Games are direct FINAL inserts (score only, no
+  // GameEvent/GameStatLine) since Team's Games tab has never shown
+  // play-by-play, unlike seedFinalizedGame's live-event simulation above.
+  const pastSeason = await db.season.upsert({
+    where: { slug: '2024-25' },
+    update: {},
+    create: {
+      id: seedIds.seasons.prior,
+      leagueId: league.id,
+      slug: '2024-25',
+      name: '2024-25 Season',
+      isActive: false,
+      startDate: new Date('2024-11-01'),
+      endDate: new Date('2025-03-01'),
+    },
+  })
+
+  for (const [i, p] of players.entries()) {
+    const pastJerseyNumber = Math.floor(i / 2) + 11
+    await db.rosterMembership.upsert({
+      where: { playerId_teamId_seasonId: { playerId: p.id, teamId: p.teamId, seasonId: pastSeason.id } },
+      update: {},
+      create: { id: `seed-roster-prior-${String(i + 1).padStart(2, '0')}`, playerId: p.id, teamId: p.teamId, seasonId: pastSeason.id, jerseyNumber: pastJerseyNumber },
+    })
+  }
+
+  const pastRecords = new Map([
+    [teams[0].id, { wins: 14, losses: 8, pointsFor: 1584, pointsAgainst: 1409 }],
+    [teams[1].id, { wins: 10, losses: 12, pointsFor: 1467, pointsAgainst: 1522 }],
+    [teams[2].id, { wins: 12, losses: 10, pointsFor: 1510, pointsAgainst: 1488 }],
+    [teams[3].id, { wins: 8, losses: 14, pointsFor: 1398, pointsAgainst: 1540 }],
+  ])
+  for (const team of teams) {
+    const record = pastRecords.get(team.id)!
+    await db.teamSeasonStat.upsert({
+      where: { teamId_seasonId: { teamId: team.id, seasonId: pastSeason.id } },
+      update: { ...record, stats: record },
+      create: { teamId: team.id, seasonId: pastSeason.id, ...record, stats: record },
+    })
+  }
+
+  const pastGames = [
+    { id: 'seed-past-game-1', scheduledAt: new Date('2024-12-06'), homeTeam: teams[0], awayTeam: teams[1], homeScore: 61, awayScore: 54 },
+    { id: 'seed-past-game-2', scheduledAt: new Date('2025-01-24'), homeTeam: teams[1], awayTeam: teams[0], homeScore: 58, awayScore: 63 },
+  ]
+  for (const g of pastGames) {
+    const existing = await db.game.findUnique({ where: { id: g.id } })
+    if (existing) continue
+    await db.game.create({
+      data: {
+        id: g.id,
+        sportId: sport.id,
+        seasonId: pastSeason.id,
+        scheduledAt: g.scheduledAt,
+        status: 'FINAL',
+        startedAt: g.scheduledAt,
+        finalizedAt: g.scheduledAt,
+        gameTeams: {
+          create: [
+            { teamId: g.homeTeam.id, isHome: true, finalScore: g.homeScore },
+            { teamId: g.awayTeam.id, isHome: false, finalScore: g.awayScore },
+          ],
+        },
+      },
+    })
+  }
+  console.log(`✓ Historical season: 2024-25 (team records, roster snapshot, ${pastGames.length} games)`)
+
   // ── Live game (in progress, with real events already submitted) ────────
   const liveGame = await db.game.upsert({
     where: { id: 'seed-live-game' },
@@ -492,9 +641,9 @@ async function main() {
     create: {
       id: 'seed-live-game',
       sportId: sport.id, seasonId: season.id,
-      scheduledAt: new Date(),
+      scheduledAt: seedClock.referenceDate,
       status: 'LIVE',
-      startedAt: new Date(Date.now() - 20 * 60 * 1000),
+      startedAt: seedClock.minutes(-20),
       gameTeams: {
         create: [
           { teamId: teams[0].id, isHome: true },
@@ -543,7 +692,7 @@ async function main() {
           playerId: e.playerId,
           teamId: e.teamId,
           type: e.type,
-          clientTimestamp: new Date(Date.now() - (liveEvents.length - i) * 90 * 1000),
+          clientTimestamp: seedClock.minutes(-Math.ceil((liveEvents.length - i) * 1.5)),
           status: 'ACCEPTED',
         },
       })
@@ -641,6 +790,45 @@ async function main() {
     })
   }
   console.log(`✓ Media attached: ${mediaTargets.length} videos`)
+
+  // ── Athlete gallery photos ────────────────────────────────────────────────
+  // Deterministic picsum.photos seed URLs (no API key, stable per-athlete
+  // images) — same reasoning as Article.thumbnailUrl below, and same
+  // bypass-the-real-upload-pipeline tradeoff: these ImageAsset rows are
+  // inserted directly rather than routed through ImageService, so the
+  // usual objectKey/contentType/byteSize fields are filled with plausible
+  // constant values instead of real upload metadata. Every player gets 2
+  // photos so the new browsable hero carousel has real content on first
+  // run, not just the 11 players who also have a seeded video.
+  const galleryUploaders = [athleteUser, fan1, fan2]
+  let gallerySeeded = 0
+  for (const [index, p] of players.entries()) {
+    for (let photoIndex = 0; photoIndex < 2; photoIndex += 1) {
+      const id = `seed-gallery-${index}-${photoIndex}`
+      const uploadedByUserId = galleryUploaders[(index + photoIndex) % galleryUploaders.length]!.id
+      const url = `https://picsum.photos/seed/statman-athlete-${p.id}-${photoIndex}/1200/800`
+      await db.imageAsset.upsert({
+        where: { id },
+        update: { url, uploadedByUserId, deletedAt: null },
+        create: {
+          id,
+          targetType: 'ATHLETE_PROFILE',
+          targetId: p.athleteProfileId,
+          usage: 'GALLERY',
+          storageProvider: 'LOCAL',
+          objectKey: id,
+          url,
+          contentType: 'image/jpeg',
+          byteSize: 240000,
+          width: 1200,
+          height: 800,
+          uploadedByUserId,
+        },
+      })
+      gallerySeeded += 1
+    }
+  }
+  console.log(`✓ Gallery photos: ${gallerySeeded} across ${players.length} players`)
 
   // ── Source references / provenance evidence ──────────────────────────────
   const sourceReferences: Array<{
@@ -747,7 +935,7 @@ async function main() {
         url: source.url,
         importedAt: ['VERIFIED_TEAM_ACCOUNT', 'TEAM_MANAGER', 'OFFICIAL_SCORER', 'PLAYER_REPORT', 'SPECTATOR_REPORT', 'MULTI_SPECTATOR_REPORT'].includes(source.sourceType)
           ? null
-          : new Date(),
+          : seedClock.referenceDate,
       },
       create: {
         id: source.id,
@@ -758,7 +946,7 @@ async function main() {
         url: source.url,
         importedAt: ['VERIFIED_TEAM_ACCOUNT', 'TEAM_MANAGER', 'OFFICIAL_SCORER', 'PLAYER_REPORT', 'SPECTATOR_REPORT', 'MULTI_SPECTATOR_REPORT'].includes(source.sourceType)
           ? null
-          : new Date(),
+          : seedClock.referenceDate,
       },
     })
   }
@@ -850,18 +1038,23 @@ async function main() {
   console.log(`✓ Reactions: ${reactions.length}`)
 
   // ── Profile claim (pending, for the admin claims queue) ──────────────────
-  const claimTarget = players[0]!
-  const existingClaim = await db.claim.findFirst({ where: { athleteProfileId: claimTarget.athleteProfileId, status: 'PENDING' } })
-  if (!existingClaim) {
-    await db.claim.create({
-      data: {
-        athleteProfileId: claimTarget.athleteProfileId,
-        requestedByUserId: fan1.id,
-        verificationNote: `This is me — I played JV last year at ${schools[0].name} and varsity this season.`,
-        status: 'PENDING',
-      },
-    })
-  }
+  const claimTarget = players[1]!
+  await db.claim.upsert({
+    where: { id: 'seed-claim-pending' },
+    update: {
+      athleteProfileId: claimTarget.athleteProfileId,
+      requestedByUserId: fan1.id,
+      verificationNote: `This is me — I played JV last year at ${schools[0].name} and varsity this season.`,
+      status: 'PENDING', reviewedByUserId: null, reviewedAt: null,
+    },
+    create: {
+      id: 'seed-claim-pending',
+      athleteProfileId: claimTarget.athleteProfileId,
+      requestedByUserId: fan1.id,
+      verificationNote: `This is me — I played JV last year at ${schools[0].name} and varsity this season.`,
+      status: 'PENDING',
+    },
+  })
   console.log('✓ Pending profile claim: 1 (visible in the admin Claims queue)')
 
   // ── Articles ──────────────────────────────────────────────────────────────
@@ -929,7 +1122,7 @@ async function main() {
     const existing = await db.article.findFirst({ where: { authorUserId: seed.authorId, title: seed.title } })
     if (existing) continue
     const publishedAt = seed.status === 'PUBLISHED' && seed.publishedDaysAgo !== undefined
-      ? new Date(Date.now() - seed.publishedDaysAgo * 24 * 60 * 60 * 1000)
+      ? seedClock.days(-seed.publishedDaysAgo)
       : null
     await db.article.create({
       data: {
@@ -947,8 +1140,63 @@ async function main() {
   }
   console.log(`✓ Articles: ${articleSeeds.filter((s) => s.status === 'PUBLISHED').length} published, ${articleSeeds.filter((s) => s.status === 'PENDING_REVIEW').length} pending review (${articleCount} newly created this run, visible in the admin Article Review queue)`)
 
-  console.log('\nSeeding complete.')
-  console.log('Demo accounts (all password: password123):')
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Cards & Saves (Discovery Demo Data)
+  // ─────────────────────────────────────────────────────────────────────────
+  const cardTarget = players[0];
+  const cardTeam = teams[0];
+  const cardGame = finalGame1;
+  const existingCard = await db.cardTemplate.findFirst({ where: { title: 'First Game Dunk' } })
+  if (!existingCard && cardTarget) {
+    const cardId = seedIds.cards.featured
+    const image = await db.imageAsset.upsert({
+      where: { id: 'seed-card-image-01' },
+      update: {},
+      create: {
+        id: 'seed-card-image-01',
+        targetType: 'CARD_TEMPLATE',
+        targetId: cardId,
+        usage: 'HERO',
+        storageProvider: 'LOCAL',
+        objectKey: 'seed-card-image-01',
+        url: 'https://picsum.photos/seed/statmancard1/600/900',
+        contentType: 'image/jpeg',
+        byteSize: 240000,
+        width: 600,
+        height: 900,
+        uploadedByUserId: admin.id,
+      },
+    })
+    const card = await db.cardTemplate.create({
+      data: {
+        id: cardId,
+        title: 'First Game Dunk',
+        athleteProfileId: cardTarget.athleteProfileId,
+        teamId: cardTeam.id,
+        gameId: cardGame.id,
+        createdByUserId: admin.id,
+        cardType: 'BIG_GAME',
+        stylePreset: 'classic-foil',
+        status: 'PUBLISHED',
+        visibility: 'PUBLIC',
+        statsSnapshotJson: {},
+        frontImageAssetId: image.id,
+        publishedAt: seedClock.referenceDate,
+      }
+    })
+
+    // Create card save for popularity
+    await db.cardSave.upsert({
+      where: { userId_cardTemplateId: { userId: fan1.id, cardTemplateId: card.id } },
+      update: {},
+      create: { userId: fan1.id, cardTemplateId: card.id },
+    })
+    console.log('🌱 Seeded 1 featured card with 1 save')
+  }
+
+  console.log(`✓ Demo domain seed complete (development password: ${DEVELOPMENT_PASSWORD})`)
+  console.log('Demo accounts:')
   console.log('  admin@statman.dev       — ADMIN account, sees the Claims queue')
   console.log('  scorer@statman.dev      — official scorer, already joined the live game')
   console.log('  teamscorer@statman.dev  — Eastside team scorer, already joined the live game')
@@ -957,10 +1205,3 @@ async function main() {
   console.log('  fan1@statman.dev        — regular fan, has follows/reactions/a pending claim')
   console.log('  fan2@statman.dev        — regular fan, follows Westview')
 }
-
-main()
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(() => db.$disconnect())

@@ -1,5 +1,6 @@
 import { db } from '@statman/db'
 import { beforeAll, beforeEach } from 'vitest'
+import { cardGenerationExecutor } from '../../jobs/GenerationExecutor'
 
 function assertTestDatabase() {
   const databaseUrl = process.env.DATABASE_URL ?? ''
@@ -12,8 +13,17 @@ function assertTestDatabase() {
 
 // Clean between tests — order matters for FK constraints (children before parents).
 export async function resetTestDatabase() {
+  await cardGenerationExecutor.drain()
   await db.adminAuditLog.deleteMany()
+  await db.importRecord.deleteMany()
+  await db.importRawSnapshot.deleteMany()
+  await db.importRun.deleteMany()
+  await db.importRequestLog.deleteMany()
+  await db.importedStatLine.deleteMany()
+  await db.externalEntityMapping.deleteMany()
   await db.feedItem.deleteMany()
+  await db.cardDownloadEvent.deleteMany()
+  await db.cardSave.deleteMany()
   await db.cardIssue.deleteMany()
   await db.cardGenerationJob.deleteMany()
   await db.cardTemplate.deleteMany()

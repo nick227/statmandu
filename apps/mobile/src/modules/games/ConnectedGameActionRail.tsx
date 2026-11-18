@@ -1,8 +1,8 @@
-import { Share } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Heart, MessageCircle, Share2 } from 'lucide-react-native'
 import { useCreateReaction, useCurrentUser, useReactionCounts } from '@statman/sdk'
 import { FloatingActionRail, FloatingIconButton } from '@/shared/layout'
+import { sharePublicEntity } from '@/shared/share/sharePublicEntity'
 
 export interface ConnectedGameActionRailProps {
   gameId: string
@@ -32,7 +32,7 @@ export function ConnectedGameActionRail({ gameId, title }: ConnectedGameActionRa
         icon={Share2}
         label="Share"
         onPress={() => {
-          Share.share({ message: title })
+          void sharePublicEntity({ title, message: 'View this game on Statman', path: `/games/${gameId}` })
         }}
       />
     </FloatingActionRail>

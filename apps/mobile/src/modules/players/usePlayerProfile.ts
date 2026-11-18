@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
-import { useCurrentUser, useGame, useMedia, usePlayer, usePlayerGames, usePlayerSeasonStats, useUpdatePlayer } from '@statman/sdk'
+import { useAthleteCards, useCurrentUser, useGame, useImages, useMedia, usePlayer, usePlayerGames, usePlayerSeasonStats, useUpdatePlayer } from '@statman/sdk'
 import { sportStatChips } from '@/modules/sports'
 
-const PLAYER_PROFILE_TABS = ['Stats', 'Games', 'Media', 'Cards', 'Sources']
+const PLAYER_PROFILE_TAB_LABELS = ['Stats', 'Games', 'Cards', 'Media', 'Sources'] as const
 
 export function usePlayerProfile(playerId: string) {
-  const [tab, setTab] = useState(PLAYER_PROFILE_TABS[0])
+  const [tab, setTab] = useState<string>(PLAYER_PROFILE_TAB_LABELS[0])
 
   const playerQuery = usePlayer(playerId)
   const seasonStatsQuery = usePlayerSeasonStats(playerId)
@@ -16,6 +16,18 @@ export function usePlayerProfile(playerId: string) {
 
   const player = playerQuery.data?.data
   const profile = player?.athleteProfile
+  const cardsQuery = useAthleteCards(profile?.id ?? '')
+  const publishedCardCount = (cardsQuery.data?.data ?? []).filter((c) => c.status === 'PUBLISHED').length
+  const tabs = PLAYER_PROFILE_TAB_LABELS.map((label) =>
+    label === 'Cards' && publishedCardCount > 0 ? { label, badge: publishedCardCount } : label
+  )
+  const galleryQuery = useImages('ATHLETE_PROFILE', profile?.id ?? '', 'GALLERY')
+  const galleryImages = (galleryQuery.data?.data ?? []).map((img) => ({
+    id: img.id,
+    url: img.url,
+    title: img.originalFilename ?? null,
+    createdAt: img.createdAt,
+  }))
   const season = seasonStatsQuery.data?.data[0]
   const media = mediaQuery.data?.data ?? []
   const primaryVideo = media[0]
@@ -43,7 +55,7 @@ export function usePlayerProfile(playerId: string) {
     canEditProfile,
     tab,
     setTab,
-    tabs: PLAYER_PROFILE_TABS,
+    tabs,
     player,
     profile,
     season,
@@ -54,6 +66,7 @@ export function usePlayerProfile(playerId: string) {
     lastGame,
     seasonHighPoints,
     media,
+    galleryImages,
     updatePlayer,
     isLoading: playerQuery.isLoading,
     isError: playerQuery.isError,

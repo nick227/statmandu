@@ -18,11 +18,12 @@ const GAME_INCLUDE = {
 const CONSENSUS_WINDOW_MS = 8000
 
 export class GameService {
-  list(opts: { status?: string; teamSlug?: string }) {
+  list(opts: { status?: string; teamSlug?: string; seasonId?: string }) {
     return db.game.findMany({
       where: {
         ...(opts.status ? { status: opts.status as any } : {}),
         ...(opts.teamSlug ? { gameTeams: { some: { team: { slug: opts.teamSlug } } } } : {}),
+        ...(opts.seasonId ? { seasonId: opts.seasonId } : {}),
       },
       include: GAME_INCLUDE,
       orderBy: { scheduledAt: 'desc' },
@@ -83,6 +84,33 @@ export class GameService {
       },
       include: GAME_INCLUDE,
     })
+  }
+
+  async recordScore(gameId: string, userId: string, data: { homeScore: number; awayScore: number }) {
+    const [actor, game] = await Promise.all([
+      this._getActor(userId),
+      db.game.findUnique({ where: { id: gameId }, include: GAME_INCLUDE }),
+    ])
+    if (!game) throw { statusCode: 404, message: 'Game not found' }
+    policy.require(actor, 'recordGameScore')
+    if (game.status === 'LIVE') {
+      throw { statusCode: 409, message: 'Use live scoring while a game is being broadcast' }
+    }
+
+    const home = game.gameTeams.find((team) => team.isHome)
+    const away = game.gameTeams.find((team) => !team.isHome)
+    if (!home || !away) throw { statusCode: 409, message: 'Game must have a home and away team' }
+
+    await db.$transaction([
+      db.gameTeam.update({ where: { id: home.id }, data: { finalScore: data.homeScore } }),
+      db.gameTeam.update({ where: { id: away.id }, data: { finalScore: data.awayScore } }),
+      db.game.update({
+        where: { id: gameId },
+        data: { status: 'FINAL', finalizedAt: game.finalizedAt ?? new Date() },
+      }),
+    ])
+
+    return this.get(gameId)
   }
 
   async joinAsReporter(gameId: string, userId: string, data: { role: GameReporterRole; teamId?: string }) {

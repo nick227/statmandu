@@ -57,7 +57,7 @@ export function ConnectedCardsExploreSection() {
         })}
       </View>
       {filtered.length > 0 ? (
-        <CardRail cards={filtered} />
+        <CardRail cards={filtered} source="EXPLORE" />
       ) : (
         <Text variant="caption">No cards match this filter yet.</Text>
       )}

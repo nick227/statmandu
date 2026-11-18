@@ -62,10 +62,11 @@ export function GameDetailScreen({ gameId }: { gameId: string }) {
   const leaderboardStats = getSportDefinition(sport).views.leaderboard.slice(0, 3)
   const { mediaItems } = mediaViewer
   const primaryMedia = mediaItems[0]
-  const heroVideoId = primaryMedia?.youtubeVideoId ?? null
+  const heroVideoId = primaryMedia?.kind === 'video' ? primaryMedia.youtubeVideoId : null
   const scoreFor = (score?: number | null) => score ?? 0
   const scheduled = new Date(game.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
   const gameTitle = `${homeName} vs ${awayName}`
+  const canBroadcast = game.status === 'SCHEDULED' || game.status === 'LIVE'
   const performerMeta = (line: (typeof topPerformers)[number]) =>
     leaderboardStats.map((key) => `${formattedSportStat(sport, line, key)} ${sportStatLabel(sport, key)}`).join(' · ')
 
@@ -107,16 +108,22 @@ export function GameDetailScreen({ gameId }: { gameId: string }) {
       <ConnectedGameActionRail gameId={game.id} title={gameTitle} />
 
       <View className="flex-row gap-sm px-lg pb-sm">
-        {game.status === 'SCHEDULED' || game.status === 'LIVE' ? (
-          <Link href={{ pathname: '/games/[gameId]/live', params: { gameId: game.id } }} asChild>
-            <Button size="sm" className="absolute left-lg z-20" style={{ bottom: GAME_DETAIL_LAYOUT.actionBottom }}>Enter Stats</Button>
+        {canBroadcast ? (
+          <Link href={{ pathname: '/games/[gameId]/live', params: { gameId: game.id, intent: 'TEAM_SCORER' } }} asChild>
+            <Button size="sm" className="absolute left-lg z-20" style={{ bottom: GAME_DETAIL_LAYOUT.actionBottom }}>Start scoring</Button>
+          </Link>
+        ) : (
+          <Link href={{ pathname: '/games/[gameId]/score', params: { gameId: game.id } }} asChild>
+            <Button size="sm" className="absolute left-lg z-20" style={{ bottom: GAME_DETAIL_LAYOUT.actionBottom }}>Add score</Button>
+          </Link>
+        )}
+        {canBroadcast ? (
+          <Link href={{ pathname: '/games/[gameId]/live', params: { gameId: game.id, intent: 'BROADCASTER' } }} asChild>
+            <Button variant="secondary" size="sm" className="absolute right-lg z-20 bg-black/45 border-white/15" style={{ bottom: GAME_DETAIL_LAYOUT.actionBottom }}>
+              Start broadcast
+            </Button>
           </Link>
         ) : null}
-        <Link href={{ pathname: '/games/[gameId]/spectate', params: { gameId: game.id } }} asChild>
-          <Button variant="secondary" size="sm" className="absolute right-lg z-20 bg-black/45 border-white/15" style={{ bottom: GAME_DETAIL_LAYOUT.actionBottom }}>
-            Watch Live
-          </Button>
-        </Link>
       </View>
 
       <Sheet snaps={['half', 'expanded']}>

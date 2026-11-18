@@ -26,6 +26,30 @@ list:
           application/json:
             schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
 
+  post:
+    operationId: createTeam
+    summary: Create a team in an existing league
+    tags: [teams]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/sports.yaml#/CreateTeamInput' }
+    responses:
+      '201':
+        description: Team created
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: '../components/schemas/sports.yaml#/Team' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+
 get:
   get:
     operationId: getTeam
@@ -53,13 +77,17 @@ get:
 roster:
   get:
     operationId: getTeamRoster
-    summary: Get a team's active roster for its current season
+    summary: Get a team's active roster for a season (defaults to current)
     security: []
     tags: [teams]
     parameters:
       - in: path
         name: teamSlug
         required: true
+        schema: { type: string }
+      - in: query
+        name: seasonId
+        description: Defaults to the team's current (isActive) season when omitted.
         schema: { type: string }
     responses:
       '200':
