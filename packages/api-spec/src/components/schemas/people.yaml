@@ -28,10 +28,6 @@ PersonProfile:
       type:
         - string
         - 'null'
-    claimedByUserId:
-      type:
-        - string
-        - 'null'
     calling:
       type: [string, 'null']
     age:
@@ -42,21 +38,14 @@ PersonProfile:
       type: [string, 'null']
     specializations:
       type: array
-      items:
-        type: object
-        required: [type]
-        properties:
-          type: { type: string }
-          attributes: { type: object, additionalProperties: true }
+      items: { type: object, additionalProperties: true }
     customFields:
       type: array
-      items:
-        type: object
-        required: [id, label, value]
-        properties:
-          id: { type: string }
-          label: { type: string }
-          value: { type: string }
+      items: { type: object, additionalProperties: true }
+    claimedByUserId:
+      type:
+        - string
+        - 'null'
     canonicalUrl:
       type: string
     shareTitle:
