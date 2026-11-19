@@ -29,6 +29,8 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
+  storefront        Storefront?
+  cardDesigns       CardTemplate[] @relation("CardDesignCreator")
   profile           Profile?
   sessions          Session[]
   createdPeople     PersonProfile[] @relation("CreatedPeople")
@@ -44,8 +46,8 @@ model User {
   articlesReviewed  Article[]       @relation("ArticleReviewer")
   mediaAssets       MediaAsset[]
   imageAssets       ImageAsset[]
-  publishedCards    CardTemplate[]  @relation("PublishedCards")
-  cardTemplates     CardTemplate[]  @relation("CreatedCardTemplates")
+  publishedCards    CardRelease[]  @relation("PublishedCards")
+  cardTemplates     CardRelease[]  @relation("CreatedCardTemplates")
   cardSaves         CardSave[]
   ownedCardIssues   CardIssue[]     @relation("OwnedCardIssues")
   claimedCardIssues CardIssue[]     @relation("ClaimedCardIssues")
@@ -118,6 +120,7 @@ enum EntityType {
   PLAYER_SEASON_STAT
   TEAM_SEASON_STAT
   CARD_TEMPLATE
+  CARD_DESIGN
   CARD_ISSUE
   ARTICLE
 }
@@ -206,7 +209,7 @@ model Team {
   gameTeams         GameTeam[]
   seasonStats       TeamSeasonStat[]
   gameReporters     GameReporter[]
-  cardTemplates     CardTemplate[]
+  cardTemplates     CardRelease[]
 
   @@index([sportId])
   @@index([leagueId])
@@ -243,7 +246,7 @@ model PersonProfile {
   claimedByUser User?          @relation("ClaimedProfile", fields: [claimedByUserId], references: [id])
   players       Player[]
   claims        Claim[]
-  cardTemplates CardTemplate[]
+  cardTemplates CardRelease[]
 
   @@index([createdAt])
 }
@@ -357,7 +360,7 @@ model Game {
   consensusGroups GameConsensusGroup[]
   statLines       GameStatLine[]
   gameReactions   GameReaction[]
-  cardTemplates   CardTemplate[]
+  cardTemplates   CardRelease[]
 
   @@index([sportId])
   @@index([scheduledAt])
@@ -805,8 +808,8 @@ model ImageAsset {
   deletedAt        DateTime?
 
   uploadedByUser User?          @relation(fields: [uploadedByUserId], references: [id])
-  cardFrontOf    CardTemplate[] @relation("CardFrontImage")
-  cardSourceOf   CardTemplate[] @relation("CardSourceImage")
+  cardFrontOf    CardRelease[] @relation("CardFrontImage")
+  cardSourceOf   CardRelease[] @relation("CardSourceImage")
 
   @@index([targetType, targetId, usage])
   @@index([createdAt])
@@ -883,6 +886,45 @@ enum CardPublicationType {
 }
 
 model CardTemplate {
+  id String @id @default(cuid())
+  createdByUserId String
+  title String
+  revision Int @default(1)
+  rendererVersion String @default("rdc-composition-v1")
+  compositionJson Json
+  archivedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdByUser User @relation("CardDesignCreator", fields: [createdByUserId], references: [id])
+  releases CardRelease[]
+
+  @@map("CardDesign")
+  @@index([createdByUserId, updatedAt])
+}
+
+model Storefront {
+  id String @id @default(cuid())
+  userId String @unique
+  description String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id])
+  releases CardRelease[]
+}
+
+model CardRelease {
+  @@map("CardTemplate")
+  templateId String?
+  templateRevision Int?
+  templateSnapshotJson Json?
+  template CardTemplate? @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  storefrontId String?
+  storefront Storefront? @relation(fields: [storefrontId], references: [id], onDelete: Restrict)
+  releaseRequestId String?
+  releaseRequestHash String?
+  @@unique([createdByUserId, releaseRequestId], map: "CardTemplate_creator_releaseRequest_key")
+  @@index([templateId])
+  @@index([storefrontId, status, visibility, publishedAt])
   publicationType CardPublicationType @default(COMMUNITY)
   publishedByUserId String?
   publishedByUser User? @relation("PublishedCards", fields: [publishedByUserId], references: [id])
@@ -934,7 +976,7 @@ model CardTemplate {
 
 model CardIssue {
   id              String          @id @default(cuid())
-  cardTemplateId  String
+  releaseId  String @map("cardTemplateId")
   issueNumber     Int?
   ownerUserId     String?
   claimedByUserId String?
@@ -944,29 +986,29 @@ model CardIssue {
   status          CardIssueStatus @default(CLAIMED)
   createdAt       DateTime        @default(now())
 
-  cardTemplate   CardTemplate        @relation(fields: [cardTemplateId], references: [id])
+  release   CardRelease        @relation(fields: [releaseId], references: [id], map: "CardIssue_cardTemplateId_fkey")
   ownerUser      User?               @relation("OwnedCardIssues", fields: [ownerUserId], references: [id])
   claimedByUser  User?               @relation("ClaimedCardIssues", fields: [claimedByUserId], references: [id])
   downloadEvents CardDownloadEvent[]
 
-  @@unique([cardTemplateId, issueNumber])
+  @@unique([releaseId, issueNumber], map: "CardIssue_cardTemplateId_issueNumber_key")
   @@unique([issueHash])
   @@index([claimedByUserId, createdAt])
 }
 
 model CardDownloadEvent {
   id                 String              @id @default(cuid())
-  cardTemplateId     String
+  releaseId     String @map("cardTemplateId")
   cardIssueId        String
   downloadedByUserId String
   context            CardDownloadContext @default(DIRECT)
   createdAt          DateTime            @default(now())
 
-  cardTemplate     CardTemplate @relation(fields: [cardTemplateId], references: [id])
+  release     CardRelease @relation(fields: [releaseId], references: [id], map: "CardDownloadEvent_cardTemplateId_fkey")
   cardIssue        CardIssue    @relation(fields: [cardIssueId], references: [id])
   downloadedByUser User         @relation(fields: [downloadedByUserId], references: [id])
 
-  @@index([cardTemplateId, createdAt])
+  @@index([releaseId, createdAt], map: "CardDownloadEvent_cardTemplateId_createdAt_idx")
   @@index([downloadedByUserId, createdAt])
 }
 
@@ -978,19 +1020,19 @@ model CardDownloadEvent {
 model CardSave {
   id             String   @id @default(cuid())
   userId         String
-  cardTemplateId String
+  releaseId String @map("cardTemplateId")
   createdAt      DateTime @default(now())
 
   user         User         @relation(fields: [userId], references: [id])
-  cardTemplate CardTemplate @relation(fields: [cardTemplateId], references: [id])
+  release CardRelease @relation(fields: [releaseId], references: [id], map: "CardSave_cardTemplateId_fkey")
 
-  @@unique([userId, cardTemplateId])
-  @@index([cardTemplateId])
+  @@unique([userId, releaseId], map: "CardSave_userId_cardTemplateId_key")
+  @@index([releaseId], map: "CardSave_cardTemplateId_idx")
 }
 
 model CardGenerationJob {
   id             String                 @id @default(cuid())
-  cardTemplateId String
+  releaseId String @map("cardTemplateId")
   provider       CardGenerationProvider @default(STUB)
   status         CardGenerationStatus   @default(QUEUED)
   inputJson      Json
@@ -1002,9 +1044,9 @@ model CardGenerationJob {
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
 
-  cardTemplate CardTemplate @relation(fields: [cardTemplateId], references: [id])
+  release CardRelease @relation(fields: [releaseId], references: [id], map: "CardGenerationJob_cardTemplateId_fkey")
 
-  @@index([cardTemplateId, createdAt])
+  @@index([releaseId, createdAt], map: "CardGenerationJob_cardTemplateId_createdAt_idx")
   @@index([status])
 }
 

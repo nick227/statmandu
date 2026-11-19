@@ -54,7 +54,7 @@ async function requireImageServeAccess(objectKey: string, request: any) {
   if (!asset) throw { statusCode: 404, message: 'Not found' }
   const user = await optionalUser(request)
   if (asset.targetType === 'CARD_TEMPLATE') {
-    const card = await db.cardTemplate.findUnique({ where: { id: asset.targetId } })
+    const card = await db.cardRelease.findUnique({ where: { id: asset.targetId } })
     if (!card) throw { statusCode: 404, message: 'Not found' }
     if (card.visibility === 'PUBLIC' && card.status === 'PUBLISHED') return
     if (user && (user.role === 'ADMIN' || user.id === card.createdByUserId)) return

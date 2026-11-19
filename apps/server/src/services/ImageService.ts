@@ -11,7 +11,7 @@ export class ImageService {
   async list(targetType: EntityType, targetId: string, usage?: ImageAssetUsage, viewerId?: string, isAdmin = false) {
     await targetService.requireTarget(targetType, targetId)
     if (targetType === 'CARD_TEMPLATE') {
-      const card = await db.cardTemplate.findUnique({ where: { id: targetId } })
+      const card = await db.cardRelease.findUnique({ where: { id: targetId } })
       if (!card || (!isAdmin && card.createdByUserId !== viewerId && !(card.status === 'PUBLISHED' && card.visibility === 'PUBLIC'))) throw { statusCode: 404, message: 'Not found' }
     }
     return db.imageAsset.findMany({
@@ -99,7 +99,7 @@ export class ImageService {
   ) {
     if (isAdmin) return
     if (targetType === 'CARD_TEMPLATE') {
-      const card = await db.cardTemplate.findUnique({ where: { id: targetId } })
+      const card = await db.cardRelease.findUnique({ where: { id: targetId } })
       if (!card || card.createdByUserId !== userId || card.publishedAt) throw { statusCode: 403, message: 'Forbidden' }
       return
     }

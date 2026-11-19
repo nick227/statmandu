@@ -71,9 +71,9 @@ describe('MR1/MR2 no-sports architectural proof', () => {
     await cards.publishCard(actor, card.id, { editionMode: 'LIMITED', editionSize: 2 })
     const results = await Promise.allSettled(Array.from({ length: 6 }, () => cards.claimCard(card.id, testOtherUserId)))
     expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(2)
-    const issues = await db.cardIssue.findMany({ where: { cardTemplateId: card.id }, orderBy: { issueNumber: 'asc' } })
+    const issues = await db.cardIssue.findMany({ where: { releaseId: card.id }, orderBy: { issueNumber: 'asc' } })
     expect(issues.map(i => i.issueNumber)).toEqual([1, 2])
-    expect((await db.cardTemplate.findUniqueOrThrow({ where: { id: card.id } })).issuedCount).toBe(2)
+    expect((await db.cardRelease.findUniqueOrThrow({ where: { id: card.id } })).issuedCount).toBe(2)
   })
 
   it('deduplicates concurrent batch retries and isolates creator keys and sources', async () => {
@@ -169,7 +169,7 @@ describe('MR1/MR2 no-sports architectural proof', () => {
     const published = await cards.publishCard({ id: testOtherUserId, role: 'ADMIN' }, card.id)
     expect(published.createdByUserId).toBe(testUserId)
     expect(published.publishedByUserId).toBe(testOtherUserId)
-    const legacy = await db.cardTemplate.create({ data: { athleteProfileId: subject.id, createdByUserId: testUserId, title: 'Legacy', cardType: 'PROFILE', stylePreset: 'portrait', statsSnapshotJson: {}, originHash: 'old-hash', publishedAt: new Date(), status: 'PUBLISHED', visibility: 'PUBLIC' } })
+    const legacy = await db.cardRelease.create({ data: { athleteProfileId: subject.id, createdByUserId: testUserId, title: 'Legacy', cardType: 'PROFILE', stylePreset: 'portrait', statsSnapshotJson: {}, originHash: 'old-hash', publishedAt: new Date(), status: 'PUBLISHED', visibility: 'PUBLIC' } })
     expect((await cards.getCard(legacy.id)).publishedByUserId).toBeNull()
     expect((await cards.getCard(legacy.id)).originHash).toBe('old-hash')
   })

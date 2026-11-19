@@ -1147,7 +1147,7 @@ export async function seedDemo(config: Pick<SeedConfig, 'referenceDate'>) {
   const cardTarget = players[0];
   const cardTeam = teams[0];
   const cardGame = finalGame1;
-  const existingCard = await db.cardTemplate.findFirst({ where: { title: 'First Game Dunk' } })
+  const existingCard = await db.cardRelease.findFirst({ where: { title: 'First Game Dunk' } })
   if (!existingCard && cardTarget) {
     const cardId = seedIds.cards.featured
     const image = await db.imageAsset.upsert({
@@ -1168,7 +1168,7 @@ export async function seedDemo(config: Pick<SeedConfig, 'referenceDate'>) {
         uploadedByUserId: admin.id,
       },
     })
-    const card = await db.cardTemplate.create({
+    const card = await db.cardRelease.create({
       data: {
         id: cardId,
         title: 'First Game Dunk',
@@ -1188,9 +1188,9 @@ export async function seedDemo(config: Pick<SeedConfig, 'referenceDate'>) {
 
     // Create card save for popularity
     await db.cardSave.upsert({
-      where: { userId_cardTemplateId: { userId: fan1.id, cardTemplateId: card.id } },
+      where: { userId_releaseId: { userId: fan1.id, releaseId: card.id } },
       update: {},
-      create: { userId: fan1.id, cardTemplateId: card.id },
+      create: { userId: fan1.id, releaseId: card.id },
     })
     console.log('🌱 Seeded 1 featured card with 1 save')
   }

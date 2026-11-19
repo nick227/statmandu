@@ -38,7 +38,7 @@ export async function reconcileStuckGenerationJobs() {
         data: { status: 'FAILED', error: `Exceeded ${MAX_GENERATION_ATTEMPTS} generation attempts (likely a crash/restart mid-generation)` },
       })
       if (claim.count === 0) continue
-      await db.cardTemplate.updateMany({ where: { id: job.cardTemplateId, publishedAt: null, status: 'GENERATING' }, data: { status: 'FAILED' } }).catch(() => {})
+      await db.cardRelease.updateMany({ where: { id: job.releaseId, publishedAt: null, status: 'GENERATING' }, data: { status: 'FAILED' } }).catch(() => {})
       continue
     }
     await cardService.retryGenerationJob(job.id)

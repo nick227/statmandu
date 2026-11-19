@@ -22,7 +22,7 @@ export async function collectSeedCounts(): Promise<SeedCounts> {
   const seedUserIds = seedUsers.map((user) => user.id)
   const seedAthletes = await db.personProfile.findMany({ where: { slug: { in: [...seedPlayerSlugs] } }, select: { id: true } })
   const seedAthleteIds = seedAthletes.map((athlete) => athlete.id)
-  const seedCards = await db.cardTemplate.findMany({ where: { id: { startsWith: 'seed-' } }, select: { id: true } })
+  const seedCards = await db.cardRelease.findMany({ where: { id: { startsWith: 'seed-' } }, select: { id: true } })
   const seedCardIds = seedCards.map((card) => card.id)
   const [teams, games, gameEvents, generationJobs, follows, saves, claims, disputes] = await Promise.all([
     db.team.count({ where: { league: { slug: 'demo-league' } } }),
@@ -30,7 +30,7 @@ export async function collectSeedCounts(): Promise<SeedCounts> {
     db.gameEvent.count({ where: { gameId: { startsWith: 'seed-' } } }),
     db.cardGenerationJob.count({ where: { id: { startsWith: 'seed-' } } }),
     db.follow.count({ where: { followerId: { in: seedUserIds } } }),
-    db.cardSave.count({ where: { userId: { in: seedUserIds }, cardTemplateId: { in: seedCardIds } } }),
+    db.cardSave.count({ where: { userId: { in: seedUserIds }, releaseId: { in: seedCardIds } } }),
     db.claim.count({ where: { id: { startsWith: 'seed-' } } }),
     db.dispute.count({ where: { id: { startsWith: 'seed-' } } }),
   ])
@@ -76,7 +76,7 @@ export async function validateSeed(scenario: SeedScenario) {
       assertSeed(game.statLines.every((line) => participatingTeams.has(line.teamId)), `${game.id} contains a stat line for a non-participant`)
     }
 
-    const featured = await db.cardTemplate.count({ where: { id: { startsWith: 'seed-' }, visibility: 'PUBLIC', status: 'PUBLISHED' } })
+    const featured = await db.cardRelease.count({ where: { id: { startsWith: 'seed-' }, visibility: 'PUBLIC', status: 'PUBLISHED' } })
     const live = await db.game.count({ where: { id: { startsWith: 'seed-' }, status: 'LIVE' } })
     const scheduled = await db.game.count({ where: { id: { startsWith: 'seed-' }, status: 'SCHEDULED' } })
     const leaderboard = await db.playerSeasonStat.count({ where: { player: { athleteProfile: { slug: { in: [...seedPlayerSlugs] } } } } })
@@ -93,13 +93,13 @@ export async function validateSeed(scenario: SeedScenario) {
     assertSeed(counts.saves >= 10, 'the fan collection needs meaningful saved-card data')
 
     const activeJobs = await db.cardGenerationJob.findMany({
-      where: { id: { startsWith: 'seed-' }, status: { in: ['QUEUED', 'PROCESSING'] }, cardTemplate: { batchRequestId: { not: null } } },
-      include: { cardTemplate: true },
+      where: { id: { startsWith: 'seed-' }, status: { in: ['QUEUED', 'PROCESSING'] }, release: { batchRequestId: { not: null } } },
+      include: { release: true },
     })
     const activeAthletes = new Set<string>()
     for (const job of activeJobs) {
-      assertSeed(!activeAthletes.has(job.cardTemplate.athleteProfileId), `multiple active generation batches exist for athlete ${job.cardTemplate.athleteProfileId}`)
-      activeAthletes.add(job.cardTemplate.athleteProfileId)
+      assertSeed(!activeAthletes.has(job.release.athleteProfileId), `multiple active generation batches exist for athlete ${job.release.athleteProfileId}`)
+      activeAthletes.add(job.release.athleteProfileId)
     }
   }
 

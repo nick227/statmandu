@@ -215,7 +215,7 @@ describe('cards', () => {
       payload: { athleteProfileId: athlete.id, title: 'Draft Card', cardType: 'PROFILE', stylePreset: 'classic' },
     })
     const ready = await createReadyCard()
-    await db.cardTemplate.update({ where: { id: ready.id }, data: { athleteProfileId: athlete.id } })
+    await db.cardRelease.update({ where: { id: ready.id }, data: { athleteProfileId: athlete.id } })
     await app.inject({ method: 'POST', url: `/cards/${ready.id}/publish`, headers: asAuth(testUserId), payload: {} })
 
     const anon = await app.inject({ method: 'GET', url: `/athlete-profiles/${athlete.id}/cards` })
@@ -335,7 +335,7 @@ describe('cards', () => {
   it('tracks card download distribution by context, owner-only', async () => {
     const athlete = await seedBasketballAthlete(testUserId)
     const ready = await createReadyCard()
-    await db.cardTemplate.update({ where: { id: ready.id }, data: { athleteProfileId: athlete.id } })
+    await db.cardRelease.update({ where: { id: ready.id }, data: { athleteProfileId: athlete.id } })
     await app.inject({ method: 'POST', url: `/cards/${ready.id}/publish`, headers: asAuth(testUserId), payload: {} })
     const claimed = await app.inject({ method: 'POST', url: `/cards/${ready.id}/claim`, headers: asAuth(testOtherUserId) })
 
@@ -401,7 +401,7 @@ describe('cards', () => {
     const replayIds = replay.json().data.map((card: any) => card.id).sort()
     expect(replayIds).toEqual(firstIds)
 
-    const allForAthlete = await db.cardTemplate.count({ where: { athleteProfileId: athlete.id } })
+    const allForAthlete = await db.cardRelease.count({ where: { athleteProfileId: athlete.id } })
     expect(allForAthlete).toBe(firstIds.length)
   })
 
@@ -441,7 +441,7 @@ describe('cards', () => {
     // Simulate an in-progress batch directly (one QUEUED job under a
     // batchRequestId), rather than racing the (near-instant, stub-backed)
     // real generation flow's own timing.
-    const card = await db.cardTemplate.create({
+    const card = await db.cardRelease.create({
       data: {
         athleteProfileId: athlete.id,
         createdByUserId: testUserId,
@@ -453,7 +453,7 @@ describe('cards', () => {
       },
     })
     await db.cardGenerationJob.create({
-      data: { cardTemplateId: card.id, status: 'QUEUED', inputJson: {} },
+      data: { releaseId: card.id, status: 'QUEUED', inputJson: {} },
     })
 
     const res = await app.inject({
@@ -472,7 +472,7 @@ describe('cards', () => {
     // A manual single-card job with no batchRequestId — should never count
     // against the "one active batch" rule, which is scoped to batch-created
     // jobs specifically.
-    const manualCard = await db.cardTemplate.create({
+    const manualCard = await db.cardRelease.create({
       data: {
         athleteProfileId: athlete.id,
         createdByUserId: testUserId,
@@ -483,7 +483,7 @@ describe('cards', () => {
       },
     })
     await db.cardGenerationJob.create({
-      data: { cardTemplateId: manualCard.id, status: 'PROCESSING', inputJson: {} },
+      data: { releaseId: manualCard.id, status: 'PROCESSING', inputJson: {} },
     })
 
     const res = await app.inject({
@@ -514,7 +514,7 @@ describe('cards', () => {
 
   it('blocks unauthenticated/non-owner access to a private card image, allows the owner', async () => {
     const athlete = await seedBasketballAthlete(testUserId)
-    const card = await db.cardTemplate.create({
+    const card = await db.cardRelease.create({
       data: {
         athleteProfileId: athlete.id,
         createdByUserId: testUserId,
@@ -562,7 +562,7 @@ describe('cards', () => {
 
   it('only lets one of two concurrent retryGenerationJob calls actually claim a stale job', async () => {
     const athlete = await seedBasketballAthlete(testUserId)
-    const card = await db.cardTemplate.create({
+    const card = await db.cardRelease.create({
       data: {
         athleteProfileId: athlete.id,
         createdByUserId: testUserId,
@@ -573,7 +573,7 @@ describe('cards', () => {
       },
     })
     const job = await db.cardGenerationJob.create({
-      data: { cardTemplateId: card.id, status: 'QUEUED', attempt: 1, inputJson: {} },
+      data: { releaseId: card.id, status: 'QUEUED', attempt: 1, inputJson: {} },
     })
 
     const cardService = new CardService()

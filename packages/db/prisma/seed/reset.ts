@@ -19,7 +19,7 @@ async function resetSeedOwnedData() {
   const athleteIds = athletes.map((athlete) => athlete.id)
   const players = await db.player.findMany({ where: { athleteProfileId: { in: athleteIds } }, select: { id: true } })
   const playerIds = players.map((player) => player.id)
-  const cards = await db.cardTemplate.findMany({ where: { id: { startsWith: 'seed-' } }, select: { id: true } })
+  const cards = await db.cardRelease.findMany({ where: { id: { startsWith: 'seed-' } }, select: { id: true } })
   const cardIds = cards.map((card) => card.id)
   const games = await db.game.findMany({ where: { id: { startsWith: 'seed-' } }, select: { id: true } })
   const gameIds = games.map((game) => game.id)
@@ -28,10 +28,10 @@ async function resetSeedOwnedData() {
 
   await db.$transaction(async (tx) => {
     await tx.cardDownloadEvent.deleteMany({ where: { OR: [{ id: { startsWith: 'seed-' } }, { cardIssueId: { in: issueIds } }] } })
-    await tx.cardSave.deleteMany({ where: { cardTemplateId: { in: cardIds }, userId: { in: userIds } } })
+    await tx.cardSave.deleteMany({ where: { releaseId: { in: cardIds }, userId: { in: userIds } } })
     await tx.cardIssue.deleteMany({ where: { id: { startsWith: 'seed-' } } })
     await tx.cardGenerationJob.deleteMany({ where: { id: { startsWith: 'seed-' } } })
-    await tx.cardTemplate.deleteMany({ where: { id: { startsWith: 'seed-' } } })
+    await tx.cardRelease.deleteMany({ where: { id: { startsWith: 'seed-' } } })
     await tx.imageAsset.deleteMany({ where: { id: { startsWith: 'seed-' } } })
     await tx.mediaAsset.deleteMany({ where: { id: { startsWith: 'seed-' } } })
     await tx.sourceReference.deleteMany({ where: { id: { startsWith: 'seed-' } } })

@@ -35,7 +35,7 @@ export class EntityTargetService {
       case 'TEAM_SEASON_STAT':
         return Boolean(await db.teamSeasonStat.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'CARD_TEMPLATE':
-        return Boolean(await db.cardTemplate.findUnique({ where: { id: targetId }, select: { id: true } }))
+        return Boolean(await db.cardRelease.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'CARD_ISSUE':
         return Boolean(await db.cardIssue.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'ARTICLE':

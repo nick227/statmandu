@@ -76,7 +76,7 @@ export async function getCardDistribution(request: any, reply: any) {
 }
 
 export async function createCardSave(request: any, reply: any) {
-  const save = await cardService.saveCard(request.user.id, request.body.cardTemplateId)
+  const save = await cardService.saveCard(request.user.id, request.body.cardTemplateId ?? request.body.releaseId)
   return reply.status(201).send({ data: save })
 }
 

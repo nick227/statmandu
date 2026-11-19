@@ -89,7 +89,7 @@ export async function getHomeDiscovery(request: any, reply: any) {
   })
 
   // 4. New cards
-  const newCards = await db.cardTemplate.findMany({
+  const newCards = await db.cardRelease.findMany({
     take: 5,
     orderBy: { createdAt: 'desc' },
     include: {

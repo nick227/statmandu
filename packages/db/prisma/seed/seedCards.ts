@@ -53,7 +53,7 @@ export async function seedCards(referenceDate: Date) {
       })
     }
 
-    const card = await db.cardTemplate.upsert({
+    const card = await db.cardRelease.upsert({
       where: { id },
       update: {
         athleteProfileId: athlete.id, teamId: teams[index % teams.length]!.id,
@@ -93,8 +93,8 @@ export async function seedCards(referenceDate: Date) {
     const id = numberedSeedId(seedIds.generationJobs.prefix, index)
     await db.cardGenerationJob.upsert({
       where: { id },
-      update: { cardTemplateId: cards[job.card]!.id, provider: 'STUB', status: job.status, inputJson: { seedFixture: true }, outputJson: job.output ?? undefined, error: job.error ?? null, attempt: job.attempt, updatedAt: job.stale ? clock.days(-2) : clock.minutes(-index) },
-      create: { id, cardTemplateId: cards[job.card]!.id, provider: 'STUB', status: job.status, inputJson: { seedFixture: true }, outputJson: job.output ?? undefined, error: job.error ?? null, attempt: job.attempt, createdAt: job.stale ? clock.days(-2) : clock.minutes(-index), updatedAt: job.stale ? clock.days(-2) : clock.minutes(-index) },
+      update: { releaseId: cards[job.card]!.id, provider: 'STUB', status: job.status, inputJson: { seedFixture: true }, outputJson: job.output ?? undefined, error: job.error ?? null, attempt: job.attempt, updatedAt: job.stale ? clock.days(-2) : clock.minutes(-index) },
+      create: { id, releaseId: cards[job.card]!.id, provider: 'STUB', status: job.status, inputJson: { seedFixture: true }, outputJson: job.output ?? undefined, error: job.error ?? null, attempt: job.attempt, createdAt: job.stale ? clock.days(-2) : clock.minutes(-index), updatedAt: job.stale ? clock.days(-2) : clock.minutes(-index) },
     })
   }
 
@@ -103,8 +103,8 @@ export async function seedCards(referenceDate: Date) {
     const owner = index < 3 ? fan : collector
     await db.cardIssue.upsert({
       where: { id: issueId },
-      update: { cardTemplateId: cards[index]!.id, issueNumber: 1, ownerUserId: owner.id, claimedByUserId: owner.id, claimedAt: clock.days(-index - 1), status: index < 4 ? 'DOWNLOADED' : 'CLAIMED' },
-      create: { id: issueId, cardTemplateId: cards[index]!.id, issueNumber: 1, ownerUserId: owner.id, claimedByUserId: owner.id, claimedAt: clock.days(-index - 1), issueHash: `seed-issue-hash-${index + 1}`, status: index < 4 ? 'DOWNLOADED' : 'CLAIMED' },
+      update: { releaseId: cards[index]!.id, issueNumber: 1, ownerUserId: owner.id, claimedByUserId: owner.id, claimedAt: clock.days(-index - 1), status: index < 4 ? 'DOWNLOADED' : 'CLAIMED' },
+      create: { id: issueId, releaseId: cards[index]!.id, issueNumber: 1, ownerUserId: owner.id, claimedByUserId: owner.id, claimedAt: clock.days(-index - 1), issueHash: `seed-issue-hash-${index + 1}`, status: index < 4 ? 'DOWNLOADED' : 'CLAIMED' },
     })
   }
 
@@ -113,8 +113,8 @@ export async function seedCards(referenceDate: Date) {
     const saver = savers[index % savers.length]!
     const card = cards[index % 10]!
     await db.cardSave.upsert({
-      where: { userId_cardTemplateId: { userId: saver.id, cardTemplateId: card.id } },
-      update: {}, create: { userId: saver.id, cardTemplateId: card.id, createdAt: clock.minutes(-index) },
+      where: { userId_releaseId: { userId: saver.id, releaseId: card.id } },
+      update: {}, create: { userId: saver.id, releaseId: card.id, createdAt: clock.minutes(-index) },
     })
   }
 
@@ -124,7 +124,7 @@ export async function seedCards(referenceDate: Date) {
     await db.cardDownloadEvent.upsert({
       where: { id: `seed-card-download-${String(index + 1).padStart(2, '0')}` },
       update: { context: index % 2 === 0 ? 'HOME' : 'EXPLORE' },
-      create: { id: `seed-card-download-${String(index + 1).padStart(2, '0')}`, cardTemplateId: cards[issueIndex]!.id, cardIssueId: issueId, downloadedByUserId: savers[index % savers.length]!.id, context: index % 2 === 0 ? 'HOME' : 'EXPLORE', createdAt: clock.minutes(-index) },
+      create: { id: `seed-card-download-${String(index + 1).padStart(2, '0')}`, releaseId: cards[issueIndex]!.id, cardIssueId: issueId, downloadedByUserId: savers[index % savers.length]!.id, context: index % 2 === 0 ? 'HOME' : 'EXPLORE', createdAt: clock.minutes(-index) },
     })
   }
 

@@ -214,7 +214,7 @@ function serialize(card: any, viewerUserId?: string | null) {
     currentUserIssue: currentUserIssue
       ? {
           id: currentUserIssue.id,
-          cardTemplateId: currentUserIssue.cardTemplateId,
+          cardTemplateId: currentUserIssue.releaseId,
           issueNumber: currentUserIssue.issueNumber,
           ownerUserId: currentUserIssue.ownerUserId,
           claimedByUserId: currentUserIssue.claimedByUserId,
@@ -232,17 +232,17 @@ function serializeSave(save: any) {
   return {
     id: save.id,
     userId: save.userId,
-    cardTemplateId: save.cardTemplateId,
+    cardTemplateId: save.releaseId,
     createdAt: save.createdAt,
-    card: save.cardTemplate ? serialize(save.cardTemplate, save.userId) : null,
+    card: save.release ? serialize(save.release, save.userId) : null,
   }
 }
 
 function serializeIssue(issue: any) {
-  const card = issue.cardTemplate
+  const card = issue.release
   return {
     id: issue.id,
-    cardTemplateId: issue.cardTemplateId,
+    cardTemplateId: issue.releaseId,
     issueNumber: issue.issueNumber,
     ownerUserId: issue.ownerUserId,
     claimedByUserId: issue.claimedByUserId,
@@ -259,11 +259,11 @@ function serializeIssue(issue: any) {
 }
 
 function authenticityPayload(issue: any) {
-  const card = issue.cardTemplate
+  const card = issue.release
   const athlete = card?.athleteProfile
   const json = {
     schema: 'statman.card.authenticity.v1',
-    cardTemplateId: issue.cardTemplateId,
+    cardTemplateId: issue.releaseId,
     cardTitle: card?.title ?? null,
     athleteProfileId: card?.athleteProfileId ?? null,
     athleteName: card?.contentSnapshotJson?.person?.displayName ?? (athlete ? personName(athlete) : null),
@@ -279,7 +279,7 @@ function authenticityPayload(issue: any) {
   }
   const text = [
     'Statman Card Authenticity',
-    `Card: ${json.cardTitle ?? issue.cardTemplateId}`,
+    `Card: ${json.cardTitle ?? issue.releaseId}`,
     `Athlete: ${json.athleteName ?? json.athleteProfileId ?? 'Unknown'}`,
     `Edition: ${json.issueNumber ?? 'Unlimited'}${json.editionSize ? ` of ${json.editionSize}` : ''}`,
     `Origin Hash: ${json.originHash ?? 'Unavailable'}`,
@@ -301,7 +301,7 @@ export class CardService {
     await this.requireCardTargets(input, userId)
     const editionMode = input.editionMode ?? 'UNLIMITED'
     const editionSize = validateEdition(editionMode, input.editionSize)
-    const card = await db.cardTemplate.create({
+    const card = await db.cardRelease.create({
       data: {
         athleteProfileId: input.athleteProfileId!,
         teamId: input.teamId ?? null,
@@ -333,12 +333,12 @@ export class CardService {
       // Serialize this creator's retries/rate limits across server processes.
       await tx.$queryRaw`SELECT id FROM User WHERE id = ${actor.id} FOR UPDATE`
       if (input.batchRequestId) {
-        const cards = await tx.cardTemplate.findMany({ where: { athleteProfileId, createdByUserId: actor.id, batchRequestId: input.batchRequestId }, include: CARD_INCLUDE })
+        const cards = await tx.cardRelease.findMany({ where: { athleteProfileId, createdByUserId: actor.id, batchRequestId: input.batchRequestId }, include: CARD_INCLUDE })
         if (cards.length) return { cards, jobs: [] }
       }
-      const recent = await tx.cardTemplate.findFirst({ where: { createdByUserId: actor.id, batchRequestId: { not: null }, createdAt: { gt: new Date(Date.now() - BATCH_RATE_LIMIT_WINDOW_MS) } } })
+      const recent = await tx.cardRelease.findFirst({ where: { createdByUserId: actor.id, batchRequestId: { not: null }, createdAt: { gt: new Date(Date.now() - BATCH_RATE_LIMIT_WINDOW_MS) } } })
       if (recent) throw { statusCode: 429, message: 'Please wait before generating another batch' }
-      const active = await tx.cardGenerationJob.findFirst({ where: { status: { in: ['QUEUED', 'PROCESSING'] }, cardTemplate: { createdByUserId: actor.id, batchRequestId: { not: null } } } })
+      const active = await tx.cardGenerationJob.findFirst({ where: { status: { in: ['QUEUED', 'PROCESSING'] }, release: { createdByUserId: actor.id, batchRequestId: { not: null } } } })
       if (active) throw { statusCode: 429, message: 'A batch is already generating' }
       const player = await tx.player.findFirst({ where: { athleteProfileId }, include: { sport: true } })
       const allPoses = player && !input.poseIds?.includes('portrait') ? getCardPoses(getSportDefinition(player.sport.slug)) : [{ id: 'portrait', label: 'Portrait', promptTemplate: 'Expressive portrait, natural clothing, neutral studio background, cinematic lighting.' }]
@@ -348,9 +348,9 @@ export class CardService {
       const cards = []
       const jobs = []
       for (const pose of poses) {
-        const card = await tx.cardTemplate.create({ data: { athleteProfileId, createdByUserId: actor.id, title: pose.label, cardType: 'PROFILE', stylePreset: 'classic-foil', sourceImageAssetId: input.sourceImageAssetId, batchRequestId: requestId, generationKey: sha256({ actor: actor.id, subject: athleteProfileId, requestId, pose: pose.id }), status: 'GENERATING', statsSnapshotJson: { cardStudio: { poseId: pose.id, posePromptTemplate: pose.promptTemplate } } }, include: CARD_INCLUDE })
+        const card = await tx.cardRelease.create({ data: { athleteProfileId, createdByUserId: actor.id, title: pose.label, cardType: 'PROFILE', stylePreset: 'classic-foil', sourceImageAssetId: input.sourceImageAssetId, batchRequestId: requestId, generationKey: sha256({ actor: actor.id, subject: athleteProfileId, requestId, pose: pose.id }), status: 'GENERATING', statsSnapshotJson: { cardStudio: { poseId: pose.id, posePromptTemplate: pose.promptTemplate } } }, include: CARD_INCLUDE })
         const generationInput = this.buildGenerationInput(card)
-        const job = await tx.cardGenerationJob.create({ data: { cardTemplateId: card.id, provider: process.env.GEMINI_API_KEY ? 'GEMINI' : 'STUB', inputJson: generationInput as any } })
+        const job = await tx.cardGenerationJob.create({ data: { releaseId: card.id, provider: process.env.GEMINI_API_KEY ? 'GEMINI' : 'STUB', inputJson: generationInput as any } })
         cards.push(card)
         jobs.push({ job, card, input: generationInput })
       }
@@ -364,12 +364,12 @@ export class CardService {
 
   async updateDraftCard(actor: Actor, id: string, input: UpdateDraftCardInput) {
     if (input.personProfileId) input = this.normalizeSubject(input)
-    const existing = await db.cardTemplate.findUnique({ where: { id }, include: { athleteProfile: true } })
+    const existing = await db.cardRelease.findUnique({ where: { id }, include: { athleteProfile: true } })
     if (!existing) throw { statusCode: 404, message: 'Card not found' }
     await this.requireOwner(actor, existing)
 
     if (existing.publishedAt && input.status === 'ARCHIVED' && Object.keys(input).every(key => key === 'status')) {
-      const archived = await db.cardTemplate.update({ where: { id }, data: { status: 'ARCHIVED', visibility: 'PRIVATE' }, include: CARD_INCLUDE })
+      const archived = await db.cardRelease.update({ where: { id }, data: { status: 'ARCHIVED', visibility: 'PRIVATE' }, include: CARD_INCLUDE })
       return serialize(archived, actor.id)
     }
     if (existing.publishedAt) {
@@ -392,7 +392,7 @@ export class CardService {
     const nextEditionSize = input.editionSize === undefined ? existing.editionSize : input.editionSize
     const editionSize = validateEdition(nextEditionMode, nextEditionSize)
 
-    const card = await db.cardTemplate.update({
+    const card = await db.cardRelease.update({
       where: { id, publishedAt: null, status: { notIn: ['GENERATING', 'ARCHIVED'] } },
       data: {
         athleteProfileId: input.athleteProfileId,
@@ -414,7 +414,7 @@ export class CardService {
   }
 
   async generateCard(actor: Actor, id: string) {
-    const card = await db.cardTemplate.findUnique({ where: { id }, include: { athleteProfile: true, sourceImageAsset: true } })
+    const card = await db.cardRelease.findUnique({ where: { id }, include: { athleteProfile: true, sourceImageAsset: true } })
     if (!card) throw { statusCode: 404, message: 'Card not found' }
     await this.requireOwner(actor, card)
     if (card.publishedAt || card.status === 'ARCHIVED') {
@@ -439,21 +439,21 @@ export class CardService {
   // the loser's `count` comes back 0 and it bails out without ever calling
   // the generator or touching the card.
   async retryGenerationJob(jobId: string) {
-    const job = await db.cardGenerationJob.findUnique({ where: { id: jobId }, include: { cardTemplate: { include: { athleteProfile: true, sourceImageAsset: true } } } })
+    const job = await db.cardGenerationJob.findUnique({ where: { id: jobId }, include: { release: { include: { athleteProfile: true, sourceImageAsset: true } } } })
     if (!job) return
-    const card = job.cardTemplate
+    const card = job.release
     if (card.publishedAt || card.status === 'ARCHIVED') return
 
     const claimed = await db.$transaction(async tx => {
       await tx.$queryRaw`SELECT id FROM CardTemplate WHERE id = ${card.id} FOR UPDATE`
-      const current = await tx.cardTemplate.findUnique({ where: { id: card.id } })
+      const current = await tx.cardRelease.findUnique({ where: { id: card.id } })
       if (!current || current.publishedAt || current.status === 'ARCHIVED') return false
       const claim = await tx.cardGenerationJob.updateMany({
         where: { id: jobId, status: { in: ['QUEUED', 'PROCESSING'] }, updatedAt: job.updatedAt },
         data: { status: 'PROCESSING', attempt: { increment: 1 }, provider: process.env.GEMINI_API_KEY ? 'GEMINI' : 'STUB' },
       })
       if (!claim.count) return false
-      await tx.cardTemplate.update({ where: { id: card.id }, data: { status: 'GENERATING' } })
+      await tx.cardRelease.update({ where: { id: card.id }, data: { status: 'GENERATING' } })
       return true
     })
     if (!claimed) return
@@ -466,9 +466,9 @@ export class CardService {
 
   private async createGenerationJob(cardTemplateId: string, input: ReturnType<CardService['buildGenerationInput']>) {
     return db.$transaction(async tx => {
-      const reserved = await tx.cardTemplate.updateMany({ where: { id: cardTemplateId, publishedAt: null, status: { notIn: ['GENERATING', 'ARCHIVED'] } }, data: { status: 'GENERATING' } })
+      const reserved = await tx.cardRelease.updateMany({ where: { id: cardTemplateId, publishedAt: null, status: { notIn: ['GENERATING', 'ARCHIVED'] } }, data: { status: 'GENERATING' } })
       if (!reserved.count) throw { statusCode: 409, message: 'Card is already generating or immutable' }
-      return tx.cardGenerationJob.create({ data: { cardTemplateId, provider: process.env.GEMINI_API_KEY ? 'GEMINI' : 'STUB', inputJson: input as any } })
+      return tx.cardGenerationJob.create({ data: { releaseId: cardTemplateId, provider: process.env.GEMINI_API_KEY ? 'GEMINI' : 'STUB', inputJson: input as any } })
     })
   }
 
@@ -495,14 +495,14 @@ export class CardService {
     const startedAt = Date.now()
     try {
       await db.cardGenerationJob.update({ where: { id: jobId }, data: { status: 'PROCESSING' } })
-      await db.cardTemplate.update({ where: { id: cardId, publishedAt: null, status: 'GENERATING' }, data: { status: 'GENERATING' } })
+      await db.cardRelease.update({ where: { id: cardId, publishedAt: null, status: 'GENERATING' }, data: { status: 'GENERATING' } })
       const output = await this.generator.generate(input)
       const latencyMs = Date.now() - startedAt
       await db.cardGenerationJob.update({
         where: { id: jobId },
         data: { status: 'READY', outputJson: { ...output, latencyMs } as any },
       })
-      const updated = await db.cardTemplate.update({
+      const updated = await db.cardRelease.update({
         where: { id: cardId, publishedAt: null, status: 'GENERATING' },
         data: { status: 'READY', frontImageAssetId: output.frontImageAssetId },
         include: CARD_INCLUDE,
@@ -526,7 +526,7 @@ export class CardService {
           },
         })
       )
-      await ignoreRecordNotFound(db.cardTemplate.updateMany({ where: { id: cardId, publishedAt: null, status: 'GENERATING' }, data: { status: 'FAILED' } }))
+      await ignoreRecordNotFound(db.cardRelease.updateMany({ where: { id: cardId, publishedAt: null, status: 'GENERATING' }, data: { status: 'FAILED' } }))
       throw err
     }
   }
@@ -536,7 +536,7 @@ export class CardService {
     await this.requireActiveUser(actor.id)
     const card = await db.$transaction(async tx => {
       await tx.$queryRaw`SELECT id FROM CardTemplate WHERE id = ${id} FOR UPDATE`
-      const existing = await tx.cardTemplate.findUnique({ where: { id }, include: CARD_INCLUDE })
+      const existing = await tx.cardRelease.findUnique({ where: { id }, include: CARD_INCLUDE })
       if (!existing) throw { statusCode: 404, message: 'Card not found' }
       if (actor.role !== 'ADMIN' && existing.createdByUserId !== actor.id) throw { statusCode: 403, message: 'Forbidden' }
       if (existing.publishedAt || ['ARCHIVED', 'GENERATING'].includes(existing.status)) throw { statusCode: 409, message: 'Card cannot be published in this state' }
@@ -555,7 +555,7 @@ export class CardService {
         publicationType: 'COMMUNITY',
       }
       const originHash = sha256({ schemaVersion: 2, cardTemplateId: id, editionMode, editionSize, content: snapshot })
-      return tx.cardTemplate.update({ where: { id }, data: { status: 'PUBLISHED', visibility: options.visibility ?? 'PUBLIC', editionMode, editionSize, originHash, publishedAt: new Date(), publishedByUserId: actor.id, publicationType: 'COMMUNITY', contentSnapshotJson: snapshot as any }, include: CARD_INCLUDE })
+      return tx.cardRelease.update({ where: { id }, data: { status: 'PUBLISHED', visibility: options.visibility ?? 'PUBLIC', editionMode, editionSize, originHash, publishedAt: new Date(), publishedByUserId: actor.id, publicationType: 'COMMUNITY', contentSnapshotJson: snapshot as any }, include: CARD_INCLUDE })
     })
     await feedService.record({ type: 'CARD_PUBLISHED', targetType: 'CARD_TEMPLATE', targetId: card.id, summary: `Card published: ${card.title}` })
     return serialize(card, actor.id)
@@ -566,7 +566,7 @@ export class CardService {
       sort === 'popular'
         ? [{ downloadEvents: { _count: 'desc' as const } }, { publishedAt: 'desc' as const }, { id: 'desc' as const }]
         : [{ publishedAt: 'desc' as const }, { id: 'desc' as const }]
-    const cards = await db.cardTemplate.findMany({
+    const cards = await db.cardRelease.findMany({
       where: { status: 'PUBLISHED', visibility: 'PUBLIC' },
       orderBy,
       take: 20,
@@ -588,7 +588,7 @@ export class CardService {
             ...(viewerUserId ? [{ createdByUserId: viewerUserId }] : []),
           ],
         }
-    const cards = await db.cardTemplate.findMany({
+    const cards = await db.cardRelease.findMany({
       where,
       orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
       include: CARD_INCLUDE,
@@ -598,7 +598,7 @@ export class CardService {
 
   async listCardsForUser(userId: string) {
     const [created, issues] = await Promise.all([
-      db.cardTemplate.findMany({
+      db.cardRelease.findMany({
         where: { createdByUserId: userId },
         orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
         include: CARD_INCLUDE,
@@ -606,20 +606,20 @@ export class CardService {
       db.cardIssue.findMany({
         where: { claimedByUserId: userId, status: { not: 'REVOKED' } },
         orderBy: { createdAt: 'desc' },
-        include: { cardTemplate: { include: CARD_INCLUDE } },
+        include: { release: { include: CARD_INCLUDE } },
       }),
     ])
     return {
       created: created.map((card) => serialize(card, userId)),
       claimed: issues.map((issue) => ({
         issue: serializeIssue(issue),
-        card: serialize(issue.cardTemplate, userId),
+        card: serialize(issue.release, userId),
       })),
     }
   }
 
   async getCard(id: string, viewerUserId?: string | null, isAdmin = false) {
-    const card = await db.cardTemplate.findUnique({ where: { id }, include: CARD_INCLUDE })
+    const card = await db.cardRelease.findUnique({ where: { id }, include: CARD_INCLUDE })
     if (!card) throw { statusCode: 404, message: 'Card not found' }
     if ((card.visibility !== 'PUBLIC' || card.status !== 'PUBLISHED') && card.createdByUserId !== viewerUserId && !isAdmin) {
       throw { statusCode: 404, message: 'Card not found' }
@@ -631,7 +631,7 @@ export class CardService {
     await this.requireActiveUser(userId)
     const issue = await db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM CardTemplate WHERE id = ${id} FOR UPDATE`
-      const card = await tx.cardTemplate.findUnique({ where: { id } })
+      const card = await tx.cardRelease.findUnique({ where: { id } })
       if (!card) throw { statusCode: 404, message: 'Card not found' }
       if (card.status !== 'PUBLISHED' || card.visibility !== 'PUBLIC') {
         throw { statusCode: 409, message: 'Only public published cards can be claimed' }
@@ -643,14 +643,14 @@ export class CardService {
 
       const issueNumber = card.issuedCount + 1
       const issueHash = sha256({
-        cardTemplateId: card.id,
+        releaseId: card.id,
         originHash: card.originHash,
         issueNumber,
         claimedByUserId: userId,
       })
       const created = await tx.cardIssue.create({
         data: {
-          cardTemplateId: card.id,
+          releaseId: card.id,
           issueNumber,
           ownerUserId: userId,
           claimedByUserId: userId,
@@ -659,10 +659,10 @@ export class CardService {
           status: 'CLAIMED',
         },
       })
-      await tx.cardTemplate.update({ where: { id: card.id }, data: { issuedCount: { increment: 1 } } })
+      await tx.cardRelease.update({ where: { id: card.id }, data: { issuedCount: { increment: 1 } } })
       return tx.cardIssue.findUniqueOrThrow({
         where: { id: created.id },
-        include: { cardTemplate: true },
+        include: { release: true },
       })
     })
 
@@ -685,7 +685,7 @@ export class CardService {
     const updated = await db.cardIssue.update({
       where: { id: issueId },
       data: { downloadedAt: new Date(), status: 'DOWNLOADED' },
-      include: { cardTemplate: { include: { athleteProfile: true } } },
+      include: { release: { include: { athleteProfile: true } } },
     })
 
     // Every download call is logged, even repeat downloads of the same
@@ -693,7 +693,7 @@ export class CardService {
     // this is the actual distribution history behind the analytics panel.
     await db.cardDownloadEvent.create({
       data: {
-        cardTemplateId: updated.cardTemplateId,
+        releaseId: updated.releaseId,
         cardIssueId: updated.id,
         downloadedByUserId: userId,
         context: (context as any) ?? 'DIRECT',
@@ -721,8 +721,8 @@ export class CardService {
     const athleteProfile = await db.personProfile.findUnique({ where: { id: athleteProfileId } })
     if (!athleteProfile) throw { statusCode: 404, message: 'Athlete profile not found' }
     const events = await db.cardDownloadEvent.findMany({
-      where: { cardTemplate: { athleteProfileId, ...(actor.role === 'ADMIN' ? {} : { createdByUserId: actor.id }) } },
-      include: { cardTemplate: { include: CARD_INCLUDE } },
+      where: { release: { athleteProfileId, ...(actor.role === 'ADMIN' ? {} : { createdByUserId: actor.id }) } },
+      include: { release: { include: CARD_INCLUDE } },
     })
 
     const totalDownloads = events.length
@@ -734,11 +734,11 @@ export class CardService {
     }
     const byContext = Array.from(contextCounts.entries()).map(([context, count]) => ({ context, count }))
 
-    const cardCounts = new Map<string, { card: (typeof events)[number]['cardTemplate']; count: number }>()
+    const cardCounts = new Map<string, { card: (typeof events)[number]['release']; count: number }>()
     for (const event of events) {
-      const existing = cardCounts.get(event.cardTemplateId)
+      const existing = cardCounts.get(event.releaseId)
       if (existing) existing.count += 1
-      else cardCounts.set(event.cardTemplateId, { card: event.cardTemplate, count: 1 })
+      else cardCounts.set(event.releaseId, { card: event.release, count: 1 })
     }
     const byCard = Array.from(cardCounts.values())
       .sort((a, b) => b.count - a.count)
@@ -751,13 +751,13 @@ export class CardService {
   // SocialService.createFollow. The prerequisite for a personal
   // "Collections" view before any trading/rarity/marketplace concept.
   async saveCard(userId: string, cardTemplateId: string) {
-    const card = await db.cardTemplate.findUnique({ where: { id: cardTemplateId }, select: { id: true } })
+    const card = await db.cardRelease.findUnique({ where: { id: cardTemplateId }, select: { id: true } })
     if (!card) throw { statusCode: 404, message: 'Card not found' }
     const save = await db.cardSave.upsert({
-      where: { userId_cardTemplateId: { userId, cardTemplateId } },
+      where: { userId_releaseId: { userId, releaseId: cardTemplateId } },
       update: {},
-      create: { userId, cardTemplateId },
-      include: { cardTemplate: { include: CARD_INCLUDE } },
+      create: { userId, releaseId: cardTemplateId },
+      include: { release: { include: CARD_INCLUDE } },
     })
     return serializeSave(save)
   }
@@ -773,7 +773,7 @@ export class CardService {
     const saves = await db.cardSave.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
-      include: { cardTemplate: { include: CARD_INCLUDE } },
+      include: { release: { include: CARD_INCLUDE } },
     })
     return saves.map((save) => serializeSave(save))
   }
