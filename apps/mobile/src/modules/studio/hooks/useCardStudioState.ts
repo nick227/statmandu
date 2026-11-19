@@ -766,6 +766,8 @@ export function useCardStudioState() {
   const handleUseMyProfile = useCallback(() => {
     const myProfile: UniversalProfile = {
       id: currentUser?.id || 'me',
+      slug: (currentUserProfile as any)?.slug || currentUsername || currentUser?.id || 'me',
+      specializations: [],
       displayName: currentUserProfile?.displayName || currentUsername || 'Creator',
       hometown: (currentUserProfile as any)?.hometown || undefined,
       bio: currentUserProfile?.bio || undefined,
