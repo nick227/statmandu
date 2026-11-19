@@ -8,6 +8,11 @@ import {
   useUpdateCardDesign,
   RevisionConflictError,
 } from '../hooks/useCardDesigns'
+import {
+  useCreateRelease,
+  useGenerateRelease,
+  usePublishRelease,
+} from '../hooks/useReleases'
 
 jest.mock('../hooks/useStudioUser', () => ({
   useStudioUser: jest.fn(),
@@ -23,11 +28,21 @@ jest.mock('../hooks/useCardDesigns', () => {
   }
 })
 
+jest.mock('../hooks/useReleases', () => {
+  const actual = jest.requireActual('../hooks/useReleases')
+  return {
+    ...actual,
+    useCreateRelease: jest.fn(),
+    useGenerateRelease: jest.fn(),
+    usePublishRelease: jest.fn(),
+  }
+})
+
 jest.mock('../hooks/usePersonSelector', () => ({
   usePersonSelector: () => ({
     people: [{ id: 'p1', displayName: 'Maya Angelou', bio: 'Author' }],
     isLoading: false,
-    createPerson: jest.fn(),
+    createPerson: jest.fn().mockResolvedValue({ data: { id: 'p1', displayName: 'Maya Angelou' } }),
     isCreating: false,
   }),
 }))
@@ -72,9 +87,10 @@ jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
 
+const mockPush = jest.fn()
 jest.mock('expo-router', () => ({
   useRouter: () => ({
-    push: jest.fn(),
+    push: mockPush,
     replace: jest.fn(),
     back: jest.fn(),
   }),
@@ -84,6 +100,9 @@ jest.mock('expo-router', () => ({
 describe('CardStudioScreen', () => {
   const mockCreate = jest.fn()
   const mockUpdate = jest.fn()
+  const mockCreateRelease = jest.fn()
+  const mockGenerateRelease = jest.fn()
+  const mockPublishRelease = jest.fn()
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -114,29 +133,50 @@ describe('CardStudioScreen', () => {
       }),
       isPending: false,
     })
+    ;(useCreateRelease as jest.Mock).mockReturnValue({
+      mutateAsync: mockCreateRelease.mockResolvedValue({
+        id: 'release-123',
+        title: 'Untitled Collectible',
+      }),
+      isPending: false,
+    })
+    ;(useGenerateRelease as jest.Mock).mockReturnValue({
+      mutateAsync: mockGenerateRelease.mockResolvedValue({}),
+      isPending: false,
+    })
+    ;(usePublishRelease as jest.Mock).mockReturnValue({
+      mutateAsync: mockPublishRelease.mockResolvedValue({}),
+      isPending: false,
+    })
   })
 
-  it('renders studio canvas with Flagship Designs and adaptive positional inputs by default', async () => {
+  it('renders simplified studio layout with content inputs on left, card on right, and design dropdown', async () => {
     const screen = await render(<CardStudioScreen />)
 
     expect(screen.getByTestId('card-composition-renderer')).toBeTruthy()
     expect(screen.getByPlaceholderText('Design title...')).toBeTruthy()
-    expect(screen.getByText('Flagship Design Collection')).toBeTruthy()
+    expect(screen.getByText('Content')).toBeTruthy()
 
-    // Flagship carousel cards
-    expect(screen.getByTestId('flagship-design-card-classic-collector')).toBeTruthy()
-    expect(screen.getByTestId('flagship-design-card-prestige-gold')).toBeTruthy()
-
-    // 3 Positional inputs
+    // Dynamic inputs
     expect(screen.getByTestId('slot-input1')).toBeTruthy()
     expect(screen.getByTestId('slot-input2')).toBeTruthy()
     expect(screen.getByTestId('slot-input3')).toBeTruthy()
 
+    // Design picker dropdown under content fields
+    expect(screen.getByTestId('design-picker-dropdown')).toBeTruthy()
+
+    // Action buttons
     expect(screen.getByText('Save')).toBeTruthy()
     expect(screen.getByText('Publish Release')).toBeTruthy()
+
+    // Legacy modals / elements cut
+    expect(screen.queryByText('Select Subject')).toBeNull()
+    expect(screen.queryByText('Designs')).toBeNull()
+    expect(screen.queryByText(/Canvas 600/)).toBeNull()
+    expect(screen.queryByTestId('mode-flagship-button')).toBeNull()
   })
 
-  it('preserves positional inputs when switching between flagship designs', async () => {
+  it('preserves content when switching designs using the dropdown', async () => {
     const screen = await render(<CardStudioScreen />)
 
     // Edit slot 1
@@ -147,45 +187,18 @@ describe('CardStudioScreen', () => {
       expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
     })
 
-    // Switch to Prestige Gold flagship design
-    const prestigeCard = screen.getByTestId('flagship-design-card-prestige-gold')
-    fireEvent.press(prestigeCard)
+    // Open design dropdown
+    fireEvent.press(screen.getByTestId('design-picker-dropdown'))
+
+    // Pick Prestige Gold
+    await waitFor(() => {
+      expect(screen.getByTestId('design-option-prestige-gold')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('design-option-prestige-gold'))
 
     await waitFor(() => {
-      // Input value is preserved!
+      // Content preserved!
       expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
-    })
-  })
-
-  it('switches to 5D Recipe Studio mode and navigates dimensions', async () => {
-    const screen = await render(<CardStudioScreen />)
-
-    // Switch to 5D Recipes
-    fireEvent.press(screen.getByTestId('mode-recipes-button'))
-
-    await waitFor(() => {
-      expect(screen.getByText('Design Recipe Studio')).toBeTruthy()
-      expect(screen.getByTestId('dimension-tab-style')).toBeTruthy()
-    })
-  })
-
-  it('toggles to Advanced Layers mode and allows adding layers', async () => {
-    const screen = await render(<CardStudioScreen />)
-
-    // Click mode toggle for Advanced Layers
-    fireEvent.press(screen.getByTestId('mode-advanced-button'))
-
-    await waitFor(() => {
-      expect(screen.getByText('Add Text')).toBeTruthy()
-      expect(screen.getByText('Add Shape')).toBeTruthy()
-      expect(screen.getByText('Add Image')).toBeTruthy()
-    })
-
-    // Add a text layer in advanced mode
-    fireEvent.press(screen.getByText('Add Text'))
-
-    await waitFor(() => {
-      expect(screen.getByText('New Text Layer')).toBeTruthy()
     })
   })
 
@@ -234,6 +247,10 @@ describe('CardStudioScreen', () => {
     const titleInput = screen.getByPlaceholderText('Design title...')
     fireEvent.changeText(titleInput, 'Conflicted title local edit')
 
+    await waitFor(() => {
+      expect(titleInput.props.value).toBe('Conflicted title local edit')
+    })
+
     fireEvent.press(screen.getByTestId('save-design-button'))
 
     await waitFor(() => {
@@ -243,7 +260,29 @@ describe('CardStudioScreen', () => {
         ),
       ).toBeTruthy()
     })
+  })
 
-    expect(titleInput.props.value).toBe('Conflicted title local edit')
+  it('publishes release directly without modals and redirects to storefront', async () => {
+    const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('publish-release-button')).toBeTruthy()
+    })
+    const publishBtn = screen.getByTestId('publish-release-button')
+    fireEvent.press(publishBtn)
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalled()
+      expect(mockCreateRelease).toHaveBeenCalledWith(
+        expect.objectContaining({
+          templateId: 'design-new',
+          editionMode: 'LIMITED',
+          editionSize: 25,
+        }),
+      )
+      expect(mockGenerateRelease).toHaveBeenCalledWith('release-123')
+      expect(mockPublishRelease).toHaveBeenCalledWith('release-123')
+      expect(mockPush).toHaveBeenCalledWith('/storefronts/testcreator')
+    })
   })
 })
