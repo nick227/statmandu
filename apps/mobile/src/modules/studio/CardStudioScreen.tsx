@@ -72,28 +72,13 @@ export function CardStudioScreen() {
   usePageTitle(studio.designTitle ? `${studio.designTitle} · Card Studio` : 'Card Studio')
 
   // Inline expandable accordion state
-  const [openSections, setOpenSections] = useState<Record<StudioSection, boolean>>({
-    subject: false,
-    card: false,
-    content: false,
-    appearance: false,
-  })
+  const [openSection, setOpenSection] = useState<StudioSection | null>(null)
 
   const toggleSection = useCallback((section: StudioSection) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }))
+    setOpenSection((current) => current === section ? null : section)
   }, [])
 
-  const collapseAll = useCallback(() => {
-    setOpenSections({
-      subject: false,
-      card: false,
-      content: false,
-      appearance: false,
-    })
-  }, [])
+  const collapseAll = useCallback(() => setOpenSection(null), [])
 
   // Section summary captions
   const sectionSummaries = useMemo(() => {
@@ -225,7 +210,7 @@ export function CardStudioScreen() {
       {/* 4 Inline Expandable Accordion Sections */}
       <View className="gap-3">
         {SECTIONS.map((sec) => {
-          const isOpen = openSections[sec.id]
+          const isOpen = openSection === sec.id
           const IconComponent = sec.icon
           const summary = sectionSummaries[sec.id]
 
