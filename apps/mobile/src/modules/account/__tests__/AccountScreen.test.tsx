@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AccountScreen } from '../AccountScreen'
 import { useAccountSession } from '../useAccountSession'
 
@@ -37,7 +38,17 @@ jest.mock('@/shared/ui/Button', () => ({
   },
 }))
 
-describe('AccountScreen - Personal Card Content Fields', () => {
+function renderWithClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  })
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
+}
+
+describe('AccountScreen - Personal Card Content Fields & Media Grid', () => {
   const mockUser = {
     id: 'user-1',
     email: 'creator@rare.com',
@@ -59,18 +70,23 @@ describe('AccountScreen - Personal Card Content Fields', () => {
     })
   })
 
-  it('renders user identity and personal card content fields', async () => {
-    const screen = await render(<AccountScreen />)
+  it('renders user identity, personal card fields, and media library', async () => {
+    const screen = await renderWithClient(<AccountScreen />)
 
     expect(screen.getAllByText('Alex Designer').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Personal Fields')).toBeTruthy()
     expect(screen.getAllByText('Creator').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Athlete')).toBeTruthy()
     expect(screen.getByText('Save Attributes')).toBeTruthy()
+
+    // Media Library grid
+    expect(screen.getByText('Media Library')).toBeTruthy()
+    expect(screen.getByText('Upload Media')).toBeTruthy()
+    expect(screen.getByText('Add Image')).toBeTruthy()
   })
 
   it('dynamically switches tailored fields when selecting Athlete pursuit', async () => {
-    const screen = await render(<AccountScreen />)
+    const screen = await renderWithClient(<AccountScreen />)
 
     // Select Athlete
     await fireEvent.press(screen.getByText('Athlete'))
@@ -82,12 +98,23 @@ describe('AccountScreen - Personal Card Content Fields', () => {
   })
 
   it('allows adding and removing custom card fields', async () => {
-    const screen = await render(<AccountScreen />)
+    const screen = await renderWithClient(<AccountScreen />)
 
     expect(screen.getByText('Add Field')).toBeTruthy()
     expect(screen.getByDisplayValue('Primary Medium')).toBeTruthy()
 
     await fireEvent.press(screen.getByText('Add Field'))
     expect(screen.getByDisplayValue('New Field')).toBeTruthy()
+  })
+
+  it('renders filter tabs and allows switching in media library', async () => {
+    const screen = await renderWithClient(<AccountScreen />)
+
+    expect(screen.getByText('All')).toBeTruthy()
+    expect(screen.getByText('My Uploads')).toBeTruthy()
+    expect(screen.getByText('Presets')).toBeTruthy()
+
+    await fireEvent.press(screen.getByText('Presets'))
+    expect(screen.getByText('Presets')).toBeTruthy()
   })
 })

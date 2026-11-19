@@ -21,6 +21,7 @@ import { LoadingState } from '@/shared/ui/LoadingState'
 import { SignInPrompt } from '@/shared/ui/SignInPrompt'
 import { Screen } from '@/shared/layout/Screen'
 import { useAccountSession } from '@/modules/account/useAccountSession'
+import { AccountMediaGrid } from '@/modules/account/AccountMediaGrid'
 import { clearStoredToken } from '@/lib/sdk'
 import { useNativeColor } from '@/lib/theme'
 import { cn } from '@/lib/utils'
@@ -57,7 +58,7 @@ export function AccountScreen() {
   const brandColor = useNativeColor('brand')
   const mutedColor = useNativeColor('mutedText')
 
-  const { isError, isLoading, logout, user } = useAccountSession()
+  const { isError, isLoading, logout, user, capabilities } = useAccountSession()
 
   // State for Personal Card Content Builder
   const [pursuit, setPursuit] = useState<PursuitFocus>('CREATOR')
@@ -100,6 +101,7 @@ export function AccountScreen() {
 
   const displayName = user.profile?.displayName ?? user.profile?.username ?? user.email ?? 'Creator'
   const username = user.profile?.username ?? user.email?.split('@')[0] ?? 'collector'
+  const athleteProfileId = capabilities?.athleteProfiles?.[0]?.athleteProfileId ?? user.profile?.id ?? null
 
   function handleSwitchPursuit(newPursuit: PursuitFocus) {
     setPursuit(newPursuit)
@@ -174,7 +176,7 @@ export function AccountScreen() {
 
   return (
     <Screen title="Personal" insetTop={false} scroll>
-      <View className="w-full max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12 gap-8 pb-28">
+      <View className="w-full max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 py-8 md:py-12 gap-8 md:gap-10 pb-28">
         {/* 1. Identity Header */}
         <View className="rounded-2xl border border-border/80 bg-surface p-6 md:p-8 shadow-xs flex-row flex-wrap items-center justify-between gap-6">
           <View className="flex-row items-center gap-4 flex-1 min-w-[240px]">
@@ -212,13 +214,15 @@ export function AccountScreen() {
           </Button>
         </View>
 
-        {/* 2. Personal Fields Container */}
-        <View className="gap-6">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-xl font-bold tracking-tight text-text">
-              Personal Fields
-            </Text>
-          </View>
+        {/* 2. Main Two-Column Layout: Personal Fields on Left, Media Library Grid on Right */}
+        <View className="flex-col lg:flex-row items-start gap-8">
+          {/* Left Column: Personal Attributes Form */}
+          <View className="w-full lg:w-1/2 gap-6">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-xl font-bold tracking-tight text-text">
+                Personal Fields
+              </Text>
+            </View>
 
           {/* Pursuit Segmented Selector */}
           <View className="flex-row flex-wrap gap-2">
@@ -370,9 +374,15 @@ export function AccountScreen() {
             ) : null}
           </View>
         </View>
+
+        {/* Right Column: User Media Grid & Uploads */}
+        <View className="w-full lg:w-1/2">
+          <AccountMediaGrid athleteProfileId={athleteProfileId} />
+        </View>
       </View>
-    </Screen>
-  )
+    </View>
+  </Screen>
+)
 }
 
 function FormField({
