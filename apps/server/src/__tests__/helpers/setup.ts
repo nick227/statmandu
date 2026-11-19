@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from 'node:crypto'
 import { db } from '@statman/db'
 import { beforeAll, beforeEach } from 'vitest'
 import { cardGenerationExecutor } from '../../jobs/GenerationExecutor'
@@ -63,6 +64,11 @@ beforeAll(() => {
   assertTestDatabase()
 })
 
+const testKeys = generateKeyPairSync('ed25519')
+const testRing = JSON.stringify({ activeKeyId: 'test-only', keys: [{ id: 'test-only', publicKeyPem: testKeys.publicKey.export({ type: 'spki', format: 'pem' }), privateKeyPem: testKeys.privateKey.export({ type: 'pkcs8', format: 'pem' }) }] })
+
 beforeEach(async () => {
+  delete process.env.RARE_SIGNING_KEY_FILE
+  process.env.RARE_SIGNING_KEYS_JSON = testRing
   await resetTestDatabase()
 })

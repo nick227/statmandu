@@ -21,3 +21,4 @@ export * from './discovery'
 
 export * from './people'
 export * from './studio'
+export * from './authenticity'

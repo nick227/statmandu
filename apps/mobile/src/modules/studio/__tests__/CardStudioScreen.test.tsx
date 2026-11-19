@@ -116,46 +116,57 @@ describe('CardStudioScreen', () => {
     })
   })
 
-  it('renders studio canvas with 5-dimensional Recipe Studio by default', async () => {
+  it('renders studio canvas with Flagship Designs and adaptive positional inputs by default', async () => {
     const screen = await render(<CardStudioScreen />)
 
     expect(screen.getByTestId('card-composition-renderer')).toBeTruthy()
     expect(screen.getByPlaceholderText('Design title...')).toBeTruthy()
-    expect(screen.getByText('Design Recipe Studio')).toBeTruthy()
+    expect(screen.getByText('Flagship Design Collection')).toBeTruthy()
 
-    // 5 Dimension tabs
-    expect(screen.getByTestId('dimension-tab-style')).toBeTruthy()
-    expect(screen.getByTestId('dimension-tab-layout')).toBeTruthy()
-    expect(screen.getByTestId('dimension-tab-artwork')).toBeTruthy()
-    expect(screen.getByTestId('dimension-tab-content')).toBeTruthy()
-    expect(screen.getByTestId('dimension-tab-effects')).toBeTruthy()
+    // Flagship carousel cards
+    expect(screen.getByTestId('flagship-design-card-classic-collector')).toBeTruthy()
+    expect(screen.getByTestId('flagship-design-card-prestige-gold')).toBeTruthy()
+
+    // 3 Positional inputs
+    expect(screen.getByTestId('slot-input1')).toBeTruthy()
+    expect(screen.getByTestId('slot-input2')).toBeTruthy()
+    expect(screen.getByTestId('slot-input3')).toBeTruthy()
 
     expect(screen.getByText('Save')).toBeTruthy()
     expect(screen.getByText('Publish Release')).toBeTruthy()
   })
 
-  it('switches dimensions and updates variations without resetting other choices', async () => {
+  it('preserves positional inputs when switching between flagship designs', async () => {
     const screen = await render(<CardStudioScreen />)
 
-    // Switch to Layout dimension tab
-    fireEvent.press(screen.getByTestId('dimension-tab-layout'))
+    // Edit slot 1
+    const slotInput1 = screen.getByTestId('slot-input1')
+    fireEvent.changeText(slotInput1, 'Miles Davis')
 
     await waitFor(() => {
-      expect(screen.getByText('layout Families (5)')).toBeTruthy()
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
     })
 
-    // Click on split-editorial family chip
-    fireEvent.press(screen.getByTestId('family-chip-layout.split-editorial'))
+    // Switch to Prestige Gold flagship design
+    const prestigeCard = screen.getByTestId('flagship-design-card-prestige-gold')
+    fireEvent.press(prestigeCard)
 
     await waitFor(() => {
-      expect(screen.getByTestId('variation-card-layout.split-editorial.balanced')).toBeTruthy()
+      // Input value is preserved!
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
     })
+  })
 
-    // Select the balanced split variation
-    fireEvent.press(screen.getByTestId('variation-card-layout.split-editorial.balanced'))
+  it('switches to 5D Recipe Studio mode and navigates dimensions', async () => {
+    const screen = await render(<CardStudioScreen />)
 
-    // Studio canvas remains valid and updated
-    expect(screen.getByTestId('card-composition-renderer')).toBeTruthy()
+    // Switch to 5D Recipes
+    fireEvent.press(screen.getByTestId('mode-recipes-button'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Design Recipe Studio')).toBeTruthy()
+      expect(screen.getByTestId('dimension-tab-style')).toBeTruthy()
+    })
   })
 
   it('toggles to Advanced Layers mode and allows adding layers', async () => {
@@ -178,7 +189,7 @@ describe('CardStudioScreen', () => {
     })
   })
 
-  it('saves design with compiled composition and metadata', async () => {
+  it('saves design with compiled flagship metadata', async () => {
     const screen = await render(<CardStudioScreen />)
 
     const saveBtn = screen.getByTestId('save-design-button')
@@ -193,9 +204,10 @@ describe('CardStudioScreen', () => {
             canvas: { width: 600, height: 900 },
             metadata: expect.objectContaining({
               rendererVersion: 'rdc-composition-v1',
-              taxonomy: expect.objectContaining({
-                version: 1,
-                selections: expect.any(Object),
+              flagship: expect.objectContaining({
+                id: expect.any(String),
+                inputs: expect.any(Object),
+                fittedFontSizes: expect.any(Object),
               }),
             }),
           }),
@@ -206,7 +218,6 @@ describe('CardStudioScreen', () => {
   })
 
   it('handles 409 conflict during save and preserves local edits', async () => {
-    // First render & successful save to establish activeDesign
     const screen = await render(<CardStudioScreen />)
     fireEvent.press(screen.getByTestId('save-design-button'))
 
@@ -214,18 +225,15 @@ describe('CardStudioScreen', () => {
       expect(screen.getByText('v1')).toBeTruthy()
     })
 
-    // Configure update mutation to throw revision conflict
     mockUpdate.mockRejectedValueOnce(
       new RevisionConflictError(
         'Conflict: This design was updated elsewhere. Your unsaved changes are preserved locally.',
       ),
     )
 
-    // Edit title locally
     const titleInput = screen.getByPlaceholderText('Design title...')
     fireEvent.changeText(titleInput, 'Conflicted title local edit')
 
-    // Attempt save which fails with 409
     fireEvent.press(screen.getByTestId('save-design-button'))
 
     await waitFor(() => {
@@ -236,7 +244,6 @@ describe('CardStudioScreen', () => {
       ).toBeTruthy()
     })
 
-    // Verify local edits are NOT wiped out
     expect(titleInput.props.value).toBe('Conflicted title local edit')
   })
 })

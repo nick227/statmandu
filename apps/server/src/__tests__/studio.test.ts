@@ -81,7 +81,7 @@ describe('Reusable designs, immutable releases and creator catalogs', () => {
     expect((await app.inject({ method: 'PATCH', url: `/cards/${a.id}`, headers: asAuth(testUserId), payload: { statsSnapshotJson: { forged: true } } })).statusCode).toBe(409)
     const bad = await app.inject({ method: 'PATCH', url: `/card-designs/${design.id}`, headers: asAuth(testUserId), payload: { expectedRevision: 2, title: 'stale' } })
     expect(bad.statusCode).toBe(409)
-    expect((await app.inject({ method: 'POST', url: `/releases/${a.id}/publish`, headers: asAuth(testUserId), payload: { publicationType: 'OFFICIAL' } })).statusCode).toBe(400)
+    expect((await app.inject({ method: 'POST', url: `/releases/${a.id}/publish`, headers: asAuth(testUserId), payload: { publicationType: 'OFFICIAL' } })).statusCode).toBe(403)
     expect((await app.inject({ method: 'PATCH', url: `/card-designs/${design.id}`, headers: asAuth(testUserId), payload: { expectedRevision: 1, archived: true } })).statusCode).toBe(200)
     expect((await create({ ...input, requestId: 'archived' })).statusCode).toBe(404)
     expect((await publish(a.id)).statusCode).toBe(200)

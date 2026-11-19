@@ -233,6 +233,22 @@ components:
       $ref: ./components/schemas/studio.yaml#/UpdateStorefrontInput
     CardDesignSnapshot:
       $ref: ./components/schemas/studio.yaml#/CardDesignSnapshot
+    PublishingAuthority:
+      $ref: ./components/schemas/authenticity.yaml#/PublishingAuthority
+    RevokeClaimInput:
+      $ref: ./components/schemas/authenticity.yaml#/RevokeClaimInput
+    SigningKey:
+      $ref: ./components/schemas/authenticity.yaml#/SigningKey
+    ReleaseAuthorizationEvidence:
+      $ref: ./components/schemas/authenticity.yaml#/ReleaseAuthorizationEvidence
+    ReleaseAssetDigest:
+      $ref: ./components/schemas/authenticity.yaml#/ReleaseAssetDigest
+    ReleaseManifest:
+      $ref: ./components/schemas/authenticity.yaml#/ReleaseManifest
+    ReleaseAuthenticity:
+      $ref: ./components/schemas/authenticity.yaml#/ReleaseAuthenticity
+    IssueAuthenticity:
+      $ref: ./components/schemas/authenticity.yaml#/IssueAuthenticity
 paths:
   /auth/register:
     $ref: ./paths/auth.yaml#/register
@@ -436,3 +452,13 @@ paths:
     $ref: ./paths/studio.yaml#/route9
   /storefronts/{username}/releases:
     $ref: ./paths/studio.yaml#/route10
+  /people/{personId}/publishing-authority:
+    $ref: ./paths/authenticity.yaml#/route0
+  /claims/{claimId}/revoke:
+    $ref: ./paths/authenticity.yaml#/route1
+  /releases/{releaseId}/authenticity:
+    $ref: ./paths/authenticity.yaml#/route2
+  /card-issues/{issueId}/authenticity:
+    $ref: ./paths/authenticity.yaml#/route3
+  /signing-keys:
+    $ref: ./paths/authenticity.yaml#/route4

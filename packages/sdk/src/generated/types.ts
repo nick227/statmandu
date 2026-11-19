@@ -1740,6 +1740,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/people/{personId}/publishing-authority": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** get Publishing Authority */
+        get: operations["getPublishingAuthority"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/claims/{claimId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** revoke Claim */
+        post: operations["revokeClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/releases/{releaseId}/authenticity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** inspect Release Authenticity */
+        get: operations["inspectReleaseAuthenticity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/card-issues/{issueId}/authenticity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** inspect Issue Authenticity */
+        get: operations["inspectIssueAuthenticity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signing-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** list Signing Keys */
+        get: operations["listSigningKeys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2195,12 +2280,22 @@ export interface components {
             verificationNote?: string | null;
             status: components["schemas"]["ClaimStatus"];
             reviewedByUserId?: string | null;
+            /** Format: date-time */
+            reviewedAt?: string | null;
+            /** Format: date-time */
+            publishingApprovedAt?: string | null;
+            publishingApprovedByUserId?: string | null;
+            /** Format: date-time */
+            revokedAt?: string | null;
+            revokedByUserId?: string | null;
+            revocationReason?: string | null;
         };
         ClaimPlayerInput: {
             verificationNote?: string;
         };
         ReviewClaimInput: {
-            status: components["schemas"]["ClaimStatus"];
+            /** @enum {string} */
+            status: "APPROVED" | "REJECTED";
             verificationNote?: string;
         };
         VerifyPlayerInput: {
@@ -2356,6 +2451,14 @@ export interface components {
             templateRevision?: number | null;
             templateSnapshot?: components["schemas"]["CardDesignSnapshot"] | null;
             storefrontId?: string | null;
+            attestation?: {
+                /** @enum {string} */
+                algorithm: "Ed25519";
+                /** @enum {string} */
+                signer: "RARE_PLATFORM";
+                keyId: string;
+                manifestHash: string;
+            } | null;
         };
         CardIssue: {
             id: string;
@@ -2410,7 +2513,7 @@ export interface components {
             editionMode?: components["schemas"]["CardEditionMode"];
             editionSize?: number | null;
             /** @enum {string} */
-            publicationType?: "COMMUNITY";
+            publicationType?: "COMMUNITY" | "OFFICIAL";
         };
         MyCard: {
             issue: components["schemas"]["CardIssue"];
@@ -2541,6 +2644,117 @@ export interface components {
                 byteSize: number;
             }[];
         };
+        PublishingAuthority: {
+            personProfileId: string;
+            userId: string;
+            canPublishOfficial: boolean;
+            claimId: string | null;
+            /** Format: date-time */
+            approvedAt: string | null;
+            /** @enum {string} */
+            basis: "REVIEWED_SELF_CLAIM" | "NONE";
+        };
+        RevokeClaimInput: {
+            reason: string;
+        };
+        SigningKey: {
+            id: string;
+            /** @enum {string} */
+            algorithm: "Ed25519";
+            publicKeyPem: string;
+            /** Format: date-time */
+            revokedAt: string | null;
+        };
+        ReleaseAuthorizationEvidence: {
+            /** @enum {string} */
+            basis: "REVIEWED_SELF_CLAIM";
+            /** @enum {integer} */
+            policyVersion: 1;
+            claimId: string;
+            personProfileId: string;
+            userId: string;
+            /** Format: date-time */
+            approvedAt: string;
+            reviewedByUserId: string;
+        };
+        ReleaseAssetDigest: {
+            id: string;
+            objectKey: string;
+            contentType: string;
+            byteSize: number;
+            sha256: string;
+        };
+        ReleaseManifest: {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            releaseId: string;
+            personProfileId: string;
+            createdByUserId: string;
+            publishedByUserId: string;
+            /** @enum {string} */
+            publicationType: "COMMUNITY" | "OFFICIAL";
+            content: {
+                [key: string]: unknown;
+            };
+            edition: {
+                /** @enum {string} */
+                mode: "UNLIMITED" | "LIMITED" | "ONE_OF_ONE";
+                size: number | null;
+            };
+            rendererVersion: string;
+            assets: components["schemas"]["ReleaseAssetDigest"][];
+            /** Format: date-time */
+            publishedAt: string;
+            /** @enum {string} */
+            publicationVisibility: "PUBLIC" | "PRIVATE";
+            authorization: components["schemas"]["ReleaseAuthorizationEvidence"] | null;
+            originHash: string;
+            attestation: {
+                /** @enum {string} */
+                signer: "RARE_PLATFORM";
+                /** @enum {string} */
+                algorithm: "Ed25519";
+                keyId: string;
+                /** @enum {string} */
+                canonicalization: "RFC8785";
+                domain: string;
+            };
+        };
+        ReleaseAuthenticity: {
+            releaseId: string;
+            /** @enum {string} */
+            publicationType: "COMMUNITY" | "OFFICIAL";
+            /** @enum {string} */
+            platformAttestation: "VALID" | "INVALID" | "UNSIGNED" | "MISSING_EVIDENCE" | "KEY_UNAVAILABLE" | "KEY_REVOKED";
+            /** @enum {string} */
+            officialAtPublication: "VERIFIED" | "NOT_APPLICABLE" | "MISSING_OR_INVALID_EVIDENCE";
+            /** @enum {string} */
+            currentAuthority: "ACTIVE" | "INACTIVE" | "REVOKED" | "UNKNOWN" | "NOT_APPLICABLE";
+            /** @enum {string} */
+            withdrawalStatus: "PUBLISHED" | "WITHDRAWN";
+            manifest: components["schemas"]["ReleaseManifest"] | null;
+            manifestHash: string | null;
+            signature: string | null;
+            keyId: string | null;
+            authorizationClaimId: string | null;
+            /** Format: date-time */
+            authorityRevokedAt: string | null;
+            /** @enum {string} */
+            assetVerification: "DIGESTS_AT_PUBLICATION_NOT_RECHECKED" | "UNAVAILABLE";
+            disclaimer: string;
+        };
+        IssueAuthenticity: {
+            issueId: string;
+            releaseId: string;
+            issueNumber: number | null;
+            issueHash: string;
+            /** @enum {string} */
+            status: "CLAIMED" | "DOWNLOADED" | "REVOKED";
+            /** @enum {string} */
+            bindingStatus: "LEDGER_MATCH" | "INVALID" | "UNVERIFIABLE_LEGACY";
+            release: components["schemas"]["ReleaseAuthenticity"];
+            disclaimer: string;
+        };
         MeAthleteProfileCapability: {
             athleteProfileId: string;
             playerId: string;
@@ -2577,7 +2791,7 @@ export interface components {
             name: string;
         };
         /** @enum {string} */
-        ClaimStatus: "PENDING" | "APPROVED" | "REJECTED";
+        ClaimStatus: "PENDING" | "APPROVED" | "REJECTED" | "REVOKED";
         GameTeamSummary: {
             teamId: string;
             isHome: boolean;
@@ -6715,6 +6929,173 @@ export interface operations {
                     "application/json": {
                         data: components["schemas"]["CardRelease"][];
                         meta?: components["schemas"]["PaginatedMeta"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getPublishingAuthority: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspection or transition result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PublishingAuthority"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    revokeClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claimId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevokeClaimInput"];
+            };
+        };
+        responses: {
+            /** @description Inspection or transition result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Claim"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    inspectReleaseAuthenticity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                releaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspection or transition result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReleaseAuthenticity"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    inspectIssueAuthenticity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                issueId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspection or transition result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["IssueAuthenticity"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listSigningKeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspection or transition result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SigningKey"][];
                     };
                 };
             };

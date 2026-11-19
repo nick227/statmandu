@@ -20,6 +20,8 @@ enum UserRole {
 }
 
 model User {
+  publishingApprovals Claim[] @relation("PublishingApprover")
+  revokedClaims Claim[] @relation("ClaimRevoker")
   id           String    @id @default(cuid())
   email        String    @unique
   passwordHash String
@@ -913,6 +915,14 @@ model Storefront {
 }
 
 model CardRelease {
+  authorizationClaimId String?
+  authorizationClaim Claim? @relation(fields: [authorizationClaimId], references: [id], onDelete: Restrict)
+  attestationVersion Int?
+  manifestJson Json?
+  manifestHash String?
+  manifestSignature String? @db.Text
+  signingKeyId String?
+  @@index([authorizationClaimId])
   @@map("CardTemplate")
   templateId String?
   templateRevision Int?
@@ -1120,9 +1130,18 @@ enum ClaimStatus {
   PENDING
   APPROVED
   REJECTED
+  REVOKED
 }
 
 model Claim {
+  publishingApprovedAt DateTime?
+  publishingApprovedByUserId String?
+  publishingApprovedByUser User? @relation("PublishingApprover", fields: [publishingApprovedByUserId], references: [id])
+  revokedAt DateTime?
+  revokedByUserId String?
+  revokedByUser User? @relation("ClaimRevoker", fields: [revokedByUserId], references: [id])
+  revocationReason String? @db.Text
+  authorizedReleases CardRelease[]
   id                String      @id @default(cuid())
   athleteProfileId  String
   requestedByUserId String

@@ -309,6 +309,28 @@ Card:
       type:
         - string
         - 'null'
+    attestation:
+      anyOf:
+        - type: object
+          required:
+            - algorithm
+            - signer
+            - keyId
+            - manifestHash
+          properties:
+            algorithm:
+              type: string
+              enum:
+                - Ed25519
+            signer:
+              type: string
+              enum:
+                - RARE_PLATFORM
+            keyId:
+              type: string
+            manifestHash:
+              type: string
+        - type: 'null'
 CreateCardInput:
   type: object
   required:
@@ -412,6 +434,7 @@ PublishCardInput:
       type: string
       enum:
         - COMMUNITY
+        - OFFICIAL
 MyCard:
   type: object
   required:

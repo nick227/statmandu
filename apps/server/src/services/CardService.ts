@@ -1,3 +1,6 @@
+import { activeAccount, lockPerson, officialAuthority } from './PublishingAuthority'
+import { signManifest } from './ReleaseSigning'
+import { releaseAssetDigests } from './ReleaseManifest'
 import type { Prisma } from '@prisma/client'
 import { requireActiveCreator, requireCardCreator } from './CardAccess'
 import { personName, serializePerson } from './PersonService'
@@ -158,6 +161,7 @@ function serialize(card: any, viewerUserId?: string | null) {
     storefrontId: card.storefrontId,
     personProfileId: card.athleteProfileId,
     person: serializePerson(card.athleteProfile),
+    attestation: card.manifestSignature ? { algorithm: 'Ed25519', signer: 'RARE_PLATFORM', keyId: card.signingKeyId, manifestHash: card.manifestHash } : null,
     publicationType: card.publicationType,
     publishedByUserId: card.publishedByUserId,
     contentSnapshotJson: card.contentSnapshotJson,
@@ -545,13 +549,18 @@ export class CardService {
   }
 
   async publishCard(actor: Actor, id: string, options: PublishOptions = {}) {
-    if (options.publicationType && options.publicationType !== 'COMMUNITY') throw { statusCode: 403, message: 'Official publishing is not enabled' }
+    if (options.publicationType && !['COMMUNITY', 'OFFICIAL'].includes(options.publicationType)) throw { statusCode: 400, message: 'Invalid publication classification' }
     await this.requireActiveUser(actor.id)
     const card = await db.$transaction(async tx => {
       await tx.$queryRaw`SELECT id FROM CardTemplate WHERE id = ${id} FOR UPDATE`
       const existing = await tx.cardRelease.findUnique({ where: { id }, include: CARD_INCLUDE })
       if (!existing) throw { statusCode: 404, message: 'Card not found' }
-      if (actor.role !== 'ADMIN' && existing.createdByUserId !== actor.id) throw { statusCode: 403, message: 'Forbidden' }
+      await lockPerson(tx, existing.athleteProfileId)
+      const publisher = await activeAccount(tx, actor.id)
+      if (publisher.role !== 'ADMIN' && existing.createdByUserId !== actor.id) throw { statusCode: 403, message: 'Forbidden' }
+      const publicationType = (options.publicationType ?? 'COMMUNITY') as 'COMMUNITY' | 'OFFICIAL'
+      const authority = publicationType === 'OFFICIAL' ? await officialAuthority(tx, existing.athleteProfileId, actor.id) : null
+      if (publicationType === 'OFFICIAL' && (!authority || existing.createdByUserId !== actor.id)) throw { statusCode: 403, message: 'Official self-publishing requires a current reviewed claim and your own release' }
       if (existing.publishedAt || ['ARCHIVED', 'GENERATING'].includes(existing.status)) throw { statusCode: 409, message: 'Card cannot be published in this state' }
       const editionMode = options.editionMode ?? existing.editionMode
       const editionSize = validateEdition(editionMode, options.editionSize === undefined ? existing.editionSize : options.editionSize)
@@ -567,11 +576,15 @@ export class CardService {
         facts: existing.statsSnapshotJson,
         createdByUserId: existing.createdByUserId,
         publishedByUserId: actor.id,
-        publicationType: 'COMMUNITY',
+        publicationType,
       }
       const originHash = sha256({ schemaVersion: 2, cardTemplateId: id, editionMode, editionSize, content: snapshot })
-      return tx.cardRelease.update({ where: { id }, data: { storefrontId: storefront.id, status: 'PUBLISHED', visibility: options.visibility ?? 'PUBLIC', editionMode, editionSize, originHash, publishedAt: new Date(), publishedByUserId: actor.id, publicationType: 'COMMUNITY', contentSnapshotJson: snapshot as any }, include: CARD_INCLUDE })
-    })
+      const assets = await releaseAssetDigests(tx, existing)
+      const publishedAt = new Date()
+      const authorization = authority ? { basis: 'REVIEWED_SELF_CLAIM', policyVersion: 1, claimId: authority.id, personProfileId: existing.athleteProfileId, userId: actor.id, approvedAt: authority.publishingApprovedAt!.toISOString(), reviewedByUserId: authority.publishingApprovedByUserId } : null
+      const signed = signManifest({ schemaVersion: 1, releaseId: id, personProfileId: existing.athleteProfileId, createdByUserId: existing.createdByUserId, publishedByUserId: actor.id, publicationType, content: snapshot, edition: { mode: editionMode, size: editionSize }, rendererVersion: (existing.templateSnapshotJson as any)?.rendererVersion ?? 'legacy-card-v1', assets, publishedAt: publishedAt.toISOString(), publicationVisibility: options.visibility ?? 'PUBLIC', authorization, originHash })
+      return tx.cardRelease.update({ where: { id }, data: { ...signed, attestationVersion: 1, authorizationClaimId: authority?.id ?? null, storefrontId: storefront.id, status: 'PUBLISHED', visibility: options.visibility ?? 'PUBLIC', editionMode, editionSize, originHash, publishedAt, publishedByUserId: actor.id, publicationType, contentSnapshotJson: snapshot as any }, include: CARD_INCLUDE })
+    }, { timeout: 30000 })
     await feedService.record({ type: 'CARD_PUBLISHED', targetType: 'CARD_TEMPLATE', targetId: card.id, summary: `Card published: ${card.title}` })
     return serialize(card, actor.id)
   }

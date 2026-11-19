@@ -1,0 +1,155 @@
+route0:
+  get:
+    operationId: getPublishingAuthority
+    summary: get Publishing Authority
+    tags:
+      - claims
+    parameters:
+      - in: path
+        name: personId
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Inspection or transition result
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  $ref: ../components/schemas/authenticity.yaml#/PublishingAuthority
+      default:
+        description: Request failed
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/ErrorResponse
+route1:
+  post:
+    operationId: revokeClaim
+    summary: revoke Claim
+    tags:
+      - claims
+    parameters:
+      - in: path
+        name: claimId
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/authenticity.yaml#/RevokeClaimInput
+    responses:
+      '200':
+        description: Inspection or transition result
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  $ref: ../components/schemas/verification.yaml#/Claim
+      default:
+        description: Request failed
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/ErrorResponse
+route2:
+  get:
+    operationId: inspectReleaseAuthenticity
+    summary: inspect Release Authenticity
+    tags:
+      - claims
+    security: []
+    parameters:
+      - in: path
+        name: releaseId
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Inspection or transition result
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  $ref: ../components/schemas/authenticity.yaml#/ReleaseAuthenticity
+      default:
+        description: Request failed
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/ErrorResponse
+route3:
+  get:
+    operationId: inspectIssueAuthenticity
+    summary: inspect Issue Authenticity
+    tags:
+      - claims
+    security: []
+    parameters:
+      - in: path
+        name: issueId
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Inspection or transition result
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  $ref: ../components/schemas/authenticity.yaml#/IssueAuthenticity
+      default:
+        description: Request failed
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/ErrorResponse
+route4:
+  get:
+    operationId: listSigningKeys
+    summary: list Signing Keys
+    tags:
+      - claims
+    security: []
+    responses:
+      '200':
+        description: Inspection or transition result
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../components/schemas/authenticity.yaml#/SigningKey
+      default:
+        description: Request failed
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/ErrorResponse

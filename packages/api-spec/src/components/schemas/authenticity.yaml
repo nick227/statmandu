@@ -1,0 +1,334 @@
+PublishingAuthority:
+  type: object
+  required:
+    - personProfileId
+    - userId
+    - canPublishOfficial
+    - claimId
+    - approvedAt
+    - basis
+  properties:
+    personProfileId:
+      type: string
+    userId:
+      type: string
+    canPublishOfficial:
+      type: boolean
+    claimId:
+      type:
+        - string
+        - 'null'
+    approvedAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
+    basis:
+      type: string
+      enum:
+        - REVIEWED_SELF_CLAIM
+        - NONE
+RevokeClaimInput:
+  type: object
+  required:
+    - reason
+  properties:
+    reason:
+      type: string
+      minLength: 1
+      maxLength: 1000
+  additionalProperties: false
+SigningKey:
+  type: object
+  required:
+    - id
+    - algorithm
+    - publicKeyPem
+    - revokedAt
+  properties:
+    id:
+      type: string
+    algorithm:
+      type: string
+      enum:
+        - Ed25519
+    publicKeyPem:
+      type: string
+    revokedAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
+ReleaseAuthorizationEvidence:
+  type: object
+  required:
+    - basis
+    - policyVersion
+    - claimId
+    - personProfileId
+    - userId
+    - approvedAt
+    - reviewedByUserId
+  properties:
+    basis:
+      type: string
+      enum:
+        - REVIEWED_SELF_CLAIM
+    policyVersion:
+      type: integer
+      enum:
+        - 1
+    claimId:
+      type: string
+    personProfileId:
+      type: string
+    userId:
+      type: string
+    approvedAt:
+      type: string
+      format: date-time
+    reviewedByUserId:
+      type: string
+ReleaseAssetDigest:
+  type: object
+  required:
+    - id
+    - objectKey
+    - contentType
+    - byteSize
+    - sha256
+  properties:
+    id:
+      type: string
+    objectKey:
+      type: string
+    contentType:
+      type: string
+    byteSize:
+      type: integer
+    sha256:
+      type: string
+      pattern: ^[0-9a-f]{64}$
+ReleaseManifest:
+  type: object
+  required:
+    - schemaVersion
+    - releaseId
+    - personProfileId
+    - createdByUserId
+    - publishedByUserId
+    - publicationType
+    - content
+    - edition
+    - rendererVersion
+    - assets
+    - publishedAt
+    - publicationVisibility
+    - authorization
+    - originHash
+    - attestation
+  properties:
+    schemaVersion:
+      type: integer
+      enum:
+        - 1
+    releaseId:
+      type: string
+    personProfileId:
+      type: string
+    createdByUserId:
+      type: string
+    publishedByUserId:
+      type: string
+    publicationType:
+      type: string
+      enum:
+        - COMMUNITY
+        - OFFICIAL
+    content:
+      type: object
+      additionalProperties: true
+    edition:
+      type: object
+      required:
+        - mode
+        - size
+      properties:
+        mode:
+          type: string
+          enum:
+            - UNLIMITED
+            - LIMITED
+            - ONE_OF_ONE
+        size:
+          type:
+            - integer
+            - 'null'
+    rendererVersion:
+      type: string
+    assets:
+      type: array
+      items:
+        $ref: '#/ReleaseAssetDigest'
+    publishedAt:
+      type: string
+      format: date-time
+    publicationVisibility:
+      type: string
+      enum:
+        - PUBLIC
+        - PRIVATE
+    authorization:
+      anyOf:
+        - $ref: '#/ReleaseAuthorizationEvidence'
+        - type: 'null'
+    originHash:
+      type: string
+    attestation:
+      type: object
+      required:
+        - signer
+        - algorithm
+        - keyId
+        - canonicalization
+        - domain
+      properties:
+        signer:
+          type: string
+          enum:
+            - RARE_PLATFORM
+        algorithm:
+          type: string
+          enum:
+            - Ed25519
+        keyId:
+          type: string
+        canonicalization:
+          type: string
+          enum:
+            - RFC8785
+        domain:
+          type: string
+ReleaseAuthenticity:
+  type: object
+  required:
+    - releaseId
+    - publicationType
+    - platformAttestation
+    - officialAtPublication
+    - currentAuthority
+    - withdrawalStatus
+    - manifest
+    - manifestHash
+    - signature
+    - keyId
+    - authorizationClaimId
+    - authorityRevokedAt
+    - assetVerification
+    - disclaimer
+  properties:
+    releaseId:
+      type: string
+    publicationType:
+      type: string
+      enum:
+        - COMMUNITY
+        - OFFICIAL
+    platformAttestation:
+      type: string
+      enum:
+        - VALID
+        - INVALID
+        - UNSIGNED
+        - MISSING_EVIDENCE
+        - KEY_UNAVAILABLE
+        - KEY_REVOKED
+    officialAtPublication:
+      type: string
+      enum:
+        - VERIFIED
+        - NOT_APPLICABLE
+        - MISSING_OR_INVALID_EVIDENCE
+    currentAuthority:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - REVOKED
+        - UNKNOWN
+        - NOT_APPLICABLE
+    withdrawalStatus:
+      type: string
+      enum:
+        - PUBLISHED
+        - WITHDRAWN
+    manifest:
+      anyOf:
+        - $ref: '#/ReleaseManifest'
+        - type: 'null'
+    manifestHash:
+      type:
+        - string
+        - 'null'
+    signature:
+      type:
+        - string
+        - 'null'
+    keyId:
+      type:
+        - string
+        - 'null'
+    authorizationClaimId:
+      type:
+        - string
+        - 'null'
+    authorityRevokedAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
+    assetVerification:
+      type: string
+      enum:
+        - DIGESTS_AT_PUBLICATION_NOT_RECHECKED
+        - UNAVAILABLE
+    disclaimer:
+      type: string
+IssueAuthenticity:
+  type: object
+  required:
+    - issueId
+    - releaseId
+    - issueNumber
+    - issueHash
+    - status
+    - bindingStatus
+    - release
+    - disclaimer
+  properties:
+    issueId:
+      type: string
+    releaseId:
+      type: string
+    issueNumber:
+      type:
+        - integer
+        - 'null'
+    issueHash:
+      type: string
+    status:
+      type: string
+      enum:
+        - CLAIMED
+        - DOWNLOADED
+        - REVOKED
+    bindingStatus:
+      type: string
+      enum:
+        - LEDGER_MATCH
+        - INVALID
+        - UNVERIFIABLE_LEGACY
+    release:
+      $ref: '#/ReleaseAuthenticity'
+    disclaimer:
+      type: string

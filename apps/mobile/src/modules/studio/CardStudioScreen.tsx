@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useStudioUser } from './hooks/useStudioUser'
 import { Screen } from '@/shared/layout/Screen'
 import { Text } from '@/shared/ui/Text'
@@ -32,6 +32,12 @@ import type {
   TaxonomyDimensionKey,
   TaxonomySelections,
 } from '@/modules/taxonomy/types'
+import {
+  FLAGSHIP_DESIGNS,
+  compileFlagshipDesign,
+  getFlagshipDesignById,
+  type PositionalInputs,
+} from '@/modules/designs/flagshipDesigns'
 import { RecipePickerPanel } from './RecipePickerPanel'
 import { LayerEditorPanel } from './LayerEditorPanel'
 import { PersonSelectorModal, type PersonProfile } from './PersonSelectorModal'
@@ -49,13 +55,23 @@ import {
   Type,
   Square,
   ImageIcon,
+  LayoutGrid,
+  Check,
+  RefreshCw,
+  ExternalLink,
 } from 'lucide-react-native'
 
-const INITIAL_TAXONOMY_SELECTIONS = DEFAULT_TAXONOMY_SELECTIONS
-const INITIAL_COMPOSITION = compileDesignRecipe(INITIAL_TAXONOMY_SELECTIONS)
+const INITIAL_FLAGSHIP_ID = 'classic-collector'
+const INITIAL_INPUTS: PositionalInputs = {
+  input1: 'MAYA ANGELOU',
+  input2: 'POET & CIVIL RIGHTS ICON',
+  input3: 'Phenomenal Woman, presidential poet, and civil rights champion whose literary voice moved generations.',
+}
+const INITIAL_FLAGSHIP_COMP = compileFlagshipDesign(INITIAL_FLAGSHIP_ID, INITIAL_INPUTS).composition
 
 export function CardStudioScreen() {
   const router = useRouter()
+  const params = useLocalSearchParams<{ flagshipId?: string }>()
   const { width } = useWindowDimensions()
   const isDesktop = width >= 1024
 
@@ -71,15 +87,21 @@ export function CardStudioScreen() {
   const [activeDesign, setActiveDesign] = useState<CardDesign | null>(null)
   const [designTitle, setDesignTitle] = useState('Untitled Collectible')
 
-  // Taxonomy Selections (5 dimensions)
-  const [selections, setSelections] = useState<TaxonomySelections>(INITIAL_TAXONOMY_SELECTIONS)
+  // Editor Mode: 'flagship' (default Canva-like flagship cards) | 'recipes' (5D taxonomy) | 'advanced' (layers)
+  const [editorMode, setEditorMode] = useState<'flagship' | 'recipes' | 'advanced'>('flagship')
 
-  // Editor Mode: 'recipes' (default) | 'advanced'
-  const [editorMode, setEditorMode] = useState<'recipes' | 'advanced'>('recipes')
+  // Flagship State
+  const [activeFlagshipId, setActiveFlagshipId] = useState<string>(
+    params.flagshipId || INITIAL_FLAGSHIP_ID,
+  )
+  const [positionalInputs, setPositionalInputs] = useState<PositionalInputs>(INITIAL_INPUTS)
+
+  // Taxonomy Selections (5 dimensions)
+  const [selections, setSelections] = useState<TaxonomySelections>(DEFAULT_TAXONOMY_SELECTIONS)
 
   // Composition & Local History (Undo/Redo)
-  const [composition, setComposition] = useState<CardComposition>(INITIAL_COMPOSITION)
-  const [history, setHistory] = useState<CardComposition[]>([INITIAL_COMPOSITION])
+  const [composition, setComposition] = useState<CardComposition>(INITIAL_FLAGSHIP_COMP)
+  const [history, setHistory] = useState<CardComposition[]>([INITIAL_FLAGSHIP_COMP])
   const [historyIndex, setHistoryIndex] = useState(0)
 
   // Active selected layer in advanced mode
@@ -96,6 +118,24 @@ export function CardStudioScreen() {
   // Conflict / Error state
   const [conflictMessage, setConflictMessage] = useState<string | null>(null)
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false)
+
+  // Active Flagship Design & Compilation info
+  const activeFlagship = getFlagshipDesignById(activeFlagshipId) || FLAGSHIP_DESIGNS[0]
+  const currentFlagshipResult = compileFlagshipDesign(
+    activeFlagshipId,
+    positionalInputs,
+    selectedPerson,
+  )
+
+  // Handle route param updates if navigated from Gallery
+  useEffect(() => {
+    if (params.flagshipId && params.flagshipId !== activeFlagshipId) {
+      setActiveFlagshipId(params.flagshipId)
+      setEditorMode('flagship')
+      const result = compileFlagshipDesign(params.flagshipId, positionalInputs, selectedPerson)
+      setComposition(result.composition)
+    }
+  }, [params.flagshipId])
 
   // Push to history when composition changes
   const updateCompositionWithHistory = useCallback((nextComp: CardComposition) => {
@@ -114,9 +154,20 @@ export function CardStudioScreen() {
       setHistoryIndex(nextIndex)
       const prevComp = history[nextIndex]
       setComposition(prevComp)
-      const extracted = extractTaxonomySelections(prevComp)
-      if (extracted) {
-        setSelections(extracted)
+
+      // Restore mode-specific state
+      if (prevComp.metadata?.flagship) {
+        setActiveFlagshipId(prevComp.metadata.flagship.id)
+        if (prevComp.metadata.flagship.inputs) {
+          setPositionalInputs(prevComp.metadata.flagship.inputs)
+        }
+        setEditorMode('flagship')
+      } else {
+        const extracted = extractTaxonomySelections(prevComp)
+        if (extracted) {
+          setSelections(extracted)
+          setEditorMode('recipes')
+        }
       }
     }
   }
@@ -127,14 +178,50 @@ export function CardStudioScreen() {
       setHistoryIndex(nextIndex)
       const nextComp = history[nextIndex]
       setComposition(nextComp)
-      const extracted = extractTaxonomySelections(nextComp)
-      if (extracted) {
-        setSelections(extracted)
+
+      if (nextComp.metadata?.flagship) {
+        setActiveFlagshipId(nextComp.metadata.flagship.id)
+        if (nextComp.metadata.flagship.inputs) {
+          setPositionalInputs(nextComp.metadata.flagship.inputs)
+        }
+        setEditorMode('flagship')
+      } else {
+        const extracted = extractTaxonomySelections(nextComp)
+        if (extracted) {
+          setSelections(extracted)
+          setEditorMode('recipes')
+        }
       }
     }
   }
 
-  // Handle changing a single dimension in the taxonomy recipe
+  // --- Flagship Actions ---
+  function handleSelectFlagshipDesign(designId: string) {
+    setActiveFlagshipId(designId)
+    // Preserve positional inputs across design switching!
+    const result = compileFlagshipDesign(designId, positionalInputs, selectedPerson)
+    updateCompositionWithHistory(result.composition)
+  }
+
+  function handleUpdatePositionalInput(field: 'input1' | 'input2' | 'input3', value: string) {
+    const nextInputs = { ...positionalInputs, [field]: value }
+    setPositionalInputs(nextInputs)
+    const result = compileFlagshipDesign(activeFlagshipId, nextInputs, selectedPerson)
+    updateCompositionWithHistory(result.composition)
+  }
+
+  function handleAutofillFromPerson(p: PersonProfile) {
+    const autofilled: PositionalInputs = {
+      input1: p.displayName || '',
+      input2: p.hometown || '',
+      input3: p.bio || '',
+    }
+    setPositionalInputs(autofilled)
+    const result = compileFlagshipDesign(activeFlagshipId, autofilled, p)
+    updateCompositionWithHistory(result.composition)
+  }
+
+  // --- 5D Recipe Actions ---
   function handleSelectVariation(dimension: TaxonomyDimensionKey, variationKey: string) {
     const nextSelections: TaxonomySelections = {
       ...selections,
@@ -145,7 +232,6 @@ export function CardStudioScreen() {
     updateCompositionWithHistory(nextComp)
   }
 
-  // Surprise Me / Randomize Recipe
   function handleRandomizeRecipe() {
     const randomized: any = {}
     for (const dim of DIMENSIONS) {
@@ -163,7 +249,7 @@ export function CardStudioScreen() {
     updateCompositionWithHistory(nextComp)
   }
 
-  // Load existing design
+  // --- Design Load / Save ---
   function loadDesign(design: CardDesign) {
     setActiveDesign(design)
     setDesignTitle(design.title)
@@ -173,6 +259,17 @@ export function CardStudioScreen() {
     setSelectedLayerIndex(0)
     setConflictMessage(null)
     setDesignsPickerVisible(false)
+
+    // Restore flagship state if present
+    const compMetadata = (design.composition as CardComposition).metadata
+    if (compMetadata?.flagship) {
+      setActiveFlagshipId(compMetadata.flagship.id)
+      if (compMetadata.flagship.inputs) {
+        setPositionalInputs(compMetadata.flagship.inputs)
+      }
+      setEditorMode('flagship')
+      return
+    }
 
     // Restore taxonomy selections if available
     const extracted = extractTaxonomySelections(design.composition)
@@ -184,26 +281,25 @@ export function CardStudioScreen() {
     }
   }
 
-  // Start new design
   function startNewDesign() {
     setActiveDesign(null)
     setDesignTitle('New Collectible')
-    setSelections(INITIAL_TAXONOMY_SELECTIONS)
-    setComposition(INITIAL_COMPOSITION)
-    setHistory([INITIAL_COMPOSITION])
+    setActiveFlagshipId(INITIAL_FLAGSHIP_ID)
+    setPositionalInputs(INITIAL_INPUTS)
+    const initialComp = compileFlagshipDesign(INITIAL_FLAGSHIP_ID, INITIAL_INPUTS).composition
+    setComposition(initialComp)
+    setHistory([initialComp])
     setHistoryIndex(0)
     setSelectedLayerIndex(0)
     setConflictMessage(null)
     setDesignsPickerVisible(false)
-    setEditorMode('recipes')
+    setEditorMode('flagship')
   }
 
-  // Save design (respects expectedRevision and handles 409 without discarding unsaved changes)
   async function handleSaveDesign() {
     setConflictMessage(null)
     try {
       if (!activeDesign) {
-        // Create new design
         const created = await createDesignMutation.mutateAsync({
           title: designTitle.trim() || 'Untitled Collectible',
           composition,
@@ -211,7 +307,6 @@ export function CardStudioScreen() {
         setActiveDesign(created)
         setSaveSuccessMsg(true)
       } else {
-        // Update existing design with expectedRevision
         const updated = await updateDesignMutation.mutateAsync({
           designId: activeDesign.id,
           expectedRevision: activeDesign.revision,
@@ -232,7 +327,7 @@ export function CardStudioScreen() {
     }
   }
 
-  // Layer editing callbacks (Advanced mode)
+  // --- Advanced Layer editing callbacks ---
   const layers = composition.layers || []
   const activeLayer = layers[selectedLayerIndex]
 
@@ -308,7 +403,6 @@ export function CardStudioScreen() {
     <Screen title="Card Studio" withBack scroll>
       {/* Top Action Bar */}
       <View className="mb-md flex-row flex-wrap items-center justify-between gap-sm border-b border-border pb-md">
-        {/* Title & Revision */}
         <View className="flex-1 min-w-[200px] flex-row items-center gap-xs">
           <Input
             value={designTitle}
@@ -374,7 +468,6 @@ export function CardStudioScreen() {
             icon={Rocket}
             onPress={async () => {
               if (!activeDesign) {
-                // Must save design first to establish immutable revision
                 const created = await createDesignMutation.mutateAsync({
                   title: designTitle.trim() || 'Untitled Collectible',
                   composition,
@@ -410,17 +503,29 @@ export function CardStudioScreen() {
           <View>
             <Text className="text-xs uppercase text-muted-text">Card Subject</Text>
             <Text className="font-semibold text-text">
-              {selectedPerson ? selectedPerson.displayName : 'No Subject Selected (Previewing Mock)'}
+              {selectedPerson ? selectedPerson.displayName : 'No Subject Selected (Previewing Default)'}
             </Text>
           </View>
         </View>
-        <Button
-          size="sm"
-          variant="secondary"
-          onPress={() => setPersonModalVisible(true)}
-        >
-          {selectedPerson ? 'Change Subject' : 'Select Subject'}
-        </Button>
+        <View className="flex-row items-center gap-xs">
+          {selectedPerson && editorMode === 'flagship' && (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={RefreshCw}
+              onPress={() => handleAutofillFromPerson(selectedPerson)}
+            >
+              Autofill Content
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="secondary"
+            onPress={() => setPersonModalVisible(true)}
+          >
+            {selectedPerson ? 'Change Subject' : 'Select Subject'}
+          </Button>
+        </View>
       </View>
 
       {/* Main Studio Work Area */}
@@ -437,39 +542,56 @@ export function CardStudioScreen() {
             Canvas {composition.canvas.width} × {composition.canvas.height} ({RDC_COMPOSITION_RENDERER_VERSION})
           </Text>
 
-          {/* Mode Switcher Toggle: Visual Recipe vs Advanced Layers */}
+          {/* Mode Switcher Toggle: Flagship Designs (Default) | 5D Recipes | Advanced Layers */}
           <View className="mt-md flex-row items-center gap-xs rounded-xl border border-border bg-card-surface p-1">
+            <Pressable
+              testID="mode-flagship-button"
+              onPress={() => setEditorMode('flagship')}
+              className={`flex-row items-center gap-xs rounded-lg px-sm py-xs ${
+                editorMode === 'flagship' ? 'bg-brand' : 'bg-transparent'
+              }`}
+            >
+              <LayoutGrid size={15} color={editorMode === 'flagship' ? '#FFFFFF' : '#94A3B8'} />
+              <Text
+                className={`text-xs font-bold ${
+                  editorMode === 'flagship' ? 'text-white' : 'text-muted-text'
+                }`}
+              >
+                Flagship (20)
+              </Text>
+            </Pressable>
+
             <Pressable
               testID="mode-recipes-button"
               onPress={() => setEditorMode('recipes')}
-              className={`flex-row items-center gap-xs rounded-lg px-md py-xs ${
+              className={`flex-row items-center gap-xs rounded-lg px-sm py-xs ${
                 editorMode === 'recipes' ? 'bg-brand' : 'bg-transparent'
               }`}
             >
-              <Sparkles size={16} color={editorMode === 'recipes' ? '#FFFFFF' : '#94A3B8'} />
+              <Sparkles size={15} color={editorMode === 'recipes' ? '#FFFFFF' : '#94A3B8'} />
               <Text
                 className={`text-xs font-bold ${
                   editorMode === 'recipes' ? 'text-white' : 'text-muted-text'
                 }`}
               >
-                Visual Recipes
+                5D Recipes
               </Text>
             </Pressable>
 
             <Pressable
               testID="mode-advanced-button"
               onPress={() => setEditorMode('advanced')}
-              className={`flex-row items-center gap-xs rounded-lg px-md py-xs ${
+              className={`flex-row items-center gap-xs rounded-lg px-sm py-xs ${
                 editorMode === 'advanced' ? 'bg-brand' : 'bg-transparent'
               }`}
             >
-              <Sliders size={16} color={editorMode === 'advanced' ? '#FFFFFF' : '#94A3B8'} />
+              <Sliders size={15} color={editorMode === 'advanced' ? '#FFFFFF' : '#94A3B8'} />
               <Text
                 className={`text-xs font-bold ${
                   editorMode === 'advanced' ? 'text-white' : 'text-muted-text'
                 }`}
               >
-                Advanced Layers
+                Layers
               </Text>
             </Pressable>
           </View>
@@ -477,15 +599,160 @@ export function CardStudioScreen() {
 
         {/* Controls Column */}
         <View className={`gap-md ${isDesktop ? 'flex-1' : 'w-full'}`}>
-          {editorMode === 'recipes' ? (
-            /* Visual Recipe Selector (Default Primary Experience) */
+          {/* Mode 1: 20 Flagship Designs & Positional Content Slots (Canva-like Simplicity) */}
+          {editorMode === 'flagship' && (
+            <View className="gap-md">
+              {/* Flagship Selector Header */}
+              <View className="rounded-2xl border border-border bg-surface p-md">
+                <View className="flex-row items-center justify-between pb-xs">
+                  <View>
+                    <Text className="font-bold text-base text-text">Flagship Design Collection</Text>
+                    <Text variant="caption">Pick one of 20 distinctive visual architectures</Text>
+                  </View>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={ExternalLink}
+                    onPress={() => router.push('/cards/gallery' as any)}
+                  >
+                    View Gallery
+                  </Button>
+                </View>
+
+                {/* Horizontal Flagship Selector Carousel */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="gap-xs pt-sm">
+                  {FLAGSHIP_DESIGNS.map((d) => {
+                    const isSelected = activeFlagshipId === d.id
+                    return (
+                      <Pressable
+                        key={d.id}
+                        testID={`flagship-design-card-${d.id}`}
+                        onPress={() => handleSelectFlagshipDesign(d.id)}
+                        className={`w-36 rounded-xl border p-sm ${
+                          isSelected
+                            ? 'border-brand bg-brand/10'
+                            : 'border-border bg-card-surface hover:border-brand/40'
+                        }`}
+                      >
+                        <View className="flex-row items-center justify-between">
+                          <Text
+                            numberOfLines={1}
+                            className={`font-bold text-xs ${
+                              isSelected ? 'text-brand' : 'text-text'
+                            }`}
+                          >
+                            {d.name}
+                          </Text>
+                          {isSelected && <Check size={14} className="text-brand" />}
+                        </View>
+                        <Text variant="caption" numberOfLines={1} className="mt-0.5 text-[10px]">
+                          {d.family}
+                        </Text>
+                        <View
+                          style={{ backgroundColor: d.palette.background }}
+                          className="mt-xs h-3 w-full rounded-full border border-border"
+                        />
+                      </Pressable>
+                    )
+                  })}
+                </ScrollView>
+              </View>
+
+              {/* Positional Adaptive Content Slots Editor */}
+              <View className="rounded-2xl border border-border bg-surface p-md gap-sm">
+                <View className="flex-row items-center justify-between border-b border-border pb-xs">
+                  <Text className="font-bold text-text">Adaptive Positional Content</Text>
+                  <Text variant="caption">Auto-fits into {activeFlagship.name} slots</Text>
+                </View>
+
+                {/* Slot 1: Headline / Name */}
+                <View className="gap-1">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-xs font-semibold text-text">
+                      Slot 1 ({activeFlagship.slots.input1.label})
+                    </Text>
+                    <View className="flex-row items-center gap-xs">
+                      {currentFlagshipResult.isOverflow.input1 ? (
+                        <Text className="text-[10px] font-bold text-warning">Overflow</Text>
+                      ) : (
+                        <Text className="text-[10px] font-semibold text-muted-text">
+                          Fitted: {currentFlagshipResult.fittedFontSizes.input1}px
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <Input
+                    testID="slot-input1"
+                    value={positionalInputs.input1}
+                    onChangeText={(t) => handleUpdatePositionalInput('input1', t)}
+                    placeholder="Primary headline / name..."
+                  />
+                </View>
+
+                {/* Slot 2: Subtitle / Discipline */}
+                <View className="gap-1">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-xs font-semibold text-text">
+                      Slot 2 ({activeFlagship.slots.input2.label})
+                    </Text>
+                    <View className="flex-row items-center gap-xs">
+                      {currentFlagshipResult.isOverflow.input2 ? (
+                        <Text className="text-[10px] font-bold text-warning">Overflow</Text>
+                      ) : (
+                        <Text className="text-[10px] font-semibold text-muted-text">
+                          Fitted: {currentFlagshipResult.fittedFontSizes.input2}px
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <Input
+                    testID="slot-input2"
+                    value={positionalInputs.input2}
+                    onChangeText={(t) => handleUpdatePositionalInput('input2', t)}
+                    placeholder="Subtitle, discipline, team or category..."
+                  />
+                </View>
+
+                {/* Slot 3: Bio / Details / Highlights */}
+                <View className="gap-1">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-xs font-semibold text-text">
+                      Slot 3 ({activeFlagship.slots.input3.label})
+                    </Text>
+                    <View className="flex-row items-center gap-xs">
+                      {currentFlagshipResult.isOverflow.input3 ? (
+                        <Text className="text-[10px] font-bold text-warning">Overflow</Text>
+                      ) : (
+                        <Text className="text-[10px] font-semibold text-muted-text">
+                          Fitted: {currentFlagshipResult.fittedFontSizes.input3}px
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <Input
+                    testID="slot-input3"
+                    value={positionalInputs.input3}
+                    onChangeText={(t) => handleUpdatePositionalInput('input3', t)}
+                    placeholder="Career highlights, biographical notes, discography or quote..."
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Mode 2: 5D Recipe Studio (Style, Layout, Artwork, Content, Effects) */}
+          {editorMode === 'recipes' && (
             <RecipePickerPanel
               selections={selections}
               onSelectVariation={handleSelectVariation}
               onRandomizeRecipe={handleRandomizeRecipe}
             />
-          ) : (
-            /* Technical Layer Stack Editor (Advanced Power Mode) */
+          )}
+
+          {/* Mode 3: Technical Layer Stack Editor (Advanced Power Mode) */}
+          {editorMode === 'advanced' && (
             <View className="gap-md">
               <View className="rounded-2xl border border-border bg-surface p-md">
                 <View className="flex-row items-center justify-between pb-xs">
@@ -568,7 +835,12 @@ export function CardStudioScreen() {
       <PersonSelectorModal
         visible={personModalVisible}
         selectedPersonId={selectedPerson?.id}
-        onSelect={(p) => setSelectedPerson(p)}
+        onSelect={(p) => {
+          setSelectedPerson(p)
+          if (editorMode === 'flagship') {
+            handleAutofillFromPerson(p)
+          }
+        }}
         onClose={() => setPersonModalVisible(false)}
       />
 

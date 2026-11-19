@@ -2,7 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getApiClient, ApiError, type components } from '@statman/sdk'
 
 export type CardDesign = components['schemas']['CardDesign']
-export type CardComposition = components['schemas']['CardComposition']
+export type CardComposition = components['schemas']['CardComposition'] & {
+  metadata?: {
+    rendererVersion?: string
+    flagship?: any
+    taxonomy?: any
+    [key: string]: any
+  }
+}
 export type CardCompositionLayer = components['schemas']['CardCompositionLayer']
 export type CreateCardDesignInput = components['schemas']['CreateCardDesignInput']
 export type UpdateCardDesignInput = components['schemas']['UpdateCardDesignInput']

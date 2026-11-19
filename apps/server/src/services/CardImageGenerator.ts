@@ -65,20 +65,24 @@ export class StubCardImageGenerator implements CardImageGenerator {
       .digest('hex')
       .slice(0, 16)
     const prompt = buildPrompt(input)
-    const objectKey = `cards/${input.cardTemplateId}/front-${seed}.png`
-    const url = `statman://generated/cards/${input.cardTemplateId}/front-${seed}.png`
+    // The offline provider also persists real bytes, so publication can attest
+    // artwork without signing a nonexistent placeholder URL.
+    const buffer = await sharp({ create: { width: 600, height: 840, channels: 3, background: `#${seed.slice(0, 6)}` } }).png().toBuffer()
+    const stored = await storeImage({ private: true, buffer, contentType: 'image/png', targetType: 'CARD_TEMPLATE', targetId: input.cardTemplateId, usage: 'HERO' })
+    const { objectKey, url } = stored
 
     const asset = await db.imageAsset.create({
       data: {
         targetType: 'CARD_TEMPLATE',
         targetId: input.cardTemplateId,
         usage: 'HERO',
-        storageProvider: 'LOCAL',
+        storageProvider: stored.provider,
+        visibility: 'PRIVATE',
         objectKey,
         url,
         originalFilename: `stub-card-${seed}.png`,
         contentType: 'image/png',
-        byteSize: 0,
+        byteSize: buffer.byteLength,
         uploadedByUserId: input.createdByUserId,
       },
     })
