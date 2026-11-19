@@ -40,8 +40,8 @@ export async function getCurrentUser(request: any, reply: any) {
 }
 
 export async function updateCurrentUserProfile(request: any, reply: any) {
-  const user = await authService.updateProfile(request.user.id, request.body)
-  return reply.send({ data: user })
+  const { passwordHash: _passwordHash, ...safeUser } = await authService.updateProfile(request.user.id, request.body)
+  return reply.send({ data: safeUser })
 }
 
 export async function getMeCapabilities(request: any, reply: any) {
