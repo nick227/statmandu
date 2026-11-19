@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Modal, Platform, Pressable, View, useWindowDimensions, type ViewStyle } from 'react-native'
 import { Link, usePathname, useRouter } from 'expo-router'
-import { CreditCard, Layers, Plus, Sparkles, Trophy, User, UserRound, X } from 'lucide-react-native'
+import { CreditCard, Layers, Plus, Sparkles, User, UserRound, X } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@/shared/ui/Text'
@@ -19,7 +19,6 @@ const ITEMS: ReadonlyArray<{ label: string; href: string; icon: LucideIcon; prom
 const CREATE_ACTIONS: ReadonlyArray<{ label: string; description: string; href: string | { pathname: string; params: Record<string, string> }; icon: LucideIcon }> = [
   { label: 'Card Studio', description: 'Design and compose a collectible', href: '/cards/studio', icon: CreditCard },
   { label: 'Add Person', description: 'Create an unclaimed profile to design for', href: '/players/create', icon: UserRound },
-  { label: 'Sports Archive', description: 'Browse games, rosters, and stats', href: '/games', icon: Trophy },
 ]
 
 // 52px touch target + 4px top inset + at least 4px bottom inset + border.
