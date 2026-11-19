@@ -11,7 +11,6 @@ import {
   SidebarPanel,
   SidebarRail,
 } from '@/shared/layout'
-import { CARD_TYPES } from '@/modules/cards/builder/builderConstants'
 import { CARDS_BROWSE_FILTERS, type CardsBrowseFilter } from '@/modules/cards/useCardsBrowse'
 import { isEditableCardStatus } from '@/modules/cards/builder/cardFromApi'
 
@@ -42,20 +41,10 @@ export function CardsSidebar({
         subtitle="Create collectible drops. Browse new releases in the main column."
       />
 
-      <SidebarPanel title="Create a card" subtitle="Subject → photo → type → style → generate → publish.">
-        <View className="flex-row flex-wrap gap-xs pb-xs">
-          {CARD_TYPES.slice(0, 4).map((type) => (
-            <View key={type.value} className="rounded-sm border border-border bg-canvas px-sm py-xs">
-              <Text variant="statLabel" className="text-muted-text">{type.label}</Text>
-            </View>
-          ))}
-        </View>
+      <SidebarPanel title="Create a card" subtitle="Design and publish in Card Studio.">
         {isAuthenticated ? (
           <View className="gap-xs">
             <Button onPress={() => router.push('/cards/studio')}>Create a card</Button>
-            <Button variant="secondary" onPress={() => router.push('/cards/generate' as never)}>
-              Generate from photo
-            </Button>
           </View>
         ) : (
           <SignInPrompt message="Sign in to open Card Studio" className="items-start py-xs" />
