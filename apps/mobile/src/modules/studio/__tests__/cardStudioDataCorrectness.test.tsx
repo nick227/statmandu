@@ -447,4 +447,107 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
       expect(mockCreateRelease).toHaveBeenCalled()
     })
   })
+
+  // 9. Semantic override isolation: Role override does not leak into Stats Discipline
+  it('does not leak template-specific overrides across card types and preserves them on return', async () => {
+    const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input2')).toBeTruthy()
+    })
+
+    // In Standard, input2 is Role
+    fireEvent.changeText(screen.getByTestId('slot-input2'), 'Master Architect')
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input2').props.value).toBe('Master Architect')
+    })
+
+    // Switch to Stats template (where input2 is Discipline / Category)
+    fireEvent.press(screen.getByTestId('card-type-dropdown'))
+    await waitFor(() => {
+      expect(screen.getByTestId('card-type-option-stats')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('card-type-option-stats'))
+
+    // Stats input2 must NOT be contaminated with "Master Architect"
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input2').props.value).not.toBe('Master Architect')
+      expect(screen.getByTestId('slot-input2').props.value).toBe('')
+    })
+
+    // Switch back to Standard template
+    fireEvent.press(screen.getByTestId('card-type-dropdown'))
+    await waitFor(() => {
+      expect(screen.getByTestId('card-type-option-standard')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('card-type-option-standard'))
+
+    // Preserved the manual Role override on return!
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input2').props.value).toBe('Master Architect')
+    })
+  })
+
+  // 10. Publishing with canonical person ID from loaded draft
+  it('publishes using canonical person ID when activeProfile is present', async () => {
+    const savedDraft = {
+      id: 'saved-draft-canonical',
+      title: 'Canonical Subject Draft',
+      revision: 1,
+      composition: {
+        schemaVersion: 1,
+        canvas: { width: 600, height: 900 },
+        layers: [],
+        metadata: {
+          flagship: {
+            id: 'classic-collector',
+            cardTypeId: 'standard',
+            contentStore: {
+              input1: 'Grace Hopper',
+            },
+            profile: {
+              id: 'person-canonical-42',
+              displayName: 'Grace Hopper',
+            },
+          },
+        },
+      },
+    }
+
+    ;(useCardDesigns as jest.Mock).mockReturnValue({
+      data: [savedDraft],
+      isLoading: false,
+    })
+
+    const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('saved-designs-dropdown')).toBeTruthy()
+    })
+
+    fireEvent.press(screen.getByTestId('saved-designs-dropdown'))
+    await waitFor(() => {
+      expect(screen.getByTestId('saved-design-saved-draft-canonical')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('saved-design-saved-draft-canonical'))
+
+    // Open publish drawer
+    await waitFor(() => {
+      expect(screen.getByTestId('publish-release-button')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('publish-release-button'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-publish-button')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('confirm-publish-button'))
+
+    await waitFor(() => {
+      expect(mockCreateRelease).toHaveBeenCalledWith(
+        expect.objectContaining({
+          personProfileId: 'person-canonical-42',
+        })
+      )
+    })
+  })
 })

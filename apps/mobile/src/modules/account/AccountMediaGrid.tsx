@@ -55,9 +55,12 @@ export function AccountMediaGrid({ athleteProfileId, className }: AccountMediaGr
     }
   }
 
-  function handleUseInStudio(_item: MediaLibraryItem) {
+  function handleUseInStudio(item: MediaLibraryItem) {
     setSelectedItem(null)
-    router.push('/cards/studio')
+    router.push({
+      pathname: '/cards/studio',
+      params: { imageId: item.id },
+    } as any)
   }
 
   return (

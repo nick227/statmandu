@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Platform, Pressable, TextInput, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
+import { useUpdateProfile, useUploadImage } from '@statman/sdk'
 import {
   Plus,
   Trash2,
@@ -62,21 +63,25 @@ export function AccountScreen() {
   const mutedColor = useNativeColor('mutedText')
 
   const { isError, isLoading, logout, user, capabilities } = useAccountSession()
+  const updateProfile = useUpdateProfile()
+  const uploadImage = useUploadImage()
 
   // Active Chip (Creator is our Primary tab)
   const [pursuit, setPursuit] = useState<PursuitFocus>('CREATOR')
 
+  const initialPerson = capabilities?.personProfile as any
+
   // Avatar Image URI state (clickable to upload new main avatar)
-  const [avatarUri, setAvatarUri] = useState<string | null>(user?.profile?.avatarUrl ?? null)
+  const [avatarUri, setAvatarUri] = useState<string | null>(initialPerson?.avatarUrl ?? user?.profile?.avatarUrl ?? null)
 
   // Primary Creator Fields
-  const [displayName, setDisplayName] = useState(user?.profile?.displayName ?? '')
-  const [location, setLocation] = useState((user?.profile as any)?.hometown ?? '')
-  const [age, setAge] = useState('')
-  const [calling, setCalling] = useState('')
-  const [bio, setBio] = useState(user?.profile?.bio ?? '')
-  const [quote, setQuote] = useState('')
-  const [debut, setDebut] = useState('')
+  const [displayName, setDisplayName] = useState(initialPerson?.displayName ?? user?.profile?.displayName ?? '')
+  const [location, setLocation] = useState(initialPerson?.hometown ?? (user?.profile as any)?.hometown ?? '')
+  const [age, setAge] = useState(initialPerson?.age ?? '')
+  const [calling, setCalling] = useState(initialPerson?.calling ?? '')
+  const [bio, setBio] = useState(initialPerson?.bio ?? user?.profile?.bio ?? '')
+  const [quote, setQuote] = useState(initialPerson?.quote ?? '')
+  const [debut, setDebut] = useState(initialPerson?.debut ?? '')
 
   // Discipline specific fields (starts clean with no mock data)
   const [athleteSport, setAthleteSport] = useState('')
@@ -105,9 +110,63 @@ export function AccountScreen() {
   const [customPhilosophy, setCustomPhilosophy] = useState('')
 
   // Dynamic Custom Fields
-  const [customFields, setCustomFields] = useState<CustomField[]>([])
+  const [customFields, setCustomFields] = useState<CustomField[]>(initialPerson?.customFields ?? [])
 
   const [savedSuccess, setSavedSuccess] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Sync state whenever capabilities or user profile updates
+  useEffect(() => {
+    const p = capabilities?.personProfile as any
+    if (p) {
+      if (p.displayName !== undefined) setDisplayName(p.displayName || '')
+      if (p.hometown !== undefined) setLocation(p.hometown || '')
+      if (p.calling !== undefined) setCalling(p.calling || '')
+      if (p.age !== undefined) setAge(p.age || '')
+      if (p.bio !== undefined) setBio(p.bio || '')
+      if (p.quote !== undefined) setQuote(p.quote || '')
+      if (p.debut !== undefined) setDebut(p.debut || '')
+      if (p.avatarUrl !== undefined) setAvatarUri(p.avatarUrl || null)
+      if (Array.isArray(p.customFields)) {
+        setCustomFields(p.customFields)
+      }
+      if (Array.isArray(p.specializations)) {
+        for (const spec of p.specializations) {
+          if (spec.type === 'ATHLETE' && spec.attributes) {
+            if (spec.attributes.sport !== undefined) setAthleteSport(spec.attributes.sport)
+            if (spec.attributes.role !== undefined) setAthleteRole(spec.attributes.role)
+            if (spec.attributes.stat !== undefined) setAthleteStat(spec.attributes.stat)
+            if (spec.attributes.accolades !== undefined) setAthleteAccolades(spec.attributes.accolades)
+          } else if (spec.type === 'WRITER' && spec.attributes) {
+            if (spec.attributes.focus !== undefined) setWriterFocus(spec.attributes.focus)
+            if (spec.attributes.works !== undefined) setWriterWorks(spec.attributes.works)
+            if (spec.attributes.era !== undefined) setWriterEra(spec.attributes.era)
+            if (spec.attributes.honors !== undefined) setWriterHonors(spec.attributes.honors)
+          } else if (spec.type === 'MUSICIAN' && spec.attributes) {
+            if (spec.attributes.genre !== undefined) setMusicianGenre(spec.attributes.genre)
+            if (spec.attributes.instruments !== undefined) setMusicianInstruments(spec.attributes.instruments)
+            if (spec.attributes.releases !== undefined) setMusicianReleases(spec.attributes.releases)
+            if (spec.attributes.collabs !== undefined) setMusicianCollabs(spec.attributes.collabs)
+          } else if (spec.type === 'PERFORMER' && spec.attributes) {
+            if (spec.attributes.medium !== undefined) setPerformerMedium(spec.attributes.medium)
+            if (spec.attributes.role !== undefined) setPerformerRole(spec.attributes.role)
+            if (spec.attributes.productions !== undefined) setPerformerProductions(spec.attributes.productions)
+            if (spec.attributes.honors !== undefined) setPerformerHonors(spec.attributes.honors)
+          } else if (spec.type === 'CUSTOM' && spec.attributes) {
+            if (spec.attributes.calling !== undefined) setCustomCalling(spec.attributes.calling)
+            if (spec.attributes.innovation !== undefined) setCustomInnovation(spec.attributes.innovation)
+            if (spec.attributes.milestone !== undefined) setCustomMilestone(spec.attributes.milestone)
+            if (spec.attributes.philosophy !== undefined) setCustomPhilosophy(spec.attributes.philosophy)
+          }
+        }
+      }
+    } else if (user?.profile) {
+      if (user.profile.displayName) setDisplayName(user.profile.displayName)
+      if (user.profile.bio) setBio(user.profile.bio)
+      if (user.profile.avatarUrl) setAvatarUri(user.profile.avatarUrl)
+      if ((user.profile as any).hometown) setLocation((user.profile as any).hometown)
+    }
+  }, [capabilities?.personProfile, user?.profile])
 
   if (isLoading) {
     return (
@@ -129,7 +188,7 @@ export function AccountScreen() {
 
   const headerDisplayName = displayName || user.profile?.displayName || user.profile?.username || user.email || 'Collector'
   const username = user.profile?.username ?? user.email?.split('@')[0] ?? 'collector'
-  const athleteProfileId = capabilities?.athleteProfiles?.[0]?.athleteProfileId ?? user.profile?.id ?? null
+  const athleteProfileId = capabilities?.personProfile?.id ?? capabilities?.athleteProfiles?.[0]?.athleteProfileId ?? user.profile?.id ?? null
 
   async function handlePickAvatar() {
     try {
@@ -146,7 +205,29 @@ export function AccountScreen() {
       })
 
       if (!result.canceled && result.assets && result.assets[0]?.uri) {
-        setAvatarUri(result.assets[0].uri)
+        const asset = result.assets[0]
+        setAvatarUri(asset.uri)
+        if (athleteProfileId) {
+          const contentType = asset.mimeType === 'image/png' || asset.mimeType === 'image/webp' ? asset.mimeType : 'image/jpeg'
+          const res = await uploadImage.mutateAsync({
+            targetType: 'ATHLETE_PROFILE',
+            targetId: athleteProfileId,
+            usage: 'AVATAR',
+            contentType,
+            file: {
+              uri: asset.uri,
+              name: asset.fileName || `avatar.${contentType.split('/')[1]}`,
+              type: contentType,
+            },
+            originalFilename: asset.fileName ?? undefined,
+            width: asset.width,
+            height: asset.height,
+          })
+          if (res?.data?.url) {
+            setAvatarUri(res.data.url)
+            await updateProfile.mutateAsync({ avatarUrl: res.data.url })
+          }
+        }
       }
     } catch (e) {
       console.warn('Failed to pick avatar:', e)
@@ -172,9 +253,50 @@ export function AccountScreen() {
     setCustomFields(customFields.filter((f) => f.id !== id))
   }
 
-  function handleSaveProfile() {
-    setSavedSuccess(true)
-    setTimeout(() => setSavedSuccess(false), 3000)
+  async function handleSaveProfile() {
+    setSaveError(null)
+    try {
+      const specializations = [
+        (athleteSport || athleteRole || athleteStat || athleteAccolades) ? {
+          type: 'ATHLETE',
+          attributes: { sport: athleteSport, role: athleteRole, stat: athleteStat, accolades: athleteAccolades }
+        } : null,
+        (writerFocus || writerWorks || writerEra || writerHonors) ? {
+          type: 'WRITER',
+          attributes: { focus: writerFocus, works: writerWorks, era: writerEra, honors: writerHonors }
+        } : null,
+        (musicianGenre || musicianInstruments || musicianReleases || musicianCollabs) ? {
+          type: 'MUSICIAN',
+          attributes: { genre: musicianGenre, instruments: musicianInstruments, releases: musicianReleases, collabs: musicianCollabs }
+        } : null,
+        (performerMedium || performerRole || performerProductions || performerHonors) ? {
+          type: 'PERFORMER',
+          attributes: { medium: performerMedium, role: performerRole, productions: performerProductions, honors: performerHonors }
+        } : null,
+        (customCalling || customInnovation || customMilestone || customPhilosophy) ? {
+          type: 'CUSTOM',
+          attributes: { calling: customCalling, innovation: customInnovation, milestone: customMilestone, philosophy: customPhilosophy }
+        } : null,
+      ].filter(Boolean)
+
+      await updateProfile.mutateAsync({
+        displayName,
+        hometown: location,
+        calling,
+        age,
+        bio,
+        quote,
+        debut,
+        avatarUrl: avatarUri ?? undefined,
+        specializations,
+        customFields,
+      })
+
+      setSavedSuccess(true)
+      setTimeout(() => setSavedSuccess(false), 3000)
+    } catch (err: any) {
+      setSaveError(err?.message || 'Failed to save profile. Please try again.')
+    }
   }
 
   return (
@@ -611,12 +733,23 @@ export function AccountScreen() {
 
             {/* Save Action */}
             <View className="flex-row items-center gap-4 pt-2">
-              <Button size="lg" variant="primary" icon={Check} onPress={handleSaveProfile}>
+              <Button
+                size="lg"
+                variant="primary"
+                icon={Check}
+                isLoading={updateProfile.isPending}
+                onPress={handleSaveProfile}
+              >
                 {savedSuccess ? 'Saved' : 'Save'}
               </Button>
               {savedSuccess ? (
                 <Text variant="caption" className="text-sm font-semibold text-emerald-600">
                   ✓ Saved
+                </Text>
+              ) : null}
+              {saveError ? (
+                <Text variant="caption" className="text-sm font-semibold text-red-500">
+                  {saveError}
                 </Text>
               ) : null}
             </View>

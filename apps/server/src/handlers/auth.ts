@@ -39,6 +39,11 @@ export async function getCurrentUser(request: any, reply: any) {
   return reply.send({ data: request.user })
 }
 
+export async function updateCurrentUserProfile(request: any, reply: any) {
+  const user = await authService.updateProfile(request.user.id, request.body)
+  return reply.send({ data: user })
+}
+
 export async function getMeCapabilities(request: any, reply: any) {
   const capabilities = await authService.capabilities(request.user.id)
   return reply.send({ data: capabilities })

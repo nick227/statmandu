@@ -7,10 +7,33 @@ export function personName(person: { displayName?: string | null; firstName?: st
 }
 
 export function serializePerson(person: any) {
+  let meta: any = {}
+  if (person.aliases) {
+    if (typeof person.aliases === 'string') {
+      try {
+        meta = JSON.parse(person.aliases)
+      } catch {
+        // ignore
+      }
+    } else if (typeof person.aliases === 'object' && !Array.isArray(person.aliases)) {
+      meta = person.aliases
+    }
+  }
   return {
-    id: person.id, slug: person.slug, displayName: personName(person),
-    aliases: person.aliases ?? [], bio: person.bio, hometown: person.hometown,
-    avatarUrl: person.avatarUrl, claimedByUserId: person.claimedByUserId,
+    id: person.id,
+    slug: person.slug,
+    displayName: personName(person),
+    aliases: Array.isArray(person.aliases) ? person.aliases : (meta.aliases ?? []),
+    bio: person.bio,
+    hometown: person.hometown,
+    avatarUrl: person.avatarUrl,
+    claimedByUserId: person.claimedByUserId,
+    calling: meta.calling ?? null,
+    age: meta.age ?? null,
+    quote: meta.quote ?? null,
+    debut: meta.debut ?? null,
+    specializations: meta.specializations ?? [],
+    customFields: meta.customFields ?? [],
     ...buildShareMetadata('person', person.id, { ...person, displayName: personName(person) }),
   }
 }

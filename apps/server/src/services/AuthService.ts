@@ -46,6 +46,81 @@ export class AuthService {
     await db.session.deleteMany({ where: { token } })
   }
 
+  async updateProfile(userId: string, input: {
+    displayName?: string
+    bio?: string
+    avatarUrl?: string
+    hometown?: string
+    calling?: string
+    age?: string
+    quote?: string
+    debut?: string
+    specializations?: any[]
+    customFields?: any[]
+  }) {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      include: { profile: true, claimedProfile: true },
+    })
+    if (!user) throw { statusCode: 404, message: 'User not found' }
+
+    if (input.displayName !== undefined && !input.displayName.trim()) {
+      throw { statusCode: 400, message: 'Display name cannot be empty' }
+    }
+
+    await db.profile.update({
+      where: { userId },
+      data: {
+        displayName: input.displayName !== undefined ? input.displayName.trim() : undefined,
+        bio: input.bio !== undefined ? input.bio : undefined,
+        avatarUrl: input.avatarUrl !== undefined ? input.avatarUrl : undefined,
+      },
+    })
+
+    const metadata = {
+      calling: input.calling,
+      age: input.age,
+      quote: input.quote,
+      debut: input.debut,
+      specializations: input.specializations ?? [],
+      customFields: input.customFields ?? [],
+    }
+
+    if (user.claimedProfile) {
+      await db.personProfile.update({
+        where: { id: user.claimedProfile.id },
+        data: {
+          displayName: input.displayName !== undefined ? input.displayName.trim() : undefined,
+          bio: input.bio !== undefined ? input.bio : undefined,
+          hometown: input.hometown !== undefined ? input.hometown : undefined,
+          avatarUrl: input.avatarUrl !== undefined ? input.avatarUrl : undefined,
+          aliases: metadata as any,
+        },
+      })
+    } else {
+      const displayName = input.displayName?.trim() || user.profile?.displayName || 'Creator'
+      const slug = `${displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60) || 'person'}-${randomUUID().slice(0, 8)}`
+      await db.personProfile.create({
+        data: {
+          slug,
+          displayName,
+          bio: input.bio,
+          hometown: input.hometown,
+          avatarUrl: input.avatarUrl,
+          claimedByUserId: userId,
+          createdByUserId: userId,
+          aliases: metadata as any,
+        },
+      })
+    }
+
+    const updatedUser = await db.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    })
+    return updatedUser!
+  }
+
   async capabilities(userId: string) {
     const user = await db.user.findUnique({
       where: { id: userId },

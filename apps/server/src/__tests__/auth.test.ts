@@ -162,3 +162,57 @@ describe('getMeCapabilities', () => {
     })
   })
 })
+
+describe('updateCurrentUserProfile', () => {
+  it('requires auth', async () => {
+    const res = await app.inject({ method: 'PATCH', url: '/auth/me', payload: { displayName: 'Hacker' } })
+    expect(res.statusCode).toBe(401)
+  })
+
+  it('updates profile and creates/updates claimed person profile with specializations', async () => {
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/auth/me',
+      headers: asAuth(testUserId),
+      payload: {
+        displayName: 'Alex Chen',
+        bio: 'Sustainable architect & creator',
+        hometown: 'San Francisco, CA',
+        calling: 'Architect',
+        age: '28',
+        quote: 'Form follows purpose',
+        debut: '2020',
+        specializations: [
+          {
+            type: 'CREATOR',
+            attributes: { creativeDomains: ['Architecture', 'Urban Design'] },
+          },
+        ],
+        customFields: [{ id: 'cf-1', label: 'Studio', value: 'Chen Atelier' }],
+      },
+    })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().data.profile.displayName).toBe('Alex Chen')
+    expect(res.json().data.profile.bio).toBe('Sustainable architect & creator')
+
+    // Verify capabilities returns the persisted person profile with attributes
+    const capRes = await app.inject({
+      method: 'GET',
+      url: '/auth/me/capabilities',
+      headers: asAuth(testUserId),
+    })
+    console.log('CAP RES:', JSON.stringify(capRes.json()))
+    expect(capRes.statusCode).toBe(200)
+    const person = capRes.json().data.personProfile
+    expect(person).toBeTruthy()
+    expect(person.displayName).toBe('Alex Chen')
+    expect(person.hometown).toBe('San Francisco, CA')
+    expect(person.calling).toBe('Architect')
+    expect(person.age).toBe('28')
+    expect(person.quote).toBe('Form follows purpose')
+    expect(person.debut).toBe('2020')
+    expect(person.specializations[0].type).toBe('CREATOR')
+    expect(person.customFields[0].value).toBe('Chen Atelier')
+  })
+})

@@ -5,16 +5,16 @@
  *
  * Aggregates:
  * 1. Curated RARE Presets (cultural, historical, athletic, sci-fi)
- * 2. User's Personal Library (all uploads across designs and sessions)
+ * 2. User's Personal Library (server-backed assets for the authenticated profile)
  * 3. Subject Profile Gallery (media specifically linked to the selected Person Profile)
  *
  * Provides a unified asset interface for Card Studio and Profile editors.
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Platform } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getApiClient, useUploadImage, type components } from '@statman/sdk'
 import { CURATED_ARTWORKS } from '@/modules/designs/curatedArtwork'
 
@@ -36,29 +36,12 @@ export interface UseUnifiedMediaLibraryOptions {
   creatorUserId?: string | null
 }
 
-// In-memory shared cache across studio, profile, and app screens
-let globalUserLibrary: MediaLibraryItem[] = []
-const libraryListeners = new Set<() => void>()
-
-function notifyLibraryListeners() {
-  libraryListeners.forEach((listener) => listener())
-}
-
 export function useUnifiedMediaLibrary({
   personProfileId,
 }: UseUnifiedMediaLibraryOptions = {}) {
-  // Local state subscribed to the global client library
-  const [localUserLibrary, setLocalUserLibrary] = useState<MediaLibraryItem[]>(() => [...globalUserLibrary])
+  const queryClient = useQueryClient()
   const [isPicking, setIsPicking] = useState(false)
   const uploadImageMutation = useUploadImage()
-
-  useEffect(() => {
-    const handleUpdate = () => setLocalUserLibrary([...globalUserLibrary])
-    libraryListeners.add(handleUpdate)
-    return () => {
-      libraryListeners.delete(handleUpdate)
-    }
-  }, [])
 
   // Convert curated presets to MediaLibraryItems
   const curatedItems = useMemo<MediaLibraryItem[]>(() => {
@@ -89,8 +72,8 @@ export function useUnifiedMediaLibrary({
         return (data?.data ?? []).map((img: ImageAsset): MediaLibraryItem => ({
           id: img.id,
           url: img.url,
-          label: img.originalFilename || 'Profile Media',
-          source: 'PROFILE_GALLERY',
+          label: img.originalFilename || 'Uploaded Image',
+          source: 'USER_LIBRARY',
           category: img.usage,
           width: img.width,
           height: img.height,
@@ -102,7 +85,11 @@ export function useUnifiedMediaLibrary({
     },
   })
 
-  // Register an uploaded or external image into the user's reusable library
+  const userLibrary = useMemo<MediaLibraryItem[]>(() => {
+    return profileImagesQuery.data ?? []
+  }, [profileImagesQuery.data])
+
+  // Register an uploaded or external image into the query client cache
   const registerUploadedMedia = useCallback((item: {
     id: string
     url: string
@@ -121,19 +108,32 @@ export function useUnifiedMediaLibrary({
       height: item.height,
       createdAt: new Date().toISOString(),
     }
-    globalUserLibrary = [newItem, ...globalUserLibrary.filter((existing) => existing.id !== item.id)]
-    notifyLibraryListeners()
+    if (personProfileId) {
+      queryClient.setQueryData<MediaLibraryItem[]>(
+        ['media-library', 'person', personProfileId],
+        (existing = []) => [newItem, ...existing.filter((x) => x.id !== newItem.id)]
+      )
+    }
     return newItem
-  }, [])
+  }, [personProfileId, queryClient])
 
-  // Remove an uploaded item from the client library
+  // Remove an item from the cache
   const removeUploadedMedia = useCallback((id: string) => {
-    globalUserLibrary = globalUserLibrary.filter((existing) => existing.id !== id)
-    notifyLibraryListeners()
-  }, [])
+    if (personProfileId) {
+      queryClient.setQueryData<MediaLibraryItem[]>(
+        ['media-library', 'person', personProfileId],
+        (existing = []) => existing.filter((item) => item.id !== id)
+      )
+    }
+  }, [personProfileId, queryClient])
 
-  // Unified picker and uploader: works seamlessly on Web and Native
+  // Unified picker and server uploader: works seamlessly on Web and Native
   const pickAndUploadMedia = useCallback(async (options?: { targetId?: string; targetType?: string }) => {
+    const targetId = options?.targetId || personProfileId
+    if (!targetId) {
+      return { error: 'A profile is required to upload media.' }
+    }
+
     setIsPicking(true)
     try {
       if (Platform.OS !== 'web') {
@@ -155,77 +155,59 @@ export function useUnifiedMediaLibrary({
 
       const asset = result.assets[0]
       const label = asset.fileName || `Upload ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+      const contentType = asset.mimeType === 'image/png' || asset.mimeType === 'image/webp' ? asset.mimeType : 'image/jpeg'
 
-      // 1. Instantly register in the local library so it's immediately visible
-      const registered = registerUploadedMedia({
-        id: asset.uri,
-        url: asset.uri,
-        label,
-        category: 'Upload',
+      const res = await uploadImageMutation.mutateAsync({
+        targetType: options?.targetType || 'ATHLETE_PROFILE',
+        targetId,
+        usage: 'GALLERY',
+        contentType,
+        file: {
+          uri: asset.uri,
+          name: asset.fileName || `upload.${contentType.split('/')[1]}`,
+          type: contentType,
+        },
+        originalFilename: asset.fileName ?? undefined,
         width: asset.width,
         height: asset.height,
       })
 
-      // 2. If targetId is provided, attempt server sync in the background
-      if (options?.targetId) {
-        try {
-          const contentType = asset.mimeType === 'image/png' || asset.mimeType === 'image/webp' ? asset.mimeType : 'image/jpeg'
-          const res = await uploadImageMutation.mutateAsync({
-            targetType: options.targetType || 'ATHLETE_PROFILE',
-            targetId: options.targetId,
-            usage: 'GALLERY',
-            contentType,
-            file: {
-              uri: asset.uri,
-              name: asset.fileName || `upload.${contentType.split('/')[1]}`,
-              type: contentType,
-            },
-            originalFilename: asset.fileName ?? undefined,
-            width: asset.width,
-            height: asset.height,
-          })
-          if (res?.data?.url) {
-            registerUploadedMedia({
-              id: res.data.id || res.data.url,
-              url: res.data.url,
-              label: res.data.originalFilename || label,
-              category: 'Upload',
-              width: res.data.width,
-              height: res.data.height,
-            })
-          }
-        } catch (serverErr) {
-          // Gracefully retain local registration if server call fails
-          console.warn('Server upload failed, cached locally:', serverErr)
-        }
+      await queryClient.invalidateQueries({
+        queryKey: ['media-library', 'person', targetId],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ['images', options?.targetType || 'ATHLETE_PROFILE', targetId],
+      })
+
+      const item: MediaLibraryItem = {
+        id: res?.data?.id || res?.data?.url || asset.uri,
+        url: res?.data?.url || asset.uri,
+        label: res?.data?.originalFilename || label,
+        source: 'USER_LIBRARY',
+        category: 'Upload',
+        width: res?.data?.width || asset.width,
+        height: res?.data?.height || asset.height,
+        createdAt: new Date().toISOString(),
       }
 
-      return { success: true, item: registered }
+      return { success: true, item }
     } catch (err: any) {
       console.warn('pickAndUploadMedia error:', err)
-      return { error: err?.message || 'Failed to select media' }
+      return { error: err?.message || 'Failed to upload media.' }
     } finally {
       setIsPicking(false)
     }
-  }, [registerUploadedMedia, uploadImageMutation])
+  }, [personProfileId, uploadImageMutation, queryClient])
 
   // Aggregate unified media collection
   const allMediaItems = useMemo<MediaLibraryItem[]>(() => {
-    const profileItems = profileImagesQuery.data ?? []
+    const profileItems = userLibrary
 
     // De-duplicate by ID
     const seen = new Set<string>()
     const combined: MediaLibraryItem[] = []
 
-    // 1. Session & User Library uploads (top priority)
-    for (const item of localUserLibrary) {
-      if (!seen.has(item.id)) {
-        seen.add(item.id)
-        combined.push(item)
-      }
-    }
-
-    // 2. Profile Gallery
+    // 1. User & Profile uploads (top priority)
     for (const item of profileItems) {
       if (!seen.has(item.id)) {
         seen.add(item.id)
@@ -233,7 +215,7 @@ export function useUnifiedMediaLibrary({
       }
     }
 
-    // 3. Curated Presets
+    // 2. Curated Presets
     for (const item of curatedItems) {
       if (!seen.has(item.id)) {
         seen.add(item.id)
@@ -242,13 +224,13 @@ export function useUnifiedMediaLibrary({
     }
 
     return combined
-  }, [localUserLibrary, profileImagesQuery.data, curatedItems])
+  }, [userLibrary, curatedItems])
 
   return {
     allMedia: allMediaItems,
-    userLibrary: localUserLibrary,
+    userLibrary,
     curatedPresets: curatedItems,
-    profileGallery: profileImagesQuery.data ?? [],
+    profileGallery: userLibrary,
     isLoading: profileImagesQuery.isLoading,
     isUploading: isPicking || uploadImageMutation.isPending,
     registerUploadedMedia,

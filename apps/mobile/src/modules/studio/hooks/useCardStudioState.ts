@@ -39,6 +39,7 @@ import {
 } from '@/modules/profiles/profileTaxonomy'
 import {
   buildBoundCardFields,
+  getFieldSemanticKey,
   type BoundCardField,
 } from '@/modules/profiles/profileAttributeResolver'
 import {
@@ -48,7 +49,7 @@ import {
 import { areFontsReady, waitForFontsLoaded } from '@/modules/typography/textFit'
 
 export const INITIAL_FLAGSHIP_ID = 'classic-collector'
-export const INITIAL_CARD_TYPE_ID = 'profile'
+export const INITIAL_CARD_TYPE_ID = 'standard'
 export const INITIAL_IMAGE_ID = 'art-angelou'
 export const INITIAL_PROFILE: UniversalProfile | null = null
 
@@ -87,7 +88,7 @@ export type MediaCategoryFilter = 'ALL' | 'USER' | 'PROFILE' | 'CURATED'
  */
 export function useCardStudioState() {
   const router = useRouter()
-  const params = useLocalSearchParams<{ flagshipId?: string }>()
+  const params = useLocalSearchParams<{ flagshipId?: string; imageId?: string }>()
 
   // ---------------------------------------------------------------------------
   // Font Readiness
@@ -127,7 +128,15 @@ export function useCardStudioState() {
   const [activeFlagshipId, setActiveFlagshipId] = useState<string>(
     params.flagshipId || INITIAL_FLAGSHIP_ID,
   )
-  const [selectedImageId, setSelectedImageId] = useState<string>(INITIAL_IMAGE_ID)
+  const [selectedImageId, setSelectedImageId] = useState<string>(
+    params.imageId || INITIAL_IMAGE_ID,
+  )
+
+  useEffect(() => {
+    if (params.imageId) {
+      setSelectedImageId(params.imageId)
+    }
+  }, [params.imageId])
 
   // Linked content overrides & unlinked slots
   const [fieldOverrides, setFieldOverrides] = useState<Record<string, string>>({})
@@ -230,11 +239,8 @@ export function useCardStudioState() {
     for (const bf of boundFields) {
       store[bf.slotId] = bf.effectiveValue
     }
-    for (const [k, v] of Object.entries(fieldOverrides)) {
-      store[k] = v
-    }
     return store
-  }, [boundFields, fieldOverrides])
+  }, [boundFields])
 
   // Active flagship compilation result (composition + overflow diagnostics)
   const currentFlagshipResult = compileFlagshipDesign(
@@ -459,7 +465,7 @@ export function useCardStudioState() {
         fieldOverrides,
         unlinkedSlotIds,
       )
-      const newStore: ContentStore = { ...currentContentStore }
+      const newStore: ContentStore = { ...INITIAL_CONTENT_STORE }
       for (const bf of newBound) {
         newStore[bf.slotId] = bf.effectiveValue
       }
@@ -479,7 +485,6 @@ export function useCardStudioState() {
       activeFlagship.inputs,
       fieldOverrides,
       unlinkedSlotIds,
-      currentContentStore,
       activeFlagshipId,
       assetsList,
       selectedImageId,
@@ -517,8 +522,28 @@ export function useCardStudioState() {
   // ---------------------------------------------------------------------------
   const handleUpdatePositionalInput = useCallback(
     (slotId: string, value: string) => {
-      setFieldOverrides((prev) => ({ ...prev, [slotId]: value }))
-      const nextStore = { ...currentContentStore, [slotId]: value }
+      const fieldIndex = parseInt(slotId.replace('input', ''), 10) - 1
+      const field = activeCardType.fields[fieldIndex]
+      const semanticKey = getFieldSemanticKey(activeCardTypeId, field?.id || slotId, slotId)
+
+      const nextOverrides = { ...fieldOverrides, [semanticKey]: value }
+      if (slotId === 'input1') {
+        nextOverrides.input1 = value
+      }
+      setFieldOverrides(nextOverrides)
+
+      const nextBound = buildBoundCardFields(
+        activeCardType,
+        activeProfile,
+        activeFlagship.inputs.map((i) => i.id),
+        nextOverrides,
+        unlinkedSlotIds,
+      )
+      const nextStore: ContentStore = { ...INITIAL_CONTENT_STORE }
+      for (const bf of nextBound) {
+        nextStore[bf.slotId] = bf.effectiveValue
+      }
+
       const result = compileFlagshipDesign(
         activeFlagshipId,
         nextStore,
@@ -530,11 +555,14 @@ export function useCardStudioState() {
       updateCompositionWithHistory(result.composition)
     },
     [
-      currentContentStore,
+      activeCardType,
+      activeCardTypeId,
+      fieldOverrides,
+      unlinkedSlotIds,
       activeProfile,
+      activeFlagship.inputs,
       assetsList,
       activeFlagshipId,
-      activeCardTypeId,
       selectedImageId,
       updateCompositionWithHistory,
     ],
@@ -542,9 +570,16 @@ export function useCardStudioState() {
 
   const handleRelinkField = useCallback(
     (slotId: string) => {
+      const fieldIndex = parseInt(slotId.replace('input', ''), 10) - 1
+      const field = activeCardType.fields[fieldIndex]
+      const semanticKey = getFieldSemanticKey(activeCardTypeId, field?.id || slotId, slotId)
+
       const clearedOverrides = { ...fieldOverrides }
+      delete clearedOverrides[semanticKey]
       delete clearedOverrides[slotId]
+
       const nextUnlinked = new Set(unlinkedSlotIds)
+      nextUnlinked.delete(semanticKey)
       nextUnlinked.delete(slotId)
 
       setFieldOverrides(clearedOverrides)
@@ -557,17 +592,9 @@ export function useCardStudioState() {
         clearedOverrides,
         nextUnlinked,
       )
-      const nextStore: ContentStore = { ...currentContentStore }
+      const nextStore: ContentStore = { ...INITIAL_CONTENT_STORE }
       for (const bf of nextBound) {
         nextStore[bf.slotId] = bf.effectiveValue
-      }
-      for (const [k, v] of Object.entries(clearedOverrides)) {
-        nextStore[k] = v
-      }
-      delete nextStore[slotId]
-      const relinkedBf = nextBound.find((bf) => bf.slotId === slotId)
-      if (relinkedBf) {
-        nextStore[slotId] = relinkedBf.effectiveValue
       }
 
       const result = compileFlagshipDesign(
@@ -581,15 +608,14 @@ export function useCardStudioState() {
       updateCompositionWithHistory(result.composition)
     },
     [
+      activeCardType,
+      activeCardTypeId,
       fieldOverrides,
       unlinkedSlotIds,
-      activeCardType,
       activeProfile,
       activeFlagship.inputs,
-      currentContentStore,
       activeFlagshipId,
       assetsList,
-      activeCardTypeId,
       selectedImageId,
       updateCompositionWithHistory,
     ],
@@ -623,33 +649,16 @@ export function useCardStudioState() {
 
   const handlePickCustomImage = useCallback(async () => {
     try {
-      if (Platform.OS !== 'web') {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-        if (status !== 'granted') {
-          console.warn('Media library permission not granted')
-          return
-        }
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 5],
-        quality: 0.85,
+      const result = await mediaLibrary.pickAndUploadMedia({
+        targetId: activeProfile?.id ?? undefined,
       })
-      if (!result.canceled && result.assets && result.assets[0]?.uri) {
-        const imageUri = result.assets[0].uri
-        const registered = mediaLibrary.registerUploadedMedia({
-          id: imageUri,
-          url: imageUri,
-          label: `${activeProfile?.displayName || 'Custom'} Artwork`,
-          category: 'Upload',
-        })
-        handleSelectArtwork(registered.id)
+      if (result.success && result.item) {
+        handleSelectArtwork(result.item.id)
       }
     } catch (err) {
       console.warn('Failed to pick image:', err)
     }
-  }, [mediaLibrary, activeProfile?.displayName, handleSelectArtwork])
+  }, [mediaLibrary, activeProfile?.id, handleSelectArtwork])
 
   // Filtered media items based on active category tab
   const displayedMediaItems = useMemo<MediaLibraryItem[]>(() => {
@@ -712,7 +721,7 @@ export function useCardStudioState() {
       const subjectName = (
         publishSubjectName ||
         activeProfile?.displayName ||
-        currentContentStore.input1 ||
+        (activeCardTypeId !== 'minimal' ? currentContentStore.input1 : '') ||
         ''
       ).trim()
 
@@ -770,17 +779,21 @@ export function useCardStudioState() {
 
       // 4. Explicit Subject Attribution
       let personId: string
-      const matched = people.find(
-        (p) => p.displayName?.toLowerCase() === subjectName.toLowerCase(),
-      )
-      if (matched) {
-        personId = matched.id
+      if (activeProfile?.id) {
+        personId = activeProfile.id
       } else {
-        const created = await createPerson({
-          displayName: subjectName,
-          bio: publishSubjectBio.trim() || currentContentStore.input3?.slice(0, 500) || undefined,
-        })
-        personId = created.data.id
+        const matched = people.find(
+          (p) => p.displayName?.toLowerCase() === subjectName.toLowerCase(),
+        )
+        if (matched) {
+          personId = matched.id
+        } else {
+          const created = await createPerson({
+            displayName: subjectName,
+            bio: publishSubjectBio.trim() || undefined,
+          })
+          personId = created.data.id
+        }
       }
 
       // 3. Create release with explicit edition configuration

@@ -5,6 +5,24 @@ import * as ImagePicker from 'expo-image-picker'
 import { AccountScreen } from '../AccountScreen'
 import { useAccountSession } from '../useAccountSession'
 
+const mockUpdateProfileMutate = jest.fn().mockResolvedValue({ data: { user: {} } })
+const mockUploadImageMutate = jest.fn().mockResolvedValue({ data: { id: 'img-1', url: 'https://cdn.statman.app/img.jpg' } })
+
+jest.mock('@statman/sdk', () => {
+  const actual = jest.requireActual('@statman/sdk')
+  return {
+    ...actual,
+    useUpdateProfile: () => ({
+      mutateAsync: mockUpdateProfileMutate,
+      isPending: false,
+    }),
+    useUploadImage: () => ({
+      mutateAsync: mockUploadImageMutate,
+      isPending: false,
+    }),
+  }
+})
+
 jest.mock('../useAccountSession', () => ({
   useAccountSession: jest.fn(),
 }))
@@ -72,6 +90,15 @@ describe('AccountScreen - Profile Screen with Single Word Headings & Media', () 
     jest.clearAllMocks()
     ;(useAccountSession as jest.Mock).mockReturnValue({
       user: mockUser,
+      capabilities: {
+        personProfile: {
+          id: 'person-1',
+          displayName: 'Alex Designer',
+          hometown: 'New York, NY',
+          bio: 'Digital product architect and vintage card collector.',
+        },
+        athleteProfiles: [{ athleteProfileId: 'person-1' }],
+      },
       isLoading: false,
       isError: false,
       logout: { mutateAsync: jest.fn(), isPending: false },
@@ -95,6 +122,15 @@ describe('AccountScreen - Profile Screen with Single Word Headings & Media', () 
     })
     await fireEvent.press(avatarButton)
     expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(mockUploadImageMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          targetType: 'ATHLETE_PROFILE',
+          targetId: 'person-1',
+          usage: 'AVATAR',
+        })
+      )
+    })
 
     // Single-word headings: Details, Identity, Bio
     expect(screen.getByText('Details')).toBeTruthy()
@@ -166,6 +202,13 @@ describe('AccountScreen - Profile Screen with Single Word Headings & Media', () 
     // Save action
     await fireEvent.press(screen.getByText('Save'))
     await waitFor(() => {
+      expect(mockUpdateProfileMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          displayName: 'Alex Morgan Chen',
+          hometown: 'San Francisco, CA',
+          age: '29',
+        })
+      )
       expect(screen.getByText('✓ Saved')).toBeTruthy()
     })
   })

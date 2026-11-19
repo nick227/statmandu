@@ -69,7 +69,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update the current authenticated user's profile and attributes */
+        patch: operations["updateCurrentUserProfile"];
         trace?: never;
     };
     "/auth/me/capabilities": {
@@ -1854,6 +1855,18 @@ export interface components {
             bio?: string | null;
             avatarUrl?: string | null;
         };
+        UpdateUserProfileInput: {
+            displayName?: string;
+            bio?: string;
+            avatarUrl?: string;
+            hometown?: string;
+            calling?: string;
+            age?: string;
+            quote?: string;
+            debut?: string;
+            specializations?: Record<string, never>[];
+            customFields?: Record<string, never>[];
+        };
         RegisterInput: {
             /** Format: email */
             email: string;
@@ -2535,6 +2548,16 @@ export interface components {
             bio?: string | null;
             hometown?: string | null;
             avatarUrl?: string | null;
+            calling?: string | null;
+            age?: string | null;
+            quote?: string | null;
+            debut?: string | null;
+            specializations?: {
+                [key: string]: unknown;
+            }[];
+            customFields?: {
+                [key: string]: unknown;
+            }[];
             claimedByUserId?: string | null;
             canonicalUrl?: string;
             shareTitle?: string;
@@ -3183,6 +3206,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateCurrentUserProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserProfileInput"];
+            };
+        };
+        responses: {
+            /** @description Updated profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];

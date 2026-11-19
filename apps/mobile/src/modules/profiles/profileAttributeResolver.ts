@@ -79,17 +79,20 @@ export function resolveProfileAttributeForField(
 
   // Specialist calling / role resolution
   const calling =
-    athlete?.sport ? `${athlete.sport.toUpperCase()} · ${athlete.primaryRole || 'ATHLETE'}` :
+    profile.calling ||
+    (athlete?.sport ? `${athlete.sport.toUpperCase()} · ${athlete.primaryRole || 'ATHLETE'}` :
     musician?.primaryGenre ? `${musician.primaryGenre.toUpperCase()} · MUSICIAN` :
     writer?.literaryGenres?.[0] ? `${writer.literaryGenres[0].toUpperCase()} · AUTHOR` :
     actor?.primaryMedium ? `${actor.primaryMedium.toUpperCase()} · ACTOR` :
     scientist?.fieldOfStudy ? `${scientist.fieldOfStudy.toUpperCase()} · RESEARCHER` :
     creator?.creativeDomains?.[0] ? `${creator.creativeDomains[0].toUpperCase()} · CREATOR` :
     historical?.epochOrEra ? `${historical.epochOrEra.toUpperCase()}` :
-    ''
+    '')
 
   // Primary accolade / statistic resolution
+  const customStat = profile.customFields?.find((cf) => /stat|record|metric/i.test(cf.label))?.value
   const primaryAccolade =
+    customStat ||
     athlete?.primaryStatistic ||
     athlete?.careerAccolades?.[0] ||
     musician?.honors?.[0] ||
@@ -128,7 +131,7 @@ export function resolveProfileAttributeForField(
       return { value: primaryAccolade, sourceLabel: primaryAccolade ? 'Hero Stat' : 'Unset' }
     }
     if (field.id === 'record' || field.id === 'dateLocation' || field.id === 'honors') {
-      const rec = athlete?.careerAccolades?.[0] || athlete?.yearsActive || historical?.epochOrEra || originEra || ''
+      const rec = profile.debut || athlete?.careerAccolades?.[0] || athlete?.yearsActive || historical?.epochOrEra || originEra || ''
       return { value: rec, sourceLabel: rec ? 'Record' : 'Unset' }
     }
   }
@@ -142,7 +145,7 @@ export function resolveProfileAttributeForField(
       return { value: name, sourceLabel: name ? 'Creator' : 'Unset' }
     }
     if (field.id === 'year') {
-      return { value: originEra || '2026', sourceLabel: originEra ? 'Year' : 'Unset' }
+      return { value: profile.debut || originEra || '2026', sourceLabel: (profile.debut || originEra) ? 'Year' : 'Unset' }
     }
   }
 
@@ -234,6 +237,13 @@ export function resolveProfileAttributeForField(
   return { value: '', sourceLabel: 'Unset' }
 }
 
+export function getFieldSemanticKey(cardTypeId: string, fieldId: string, slotId?: string): string {
+  if (slotId === 'input1' || fieldId === 'name' || fieldId === 'subject') {
+    return 'input1'
+  }
+  return `${cardTypeId}.${fieldId}`
+}
+
 /**
  * Builds the complete list of BoundCardFields for a CardType and UniversalProfile,
  * taking into account local overrides and active slots of a FlagshipDesign.
@@ -249,9 +259,13 @@ export function buildBoundCardFields(
     const slotId = `input${index + 1}`
     const isMappedInDesign = designSlotIds.includes(slotId)
     const instructionalPlaceholder = field.placeholder || `Enter ${field.label}...`
+    const semanticKey = getFieldSemanticKey(cardType.id, field.id, slotId)
+
+    // Lookup override either by semantic key or direct slotId for backward compatibility
+    const override = currentOverrides[semanticKey] ?? currentOverrides[slotId]
+    const isUnlinked = unlinkedSlotIds.has(semanticKey) || unlinkedSlotIds.has(slotId)
 
     if (!profile) {
-      const override = currentOverrides[slotId]
       return {
         slotId,
         fieldId: field.id,
@@ -274,8 +288,6 @@ export function buildBoundCardFields(
       index,
     )
 
-    const isUnlinked = unlinkedSlotIds.has(slotId)
-    const override = currentOverrides[slotId]
     const isLinked = !isUnlinked && override === undefined
 
     const effectiveValue = isLinked ? resolvedVal : (override ?? resolvedVal)

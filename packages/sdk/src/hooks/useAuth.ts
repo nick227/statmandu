@@ -68,3 +68,30 @@ export function useLogout() {
     },
   })
 }
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: {
+      displayName?: string
+      bio?: string
+      avatarUrl?: string
+      hometown?: string
+      calling?: string
+      age?: string
+      quote?: string
+      debut?: string
+      specializations?: any[]
+      customFields?: any[]
+    }) => {
+      const { data, error, response } = await (getApiClient() as any).PATCH('/auth/me', { body })
+      if (error) throw new ApiError(response.status, (error as any).error)
+      return data!
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      queryClient.invalidateQueries({ queryKey: ['me-capabilities'] })
+      queryClient.invalidateQueries({ queryKey: ['people'] })
+    },
+  })
+}

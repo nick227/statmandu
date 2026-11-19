@@ -189,10 +189,14 @@ export interface UniversalProfile {
   hometown?: string | null
   location?: string | null
   age?: number | string | null
+  calling?: string | null
+  debut?: string | null
+  quote?: string | null
   originEra?: string | null
   avatarUrl?: string | null
   claimedByUserId?: string | null
   specializations: SpecializationPayload[]
+  customFields?: Array<{ id: string; label: string; value: string }>
   mediaAssetIds?: string[]
 }
 
@@ -308,8 +312,12 @@ export function toUniversalProfile(person: any): UniversalProfile {
     hometown: loc,
     location: loc,
     age: person.age != null ? person.age : null,
+    calling: person.calling ?? null,
+    debut: person.debut ?? null,
+    quote: person.quote ?? null,
     originEra: loc ? `${loc} · Era Archive` : undefined,
     avatarUrl: person.avatarUrl || null,
-    specializations: [],
+    specializations: person.specializations ?? [],
+    customFields: person.customFields ?? [],
   }
 }
