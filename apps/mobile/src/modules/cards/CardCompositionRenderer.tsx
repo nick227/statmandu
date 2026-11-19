@@ -76,12 +76,16 @@ export function resolveAssetUrl(
     const match = assets.find((a) => a.id === imageAssetId)
     if (match?.url) return match.url
   }
-  // If the asset ID is already a full URL or relative path
+  // If the asset ID is already a full URL, local URI, or relative path
   if (
     imageAssetId.startsWith('http://') ||
     imageAssetId.startsWith('https://') ||
     imageAssetId.startsWith('/') ||
-    imageAssetId.startsWith('data:')
+    imageAssetId.startsWith('data:') ||
+    imageAssetId.startsWith('file://') ||
+    imageAssetId.startsWith('blob:') ||
+    imageAssetId.startsWith('content://') ||
+    imageAssetId.startsWith('ph://')
   ) {
     return imageAssetId
   }

@@ -51,8 +51,7 @@ export function SiteHeader({ user }: SiteHeaderProps) {
       className="z-50 border-b border-border bg-surface"
     >
       <View
-        className="w-full flex-row items-center gap-md self-center px-lg pb-sm"
-        style={{ maxWidth: LAYOUT.pageMaxWidth }}
+        className="w-full flex-row items-center justify-between px-md md:px-lg lg:px-xl pb-sm"
       >
         <View className="min-w-0 flex-1 flex-row items-center gap-md">
           <Link href="/" asChild>

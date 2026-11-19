@@ -44,7 +44,8 @@ import {
 } from './useDiscoverFeed'
 
 function gridColumns(width: number): number {
-  if (width >= LAYOUT.pageMaxWidth) return 3
+  if (width >= 1440) return 4
+  if (width >= 1024) return 3
   if (width >= 640) return 2
   return 1
 }
@@ -86,10 +87,7 @@ export function DiscoverScreen() {
 
   return (
     <Screen insetTop={false} scroll>
-      <View
-        className="w-full self-center px-md pb-xxl pt-md"
-        style={{ maxWidth: LAYOUT.pageMaxWidth }}
-      >
+      <View className="w-full pb-xxl pt-md">
         {/* Brand Hero & Positioning */}
         <View className="mb-lg gap-sm border-b border-border pb-lg">
           <View className="flex-row items-center gap-xs">

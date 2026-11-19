@@ -18,7 +18,8 @@ import { useCardManager } from '@/modules/cards/useCardManager'
 import { useAuthGate } from '@/modules/auth/useAuthGate'
 
 function browseColumns(width: number) {
-  if (width >= LAYOUT.pageMaxWidth) return 2
+  if (width >= 1440) return 3
+  if (width >= 768) return 2
   return 1
 }
 

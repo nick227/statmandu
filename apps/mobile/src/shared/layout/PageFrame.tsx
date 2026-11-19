@@ -27,10 +27,7 @@ export function PageFrame({
 
   if (!isWide) {
     return (
-      <View
-        className={cn('w-full gap-md px-md', className)}
-        style={{ maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center' }}
-      >
+      <View className={cn('w-full gap-md', className)}>
         {main}
         {sidebar && narrowSidebar === 'below' ? <View className={sidebarClassName}>{sidebar}</View> : null}
       </View>
@@ -38,18 +35,14 @@ export function PageFrame({
   }
 
   return (
-    <View
-      className={cn('w-full flex-row items-start gap-md px-lg', className)}
-      style={{ maxWidth: LAYOUT.pageMaxWidth, alignSelf: 'center' }}
-    >
-      <View className={cn('gap-md', mainClassName)} style={{ flexBasis: '70%', maxWidth: '70%' }}>
+    <View className={cn('w-full flex-row items-start gap-xl', className)}>
+      <View className={cn('gap-md flex-1 min-w-0', mainClassName)}>
         {main}
       </View>
       <View
-        className={cn('gap-md', sidebarClassName)}
+        className={cn('gap-md flex-shrink-0', sidebarClassName)}
         style={{
-          flexBasis: '30%',
-          maxWidth: '30%',
+          width: 340,
           ...(Platform.OS === 'web'
             ? ({ position: 'sticky', top: LAYOUT.sidebarStickyTop } as unknown as ViewStyle)
             : null),
