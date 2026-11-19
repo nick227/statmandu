@@ -44,6 +44,24 @@ Profile:
       type:
         - string
         - 'null'
+UpdateUserProfileInput:
+  type: object
+  properties:
+    displayName: { type: string }
+    bio: { type: string }
+    avatarUrl: { type: string }
+    hometown: { type: string }
+    calling: { type: string }
+    age: { type: string }
+    quote: { type: string }
+    debut: { type: string }
+    specializations:
+      type: array
+      items: { type: object }
+    customFields:
+      type: array
+      items: { type: object }
+
 RegisterInput:
   type: object
   required:

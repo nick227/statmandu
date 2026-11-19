@@ -30,10 +30,6 @@ import {
   type ArtworkStyle,
 } from '@/modules/designs/flagshipDesigns'
 import { removeImageBackground } from '@/modules/media/backgroundRemoval'
-import type {
-  StudioPanelLocation,
-  StudioBreadcrumb,
-} from '../types/panelNavigation'
 import {
   CARD_TYPES,
   getCardTypeById,
@@ -156,67 +152,6 @@ export function useCardStudioState() {
   // Linked content overrides & unlinked slots
   const [fieldOverrides, setFieldOverrides] = useState<Record<string, string>>({})
   const [unlinkedSlotIds, setUnlinkedSlotIds] = useState<Set<string>>(new Set())
-
-  // ---------------------------------------------------------------------------
-  // 3-Level Contextual Left Panel Navigation
-  // ---------------------------------------------------------------------------
-  const [panelLocation, setPanelLocation] = useState<StudioPanelLocation>({
-    level: 1,
-    category: 'card',
-  })
-
-  const navigateTo = useCallback((loc: StudioPanelLocation) => {
-    setPanelLocation(loc)
-  }, [])
-
-  const navigateBack = useCallback(() => {
-    setPanelLocation((prev) => {
-      if (prev.level === 3) {
-        if (prev.category === 'appearance') {
-          return { level: 2, category: 'appearance' }
-        }
-        if (prev.category === 'artwork') {
-          return { level: 2, category: 'artwork' }
-        }
-        return { level: 2, category: prev.category }
-      }
-      if (prev.level === 2) {
-        return { level: 1 }
-      }
-      return prev
-    })
-  }, [])
-
-  const breadcrumbs = useMemo<StudioBreadcrumb[]>(() => {
-    const crumbs: StudioBreadcrumb[] = [
-      { label: 'Studio', location: { level: 1 } },
-    ]
-    if (panelLocation.level >= 2 && panelLocation.category) {
-      const catLabel =
-        panelLocation.category.charAt(0).toUpperCase() + panelLocation.category.slice(1)
-      crumbs.push({
-        label: catLabel,
-        location: { level: 2, category: panelLocation.category },
-      })
-    }
-
-    if (panelLocation.level === 3) {
-      if (panelLocation.category === 'appearance' && panelLocation.group) {
-        const grpLabel =
-          panelLocation.group.charAt(0).toUpperCase() + panelLocation.group.slice(1)
-        crumbs.push({
-          label: grpLabel,
-          location: panelLocation,
-        })
-      } else if (panelLocation.category === 'artwork') {
-        crumbs.push({
-          label: panelLocation.group === 'adjust' ? 'Framing' : 'Style',
-          location: panelLocation,
-        })
-      }
-    }
-    return crumbs
-  }, [panelLocation])
 
   // ---------------------------------------------------------------------------
   // Creative Levers (Appearance Customization)
@@ -843,6 +778,8 @@ export function useCardStudioState() {
   const handleUseMyProfile = useCallback(() => {
     const myProfile: UniversalProfile = {
       id: currentUser?.id || 'me',
+      slug: (currentUserProfile as any)?.slug || currentUsername || currentUser?.id || 'me',
+      specializations: [],
       displayName: currentUserProfile?.displayName || currentUsername || 'Creator',
       hometown: (currentUserProfile as any)?.hometown || undefined,
       bio: currentUserProfile?.bio || undefined,
@@ -1260,12 +1197,6 @@ export function useCardStudioState() {
     // Feedback Alerts
     conflictMessage,
     publishSuccessMsg,
-
-    // 3-Level Panel Navigation
-    panelLocation,
-    navigateTo,
-    navigateBack,
-    breadcrumbs,
 
     // Appearance State & Levers
     appearance,

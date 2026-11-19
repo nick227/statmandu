@@ -78,6 +78,29 @@ me:
       '401':
         $ref: '../components/responses/common.yaml#/Unauthorized'
 
+  patch:
+    operationId: updateCurrentUserProfile
+    summary: Update the current authenticated user's profile and attributes
+    tags: [auth]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/auth.yaml#/UpdateUserProfileInput' }
+    responses:
+      '200':
+        description: Updated profile
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/auth.yaml#/AuthResponse' }
+      '400':
+        description: Validation error
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
 capabilities:
   get:
     operationId: getMeCapabilities

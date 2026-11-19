@@ -57,6 +57,8 @@ components:
       $ref: ./components/schemas/auth.yaml#/User
     Profile:
       $ref: ./components/schemas/auth.yaml#/Profile
+    UpdateUserProfileInput:
+      $ref: ./components/schemas/auth.yaml#/UpdateUserProfileInput
     RegisterInput:
       $ref: ./components/schemas/auth.yaml#/RegisterInput
     LoginInput:

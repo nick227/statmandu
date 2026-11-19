@@ -28,6 +28,20 @@ PersonProfile:
       type:
         - string
         - 'null'
+    calling:
+      type: [string, 'null']
+    age:
+      type: [string, 'null']
+    quote:
+      type: [string, 'null']
+    debut:
+      type: [string, 'null']
+    specializations:
+      type: array
+      items: { type: object, additionalProperties: true }
+    customFields:
+      type: array
+      items: { type: object, additionalProperties: true }
     claimedByUserId:
       type:
         - string
