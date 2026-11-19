@@ -38,8 +38,9 @@ export function resolveProfileAttributeForField(
 ): { value: string; sourceLabel: string } {
   // Universal attributes
   const name = profile.displayName || ''
-  const hometown = profile.hometown || ''
+  const hometown = profile.hometown || profile.location || ''
   const bio = profile.bio || ''
+  const age = profile.age != null ? String(profile.age) : ''
   const originEra = profile.originEra || (hometown ? `${hometown} · RARE Heritage` : '')
 
   // Extract specializations
@@ -66,6 +67,14 @@ export function resolveProfileAttributeForField(
     field.id === 'alias'
   ) {
     return { value: name, sourceLabel: name ? 'Profile Name' : 'Unset' }
+  }
+
+  if (field.id === 'age') {
+    return { value: age, sourceLabel: age ? 'Profile Age' : 'Unset' }
+  }
+
+  if (field.id === 'location' || field.id === 'hometown') {
+    return { value: hometown, sourceLabel: hometown ? 'Profile Location' : 'Unset' }
   }
 
   // Specialist calling / role resolution

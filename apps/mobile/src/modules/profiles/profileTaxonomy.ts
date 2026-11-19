@@ -187,6 +187,8 @@ export interface UniversalProfile {
   aliases?: string[]
   bio?: string | null
   hometown?: string | null
+  location?: string | null
+  age?: number | string | null
   originEra?: string | null
   avatarUrl?: string | null
   claimedByUserId?: string | null
@@ -297,13 +299,16 @@ export function toUniversalProfile(person: any): UniversalProfile {
   }
 
   // Otherwise return clean universal profile without mock specializations
+  const loc = person.hometown || person.location || ''
   return {
     id: person.id || 'custom-person',
     slug: person.slug || 'custom-person',
     displayName: person.displayName || '',
     bio: person.bio || '',
-    hometown: person.hometown || '',
-    originEra: person.hometown ? `${person.hometown} · Era Archive` : undefined,
+    hometown: loc,
+    location: loc,
+    age: person.age != null ? person.age : null,
+    originEra: loc ? `${loc} · Era Archive` : undefined,
     avatarUrl: person.avatarUrl || null,
     specializations: [],
   }

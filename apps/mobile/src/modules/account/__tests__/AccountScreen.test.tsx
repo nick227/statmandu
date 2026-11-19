@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, fireEvent } from '@testing-library/react-native'
+import { render, fireEvent, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AccountScreen } from '../AccountScreen'
 import { useAccountSession } from '../useAccountSession'
@@ -48,7 +48,7 @@ function renderWithClient(ui: React.ReactElement) {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
 }
 
-describe('AccountScreen - Personal Card Content Fields & Media Grid', () => {
+describe('AccountScreen - General Profile Fields & Media Grid', () => {
   const mockUser = {
     id: 'user-1',
     email: 'creator@rare.com',
@@ -56,6 +56,8 @@ describe('AccountScreen - Personal Card Content Fields & Media Grid', () => {
       displayName: 'Alex Designer',
       username: 'alexdesigns',
       avatarUrl: null,
+      hometown: 'New York, NY',
+      bio: 'Digital product architect and vintage card collector.',
     },
     role: 'USER',
   }
@@ -70,14 +72,37 @@ describe('AccountScreen - Personal Card Content Fields & Media Grid', () => {
     })
   })
 
-  it('renders user identity, personal card fields, and media library', async () => {
+  it('renders general profile fields in prime field space and eliminates weird creator attributes', async () => {
     const screen = await renderWithClient(<AccountScreen />)
 
+    // User identity
     expect(screen.getAllByText('Alex Designer').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('Personal Fields')).toBeTruthy()
-    expect(screen.getAllByText('Creator').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('Athlete')).toBeTruthy()
-    expect(screen.getByText('Save Attributes')).toBeTruthy()
+    expect(screen.getByText('Profile Details')).toBeTruthy()
+    expect(screen.getByText('General Information')).toBeTruthy()
+
+    // Prime fields: Name, Location, Age, Calling, Bio
+    expect(screen.getByText('Name')).toBeTruthy()
+    expect(screen.getByText('Location')).toBeTruthy()
+    expect(screen.getByText('Age')).toBeTruthy()
+    expect(screen.getByText('Calling / Profession')).toBeTruthy()
+    expect(screen.getByText('Bio / About')).toBeTruthy()
+
+    // Prime field values initialized from real profile data without mock text
+    expect(screen.getByDisplayValue('Alex Designer')).toBeTruthy()
+    expect(screen.getByDisplayValue('New York, NY')).toBeTruthy()
+    expect(screen.getByDisplayValue('Digital product architect and vintage card collector.')).toBeTruthy()
+
+    // Weird creator attributes and pursuit gimmicks MUST NOT exist
+    expect(screen.queryByText('Creator Attributes')).toBeNull()
+    expect(screen.queryByText('Creative Domain')).toBeNull()
+    expect(screen.queryByText('Studio / Channel')).toBeNull()
+    expect(screen.queryByText('Flagship Project')).toBeNull()
+    expect(screen.queryByText('Signature Style')).toBeNull()
+    expect(screen.queryByText('Visual Design & Collectibles')).toBeNull()
+    expect(screen.queryByText('Studio RARE')).toBeNull()
+
+    // Save Profile button
+    expect(screen.getByText('Save Profile')).toBeTruthy()
 
     // Media Library grid
     expect(screen.getByText('Media Library')).toBeTruthy()
@@ -85,23 +110,40 @@ describe('AccountScreen - Personal Card Content Fields & Media Grid', () => {
     expect(screen.getByText('Add Image')).toBeTruthy()
   })
 
-  it('dynamically switches tailored fields when selecting Athlete pursuit', async () => {
+  it('allows editing general fields (Name, Location, Age) and saving profile', async () => {
     const screen = await renderWithClient(<AccountScreen />)
 
-    // Select Athlete
-    await fireEvent.press(screen.getByText('Athlete'))
+    const nameInput = screen.getByTestId('field-name')
+    fireEvent.changeText(nameInput, 'Alex Morgan Chen')
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Alex Morgan Chen')).toBeTruthy()
+    })
 
-    expect(screen.getByText('Athlete Attributes')).toBeTruthy()
-    expect(screen.getByText('Sport / Discipline')).toBeTruthy()
-    expect(screen.getByText('Position / Role')).toBeTruthy()
-    expect(screen.getByText('Primary Statistic')).toBeTruthy()
+    const locationInput = screen.getByTestId('field-location')
+    fireEvent.changeText(locationInput, 'San Francisco, CA')
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('San Francisco, CA')).toBeTruthy()
+    })
+
+    const ageInput = screen.getByTestId('field-age')
+    fireEvent.changeText(ageInput, '29')
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('29')).toBeTruthy()
+    })
+
+    // Save action
+    await fireEvent.press(screen.getByText('Save Profile'))
+    await waitFor(() => {
+      expect(screen.getByText('✓ Profile saved')).toBeTruthy()
+    })
   })
 
-  it('allows adding and removing custom card fields', async () => {
+  it('allows adding and removing custom card fields cleanly without mock defaults', async () => {
     const screen = await renderWithClient(<AccountScreen />)
 
+    // Starts clean with no pre-filled mock custom fields
     expect(screen.getByText('Add Field')).toBeTruthy()
-    expect(screen.getByDisplayValue('Primary Medium')).toBeTruthy()
+    expect(screen.queryByDisplayValue('Primary Medium')).toBeNull()
 
     await fireEvent.press(screen.getByText('Add Field'))
     expect(screen.getByDisplayValue('New Field')).toBeTruthy()
