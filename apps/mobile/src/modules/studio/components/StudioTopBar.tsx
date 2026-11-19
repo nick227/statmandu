@@ -99,17 +99,17 @@ export function StudioTopBar({
           </Button>
 
           {isSavedDesignsOpen && (
-            <View className="absolute left-0 md:left-auto md:right-0 top-full mt-1 z-50 w-72 rounded-xl border border-border bg-card-surface shadow-2xl p-xs">
+            <View className="absolute left-0 md:left-auto md:right-0 top-full mt-1 z-50 w-72 rounded-xl border border-border bg-surface shadow-2xl p-xs">
               <Pressable
                 testID="new-design-option"
                 onPress={onStartNewDesign}
-                className="flex-row items-center gap-sm rounded-lg px-md py-sm hover:bg-canvas border-b border-border/40"
+                className="flex-row items-center gap-sm rounded-lg px-md py-sm bg-surface hover:bg-canvas border-b border-border/40"
               >
                 <Plus size={16} className="text-brand" />
                 <Text className="text-sm font-semibold text-brand">+ New</Text>
               </Pressable>
 
-              <ScrollView nestedScrollEnabled style={{ maxHeight: 220 }} className="pt-xs">
+              <ScrollView nestedScrollEnabled style={{ maxHeight: 220 }} className="pt-xs bg-surface">
                 {savedDesigns.length === 0 ? (
                   <View className="p-sm">
                     <Text variant="caption" className="text-center">
@@ -125,7 +125,7 @@ export function StudioTopBar({
                         testID={`saved-design-${d.id}`}
                         onPress={() => onSelectSavedDesign(d)}
                         className={`flex-row items-center justify-between rounded-lg px-md py-sm ${
-                          isSelected ? 'bg-brand/10' : 'hover:bg-canvas'
+                          isSelected ? 'bg-brand/10' : 'bg-surface hover:bg-canvas'
                         }`}
                       >
                         <View className="flex-1">

@@ -50,8 +50,8 @@ export function CardTypeSelector({
 
       {/* Floating Type Options Dropdown */}
       {isOpen && (
-        <View className="absolute top-full left-0 right-0 mt-1 max-h-64 rounded-xl border border-border bg-card-surface shadow-2xl overflow-hidden z-50">
-          <ScrollView nestedScrollEnabled style={{ maxHeight: 240 }}>
+        <View className="absolute top-full left-0 right-0 mt-1 max-h-64 rounded-xl border border-border bg-surface shadow-2xl overflow-hidden z-50">
+          <ScrollView nestedScrollEnabled style={{ maxHeight: 240 }} className="bg-surface">
             {CARD_TYPES.map((t) => {
               const isSelected = t.id === activeCardTypeId
               return (
@@ -60,7 +60,7 @@ export function CardTypeSelector({
                   testID={`card-type-option-${t.id}`}
                   onPress={() => onSelectType(t.id)}
                   className={`flex-row items-center justify-between px-md py-sm border-b border-border/50 ${
-                    isSelected ? 'bg-brand/10' : 'hover:bg-canvas'
+                    isSelected ? 'bg-brand/10' : 'bg-surface hover:bg-canvas'
                   }`}
                 >
                   <View className="flex-1 mr-sm">

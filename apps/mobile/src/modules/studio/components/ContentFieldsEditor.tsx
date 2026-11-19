@@ -26,6 +26,7 @@ export interface ContentFieldsEditorProps {
  * Content Fields Editor:
  * Clean, uncluttered inputs without redundant section or field headings.
  * Good placeholders provide context, while subtle actions appear only when overriding.
+ * Only inputs mapped in the active design layout are displayed to avoid confusing unmapped fields.
  */
 export function ContentFieldsEditor({
   boundFields,
@@ -33,6 +34,9 @@ export function ContentFieldsEditor({
   onUpdateField,
   onRelinkField,
 }: ContentFieldsEditorProps) {
+  // Only display fields that are active and mapped in the current flagship design
+  const mappedFields = boundFields.filter((f) => f.isMappedInDesign)
+
   return (
     <View className="gap-sm">
       {/* Visually hidden text for accessibility and test compatibility */}
@@ -40,14 +44,14 @@ export function ContentFieldsEditor({
 
       {/* Dynamic Slot Inputs with Good Placeholders */}
       <View className="gap-sm">
-        {boundFields.map((field) => {
-          const hasOverflow = field.isMappedInDesign ? isOverflow[field.slotId] : false
+        {mappedFields.map((field) => {
+          const hasOverflow = isOverflow[field.slotId] || false
           const isOverridden = field.overrideValue !== undefined
 
           return (
             <View key={field.slotId} className="gap-1">
-              {/* Only show badge row if there is an active override, unmapped field, or overflow */}
-              {(isOverridden || hasOverflow || !field.isMappedInDesign) && (
+              {/* Only show badge row if there is an active override or overflow */}
+              {(isOverridden || hasOverflow) && (
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center gap-xs">
                     {isOverridden && (
@@ -68,13 +72,7 @@ export function ContentFieldsEditor({
                     )}
                   </View>
 
-                  {!field.isMappedInDesign ? (
-                    <View className="rounded bg-neutral-200/50 dark:bg-neutral-800 px-1.5 py-0.5">
-                      <Text className="text-[10px] font-medium text-muted-text">
-                        Preserved
-                      </Text>
-                    </View>
-                  ) : hasOverflow ? (
+                  {hasOverflow ? (
                     <Text className="text-[10px] font-bold text-warning">Text Overflow</Text>
                   ) : null}
                 </View>
@@ -84,7 +82,7 @@ export function ContentFieldsEditor({
                 testID={`slot-${field.slotId}`}
                 value={field.effectiveValue}
                 onChangeText={(t) => onUpdateField(field.slotId, t)}
-                placeholder={field.label || `Enter ${field.slotId}...`}
+                placeholder={field.placeholder || field.label || `Enter ${field.slotId}...`}
                 multiline={field.multiline}
                 numberOfLines={field.maxLines || 1}
               />

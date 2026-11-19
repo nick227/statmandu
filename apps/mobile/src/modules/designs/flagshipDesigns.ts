@@ -237,7 +237,7 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
     id: 'editorial-broadsheet',
     name: 'Editorial',
     family: 'Editorial',
-    description: 'Asymmetric portrait placement, sophisticated magazine typography, multiple editorial fields.',
+    description: 'Dramatic 2-column split layout, tall vertical portrait, sophisticated serif magazine typography.',
     visualTradition: 'High-Fashion & Investigative Journalism',
     palette: {
       background: '#FAF7F2',
@@ -247,15 +247,15 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       border: '#DCD4C4',
       subtext: '#3F3F46',
     },
-    artwork: { x: 40, y: 70, width: 520, height: 430, tint: '#E7DFCF' },
+    artwork: { x: 36, y: 70, width: 250, height: 790, tint: '#E7DFCF' },
     inputs: [
       {
         id: 'input1',
         label: 'Headline',
-        bounds: { x: 40, y: 524, width: 520, height: 76 },
-        preferredFontSize: 36,
-        minFontSize: 22,
-        maxLines: 2,
+        bounds: { x: 304, y: 104, width: 260, height: 160 },
+        preferredFontSize: 28,
+        minFontSize: 18,
+        maxLines: 4,
         required: true,
         fill: '#18181B',
         fontRole: 'serif',
@@ -263,9 +263,9 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input2',
         label: 'Category / Dateline',
-        bounds: { x: 40, y: 612, width: 520, height: 26 },
-        preferredFontSize: 13,
-        minFontSize: 10,
+        bounds: { x: 304, y: 72, width: 260, height: 26 },
+        preferredFontSize: 12,
+        minFontSize: 9,
         maxLines: 1,
         required: false,
         fill: '#B91C1C',
@@ -275,18 +275,19 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input3',
         label: 'Editorial Feature Bio',
-        bounds: { x: 40, y: 648, width: 520, height: 180 },
-        preferredFontSize: 15,
-        minFontSize: 11,
-        maxLines: 7,
+        bounds: { x: 304, y: 280, width: 260, height: 580 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 18,
         required: false,
         fill: '#3F3F46',
         fontRole: 'serif',
       },
     ],
     decorations: (p) => [
-      { id: 'dec-masthead', type: 'TEXT', x: 40, y: 28, width: 520, height: 30, text: 'THE CHRONICLE ARCHIVE', fontSize: 13, fill: p.subtext, fontRole: 'serif' as any },
-      { id: 'dec-masthead-rule', type: 'RECTANGLE', x: 40, y: 56, width: 520, height: 1, fill: p.border },
+      { id: 'dec-masthead', type: 'TEXT', x: 36, y: 24, width: 528, height: 26, text: 'THE CHRONICLE ARCHIVE', fontSize: 13, fill: p.subtext, fontRole: 'serif' as any },
+      { id: 'dec-masthead-rule', type: 'RECTANGLE', x: 36, y: 54, width: 528, height: 1, fill: p.border },
+      { id: 'dec-editorial-col-rule', type: 'RECTANGLE', x: 295, y: 70, width: 1, height: 790, fill: p.border },
     ],
   },
 
@@ -1085,7 +1086,7 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
     id: 'brutalist-block',
     name: 'Brutalist',
     family: 'Brutalism',
-    description: 'Raw high-contrast geometric blocks, uncompromising grid borders, giant monospace typography.',
+    description: 'Raw high-contrast asymmetric grid, heavy black dividing blocks, vertical telemetry sidebar.',
     visualTradition: 'Architectural Brutalism & Raw Web Aesthetics',
     palette: {
       background: '#FFFFFF',
@@ -1095,12 +1096,12 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       border: '#000000',
       subtext: '#222222',
     },
-    artwork: { x: 24, y: 24, width: 552, height: 490, tint: '#D4D4D4', borderWidth: 8, borderColor: '#000000' },
+    artwork: { x: 24, y: 72, width: 320, height: 530, tint: '#D4D4D4', borderWidth: 8, borderColor: '#000000' },
     inputs: [
       {
         id: 'input1',
         label: 'ID NAME',
-        bounds: { x: 24, y: 536, width: 552, height: 86 },
+        bounds: { x: 24, y: 620, width: 552, height: 86 },
         preferredFontSize: 46,
         minFontSize: 24,
         maxLines: 1,
@@ -1112,10 +1113,10 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input2',
         label: 'CATEGORY CODE',
-        bounds: { x: 24, y: 634, width: 552, height: 32 },
-        preferredFontSize: 17,
-        minFontSize: 12,
-        maxLines: 1,
+        bounds: { x: 360, y: 72, width: 216, height: 48 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 2,
         required: false,
         fill: '#000000',
         fontRole: 'mono',
@@ -1124,17 +1125,20 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input3',
         label: 'DATA SPECIFICATION',
-        bounds: { x: 24, y: 678, width: 552, height: 180 },
+        bounds: { x: 360, y: 140, width: 216, height: 460 },
         preferredFontSize: 13,
         minFontSize: 10,
-        maxLines: 7,
+        maxLines: 14,
         required: false,
         fill: '#222222',
         fontRole: 'mono',
       },
     ],
     decorations: (p) => [
-      { id: 'dec-brutalist-rule', type: 'RECTANGLE', x: 24, y: 626, width: 552, height: 4, fill: '#000000' },
+      { id: 'dec-brutalist-top-bar', type: 'RECTANGLE', x: 24, y: 20, width: 552, height: 36, fill: '#000000' },
+      { id: 'dec-brutalist-top-text', type: 'TEXT', x: 34, y: 28, width: 500, height: 20, text: 'SPEC // ARCHIVE SYSTEM 01', fontSize: 12, fill: '#FFFFFF', fontRole: 'mono' as any },
+      { id: 'dec-brutalist-rule', type: 'RECTANGLE', x: 24, y: 610, width: 552, height: 4, fill: '#000000' },
+      { id: 'dec-brutalist-col-rule', type: 'RECTANGLE', x: 350, y: 72, width: 4, height: 530, fill: '#000000' },
     ],
   },
 
@@ -1309,12 +1313,12 @@ export type ContentStore = Record<string, string>
 export type PositionalInputs = ContentStore
 
 export const INITIAL_CONTENT_STORE: ContentStore = {
-  input1: 'MAYA ANGELOU',
-  input2: 'POET & CIVIL RIGHTS ICON',
-  input3: 'Phenomenal Woman, presidential poet, and civil rights champion whose literary voice moved generations.',
-  input4: 'FIRST EDITION · 1/1',
-  input5: '1928 - 2014',
-  input6: 'HALL OF FAME',
+  input1: '',
+  input2: '',
+  input3: '',
+  input4: '',
+  input5: '',
+  input6: '',
 }
 
 export interface FlagshipCompilationResult {
@@ -1422,27 +1426,13 @@ export function compileFlagshipDesign(
     const inputDef = designInputs[i]
     let rawText = inputs[inputDef.id]
     if (rawText === undefined) {
-      // Check if mapped cardType field has default
-      const mappedField = cardType.fields[i]
-      if (mappedField?.defaultVal) {
-        rawText = mappedField.defaultVal
-      } else if (inputDef.id === 'input1') {
-        rawText = person?.displayName || 'MAYA ANGELOU'
-      } else if (inputDef.id === 'input2') {
-        rawText = person?.hometown || 'POET & CIVIL RIGHTS ICON'
-      } else if (inputDef.id === 'input3') {
-        rawText = person?.bio || 'Phenomenal Woman, celebrated author, presidential poet, and civil rights champion whose literary voice moved generations.'
-      } else if (inputDef.id === 'input4') {
-        rawText = 'FIRST EDITION · 1/1'
-      } else if (inputDef.id === 'input5') {
-        rawText = '1928 - 2014'
-      } else if (inputDef.id === 'input6') {
-        rawText = 'HALL OF FAME'
+      if (person?.displayName && (inputDef.id === 'input1' || i === 0)) {
+        rawText = person.displayName
       } else {
-        rawText = inputDef.label || ''
+        rawText = ''
       }
     }
-    const cleanText = rawText.trim()
+    const cleanText = (rawText || '').trim()
     resolvedInputs[inputDef.id] = cleanText
 
     // Run text-fitting
@@ -1493,6 +1483,7 @@ export function compileFlagshipDesign(
         contentStore: allContent,
         fittedFontSizes,
         isOverflow,
+        profile: person || null,
       },
     },
   }

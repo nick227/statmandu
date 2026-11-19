@@ -275,53 +275,36 @@ export const BENCHMARK_PROFILES: UniversalProfile[] = [
 ]
 
 export function toUniversalProfile(person: any): UniversalProfile {
-  if (!person) return BENCHMARK_PROFILES[0]
+  if (!person) {
+    return {
+      id: '',
+      slug: '',
+      displayName: '',
+      bio: '',
+      specializations: [],
+    }
+  }
   if (person.specializations && Array.isArray(person.specializations) && person.specializations.length > 0) {
     return person as UniversalProfile
   }
-  // Check if it matches a benchmark profile by displayName or ID
-  const benchmark = BENCHMARK_PROFILES.find(
-    (b) => b.id === person.id || b.displayName.toLowerCase() === (person.displayName || '').toLowerCase(),
-  )
-  if (benchmark) return benchmark
-
-  // Otherwise infer or create standard universal profile
-  const bio = (person.bio || '').toLowerCase()
-  let inferredType: SpecializationType = 'CREATOR'
-  if (bio.includes('jazz') || bio.includes('music') || bio.includes('album') || bio.includes('song')) {
-    inferredType = 'MUSICIAN'
-  } else if (bio.includes('olympic') || bio.includes('track') || bio.includes('sport') || bio.includes('game') || bio.includes('championship')) {
-    inferredType = 'ATHLETE'
-  } else if (bio.includes('poet') || bio.includes('book') || bio.includes('writer') || bio.includes('author') || bio.includes('novel')) {
-    inferredType = 'WRITER'
-  } else if (bio.includes('film') || bio.includes('actor') || bio.includes('stage') || bio.includes('theater')) {
-    inferredType = 'ACTOR'
-  } else if (bio.includes('science') || bio.includes('physics') || bio.includes('research')) {
-    inferredType = 'SCIENTIST'
+  // Check if it matches a benchmark profile by explicit ID or non-empty displayName
+  if (person.id || person.displayName) {
+    const pName = (person.displayName || '').trim().toLowerCase()
+    const benchmark = BENCHMARK_PROFILES.find(
+      (b) => (person.id && b.id === person.id) || (pName && b.displayName.toLowerCase() === pName),
+    )
+    if (benchmark) return benchmark
   }
 
+  // Otherwise return clean universal profile without mock specializations
   return {
     id: person.id || 'custom-person',
     slug: person.slug || 'custom-person',
-    displayName: person.displayName || 'Subject',
+    displayName: person.displayName || '',
     bio: person.bio || '',
     hometown: person.hometown || '',
     originEra: person.hometown ? `${person.hometown} · Era Archive` : undefined,
     avatarUrl: person.avatarUrl || null,
-    specializations: [
-      {
-        type: inferredType,
-        attributes: {
-          sport: 'Athletics',
-          primaryGenre: 'Contemporary',
-          primaryMedium: 'Visual & Stage',
-          literaryGenres: ['Literature'],
-          creativeDomains: ['Creative Direction'],
-          fieldOfStudy: 'Research',
-          category: 'Fashion',
-          epochOrEra: 'Contemporary Era',
-        } as any,
-      },
-    ],
+    specializations: [],
   }
 }

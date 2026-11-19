@@ -140,7 +140,7 @@ export function PersonSelectorModal({
                 <Input
                   value={newDisplayName}
                   onChangeText={setNewDisplayName}
-                  placeholder="e.g. Maya Lin, Alex Chen, Maya Angelou"
+                  placeholder="e.g. Maya Lin, Alex Chen, Jordan Taylor"
                 />
               </View>
 

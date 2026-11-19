@@ -103,9 +103,9 @@ describe('RARE Profile Attribute Resolver & Linked Content Engine', () => {
       const cardType = getCardTypeById('achievement')
       const bound = buildBoundCardFields(cardType, mayaAngelouProfile, ['input1', 'input2', 'input3'])
 
-      // Achievement field extracts honors from Writer specialization
-      expect(bound[0].effectiveValue).toBe('Presidential Medal of Freedom')
-      expect(bound[1].effectiveValue).toBe('Maya Angelou')
+      // Primary field is recipient (Honoree), secondary is achievement honor
+      expect(bound[0].effectiveValue).toBe('Maya Angelou')
+      expect(bound[1].effectiveValue).toBe('Presidential Medal of Freedom')
       expect(bound[2].effectiveValue).toContain('Celebrated poet')
     })
   })
@@ -143,6 +143,56 @@ describe('RARE Profile Attribute Resolver & Linked Content Engine', () => {
 
       expect(bound[1].isLinked).toBe(true)
       expect(bound[1].effectiveValue).toBe('JAZZ · MUSICIAN')
+    })
+
+    test('dynamically links Creator, Manifesto, and Event cards to active profile and provides generic instructional placeholders', () => {
+      // 1. Creator card with Miles Davis (artist is first field)
+      const creatorCardType = getCardTypeById('creator')
+      const creatorFields = buildBoundCardFields(creatorCardType, milesDavisProfile, ['input1', 'input2', 'input3'])
+      expect(creatorFields[0].effectiveValue).toBe('Miles Davis') // creator name linked!
+      expect(creatorFields[0].placeholder).toBe('Enter creator or artist name...') // generic instructional placeholder!
+      expect(creatorFields[1].effectiveValue).toBe('KIND OF BLUE') // key release
+
+      // 2. Manifesto card with Miles Davis (speaker is first field)
+      const manifestoCardType = getCardTypeById('manifesto')
+      const manifestoFields = buildBoundCardFields(manifestoCardType, milesDavisProfile, ['input1', 'input2'])
+      expect(manifestoFields[0].effectiveValue).toBe('Miles Davis') // speaker linked!
+      expect(manifestoFields[0].placeholder).toBe('Enter speaker or author name...')
+
+      // 3. Event card with Wilma Rudolph (presenter is first field)
+      const eventCardType = getCardTypeById('event')
+      const eventFields = buildBoundCardFields(eventCardType, wilmaRudolphProfile, ['input1', 'input2'])
+      expect(eventFields[0].effectiveValue).toBe('Wilma Rudolph') // presenter linked!
+      expect(eventFields[0].placeholder).toBe('Enter speakers, headliners, or presenter...')
+    })
+
+    test('resolves missing profile attributes to empty string and never mock data', () => {
+      const minimalProfile: UniversalProfile = {
+        id: 'person-custom',
+        slug: 'custom-person',
+        displayName: 'Custom Explorer',
+        specializations: [],
+      }
+
+      const cardType = getCardTypeById('profile')
+      const fields = buildBoundCardFields(cardType, minimalProfile, ['input1', 'input2', 'input3', 'input4'])
+
+      expect(fields[0].effectiveValue).toBe('Custom Explorer')
+      expect(fields[1].effectiveValue).toBe('') // calling is empty, NOT 'CULTURAL ICON' or 'POET & CIVIL RIGHTS ICON'
+      expect(fields[2].effectiveValue).toBe('') // bio is empty, NOT Maya Angelou's bio
+      expect(fields[3].effectiveValue).toBe('') // origin is empty, NOT St. Louis
+    })
+
+    test('handles unselected/blank profile cleanly with empty values and instructional placeholders', () => {
+      const cardType = getCardTypeById('profile')
+      const fields = buildBoundCardFields(cardType, null, ['input1', 'input2', 'input3'])
+
+      expect(fields[0].effectiveValue).toBe('')
+      expect(fields[0].placeholder).toBe('Enter subject or person name...')
+      expect(fields[1].effectiveValue).toBe('')
+      expect(fields[1].placeholder).toBe('e.g. Author, Engineer, Athlete')
+      expect(fields[2].effectiveValue).toBe('')
+      expect(fields[2].placeholder).toBe('Brief biography or statement...')
     })
   })
 })

@@ -241,7 +241,18 @@ describe('CardStudioScreen', () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('slot-input1')).toBeTruthy()
+      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
+    })
+
+    // Select profile first
+    fireEvent.press(screen.getByTestId('person-selector-dropdown'))
+    await waitFor(() => {
+      expect(screen.getByTestId('benchmark-person-maya-angelou')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('benchmark-person-maya-angelou'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Maya Angelou')
     })
 
     // Edit input1 with custom override text
@@ -521,5 +532,37 @@ describe('CardStudioScreen', () => {
       expect(mockPublishRelease).toHaveBeenCalledWith({ releaseId: 'release-123', visibility: 'PUBLIC' })
       expect(mockPush).toHaveBeenCalledWith('/storefronts/testcreator')
     })
+  })
+
+  it('supports selecting flagship designs via the dropdown', async () => {
+    const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('design-picker-dropdown')).toBeTruthy()
+    })
+
+    // Open dropdown and pick Editorial Broadsheet
+    fireEvent.press(screen.getByTestId('design-picker-dropdown'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('design-option-editorial-broadsheet')).toBeTruthy()
+    })
+
+    fireEvent.press(screen.getByTestId('design-option-editorial-broadsheet'))
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Editorial').length).toBeGreaterThanOrEqual(1)
+    })
+  })
+
+  it('does not display unmapped fields or confusing Preserved badge in content editor', async () => {
+    const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input1')).toBeTruthy()
+    })
+
+    // Content editor should never display the word "Preserved"
+    expect(screen.queryByText('Preserved')).toBeNull()
   })
 })

@@ -1,8 +1,6 @@
-import React, { useState } from 'react'
-import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
+import React from 'react'
+import { ScrollView, View, useWindowDimensions } from 'react-native'
 import { Screen } from '@/shared/layout/Screen'
-import { Text } from '@/shared/ui/Text'
-import { cn } from '@/lib/utils'
 import { usePageTitle } from '@/lib/pageTitle'
 import { useCardStudioState } from './hooks/useCardStudioState'
 import { StudioTopBar } from './components/StudioTopBar'
@@ -50,9 +48,6 @@ export function CardStudioScreen() {
 
   // Centralized dynamic document title reacting to the active design title
   usePageTitle(studio.designTitle ? `${studio.designTitle} · Card Studio` : 'Card Studio')
-
-  // Contextual editor section navigation (preserves single-panel experience without multi-panel icon rails)
-  const [editorSection, setEditorSection] = useState<'all' | 'identity' | 'design' | 'artwork' | 'content'>('all')
 
   return (
     <Screen layout="workspace" insetTop={false} className="h-full">
@@ -122,97 +117,54 @@ export function CardStudioScreen() {
                 onConfirmPublish={studio.handleConfirmPublish}
               />
 
-              {/* Contextual Single-Panel Section Navigation */}
-              <View className="flex-row items-center gap-1.5 pb-2 border-b border-border/40">
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-1.5 py-0.5">
-                  {[
-                    { id: 'all', label: 'All' },
-                    { id: 'identity', label: 'Subject' },
-                    { id: 'design', label: 'Design' },
-                    { id: 'artwork', label: 'Artwork' },
-                    { id: 'content', label: 'Content' },
-                  ].map((tab) => {
-                    const active = editorSection === tab.id
-                    return (
-                      <Pressable
-                        key={tab.id}
-                        onPress={() => setEditorSection(tab.id as any)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${tab.label} section`}
-                        className={cn(
-                          'rounded-full px-3 py-1 border transition-all active:opacity-70',
-                          active
-                            ? 'border-text bg-text'
-                            : 'border-border/80 bg-canvas hover:border-text/40'
-                        )}
-                      >
-                        <Text className={cn('text-xs font-semibold', active ? 'text-surface' : 'text-text')}>
-                          {tab.label}
-                        </Text>
-                      </Pressable>
-                    )
-                  })}
-                </ScrollView>
-              </View>
-
               {/* Modular Editor Controls (Clean, unnested, minimal borders) */}
               <View className="gap-md">
                 {/* 1. Subject Profile Selector */}
-                {(editorSection === 'all' || editorSection === 'identity') && (
-                  <SubjectProfileSelector
-                    activeProfile={studio.activeProfile}
-                    isOpen={studio.personDropdownOpen}
-                    onToggle={studio.togglePersonDropdown}
-                    onSelectProfile={studio.handleSelectPersonProfile}
-                    customPeople={studio.customPeople}
-                  />
-                )}
+                <SubjectProfileSelector
+                  activeProfile={studio.activeProfile}
+                  isOpen={studio.personDropdownOpen}
+                  onToggle={studio.togglePersonDropdown}
+                  onSelectProfile={studio.handleSelectPersonProfile}
+                  customPeople={studio.customPeople}
+                />
 
                 {/* 2. Card Type Selector */}
-                {(editorSection === 'all' || editorSection === 'identity') && (
-                  <CardTypeSelector
-                    activeCardTypeId={studio.activeCardTypeId}
-                    activeCardType={studio.activeCardType}
-                    isOpen={studio.cardTypeDropdownOpen}
-                    onToggle={studio.toggleCardTypeDropdown}
-                    onSelectType={studio.handleSelectCardType}
-                  />
-                )}
+                <CardTypeSelector
+                  activeCardTypeId={studio.activeCardTypeId}
+                  activeCardType={studio.activeCardType}
+                  isOpen={studio.cardTypeDropdownOpen}
+                  onToggle={studio.toggleCardTypeDropdown}
+                  onSelectType={studio.handleSelectCardType}
+                />
 
                 {/* 3. Flagship Design Picker */}
-                {(editorSection === 'all' || editorSection === 'design') && (
-                  <FlagshipDesignPicker
-                    activeFlagshipId={studio.activeFlagshipId}
-                    activeFlagship={studio.activeFlagship}
-                    isOpen={studio.designDropdownOpen}
-                    onToggle={studio.toggleDesignDropdown}
-                    onSelectDesign={studio.handleSelectFlagshipDesign}
-                  />
-                )}
+                <FlagshipDesignPicker
+                  activeFlagshipId={studio.activeFlagshipId}
+                  activeFlagship={studio.activeFlagship}
+                  isOpen={studio.designDropdownOpen}
+                  onToggle={studio.toggleDesignDropdown}
+                  onSelectDesign={studio.handleSelectFlagshipDesign}
+                />
 
                 {/* 4. Unified Media Library */}
-                {(editorSection === 'all' || editorSection === 'artwork') && (
-                  <MediaLibrarySelector
-                    mediaItems={studio.displayedMediaItems}
-                    selectedImageId={studio.selectedImageId}
-                    mediaCategoryFilter={studio.mediaCategoryFilter}
-                    onCategoryFilterChange={studio.setMediaCategoryFilter}
-                    onSelectArtwork={studio.handleSelectArtwork}
-                    onPickCustomImage={studio.handlePickCustomImage}
-                  />
-                )}
+                <MediaLibrarySelector
+                  mediaItems={studio.displayedMediaItems}
+                  selectedImageId={studio.selectedImageId}
+                  mediaCategoryFilter={studio.mediaCategoryFilter}
+                  onCategoryFilterChange={studio.setMediaCategoryFilter}
+                  onSelectArtwork={studio.handleSelectArtwork}
+                  onPickCustomImage={studio.handlePickCustomImage}
+                />
 
                 {/* 5. Dynamic Content Fields */}
-                {(editorSection === 'all' || editorSection === 'content') && (
-                  <ContentFieldsEditor
-                    boundFields={studio.boundFields}
-                    activeCardType={studio.activeCardType}
-                    activeFlagship={studio.activeFlagship}
-                    isOverflow={studio.currentFlagshipResult.isOverflow}
-                    onUpdateField={studio.handleUpdatePositionalInput}
-                    onRelinkField={studio.handleRelinkField}
-                  />
-                )}
+                <ContentFieldsEditor
+                  boundFields={studio.boundFields}
+                  activeCardType={studio.activeCardType}
+                  activeFlagship={studio.activeFlagship}
+                  isOverflow={studio.currentFlagshipResult.isOverflow}
+                  onUpdateField={studio.handleUpdatePositionalInput}
+                  onRelinkField={studio.handleRelinkField}
+                />
               </View>
             </ScrollView>
           </View>
@@ -260,90 +212,47 @@ export function CardStudioScreen() {
               onConfirmPublish={studio.handleConfirmPublish}
             />
 
-            {/* Contextual Single-Panel Section Navigation */}
-            <View className="flex-row items-center gap-1.5 pb-2 border-b border-border/40">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-1.5 py-0.5">
-                {[
-                  { id: 'all', label: 'All' },
-                  { id: 'identity', label: 'Subject' },
-                  { id: 'design', label: 'Design' },
-                  { id: 'artwork', label: 'Artwork' },
-                  { id: 'content', label: 'Content' },
-                ].map((tab) => {
-                  const active = editorSection === tab.id
-                  return (
-                    <Pressable
-                      key={tab.id}
-                      onPress={() => setEditorSection(tab.id as any)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${tab.label} section mobile`}
-                      className={cn(
-                        'rounded-full px-3 py-1 border transition-all active:opacity-70',
-                        active
-                          ? 'border-text bg-text'
-                          : 'border-border/80 bg-canvas hover:border-text/40'
-                      )}
-                    >
-                      <Text className={cn('text-xs font-semibold', active ? 'text-surface' : 'text-text')}>
-                        {tab.label}
-                      </Text>
-                    </Pressable>
-                  )
-                })}
-              </ScrollView>
-            </View>
+            <SubjectProfileSelector
+              activeProfile={studio.activeProfile}
+              isOpen={studio.personDropdownOpen}
+              onToggle={studio.togglePersonDropdown}
+              onSelectProfile={studio.handleSelectPersonProfile}
+              customPeople={studio.customPeople}
+            />
 
-            {(editorSection === 'all' || editorSection === 'identity') && (
-              <SubjectProfileSelector
-                activeProfile={studio.activeProfile}
-                isOpen={studio.personDropdownOpen}
-                onToggle={studio.togglePersonDropdown}
-                onSelectProfile={studio.handleSelectPersonProfile}
-                customPeople={studio.customPeople}
-              />
-            )}
+            <CardTypeSelector
+              activeCardTypeId={studio.activeCardTypeId}
+              activeCardType={studio.activeCardType}
+              isOpen={studio.cardTypeDropdownOpen}
+              onToggle={studio.toggleCardTypeDropdown}
+              onSelectType={studio.handleSelectCardType}
+            />
 
-            {(editorSection === 'all' || editorSection === 'identity') && (
-              <CardTypeSelector
-                activeCardTypeId={studio.activeCardTypeId}
-                activeCardType={studio.activeCardType}
-                isOpen={studio.cardTypeDropdownOpen}
-                onToggle={studio.toggleCardTypeDropdown}
-                onSelectType={studio.handleSelectCardType}
-              />
-            )}
+            <FlagshipDesignPicker
+              activeFlagshipId={studio.activeFlagshipId}
+              activeFlagship={studio.activeFlagship}
+              isOpen={studio.designDropdownOpen}
+              onToggle={studio.toggleDesignDropdown}
+              onSelectDesign={studio.handleSelectFlagshipDesign}
+            />
 
-            {(editorSection === 'all' || editorSection === 'design') && (
-              <FlagshipDesignPicker
-                activeFlagshipId={studio.activeFlagshipId}
-                activeFlagship={studio.activeFlagship}
-                isOpen={studio.designDropdownOpen}
-                onToggle={studio.toggleDesignDropdown}
-                onSelectDesign={studio.handleSelectFlagshipDesign}
-              />
-            )}
+            <MediaLibrarySelector
+              mediaItems={studio.displayedMediaItems}
+              selectedImageId={studio.selectedImageId}
+              mediaCategoryFilter={studio.mediaCategoryFilter}
+              onCategoryFilterChange={studio.setMediaCategoryFilter}
+              onSelectArtwork={studio.handleSelectArtwork}
+              onPickCustomImage={studio.handlePickCustomImage}
+            />
 
-            {(editorSection === 'all' || editorSection === 'artwork') && (
-              <MediaLibrarySelector
-                mediaItems={studio.displayedMediaItems}
-                selectedImageId={studio.selectedImageId}
-                mediaCategoryFilter={studio.mediaCategoryFilter}
-                onCategoryFilterChange={studio.setMediaCategoryFilter}
-                onSelectArtwork={studio.handleSelectArtwork}
-                onPickCustomImage={studio.handlePickCustomImage}
-              />
-            )}
-
-            {(editorSection === 'all' || editorSection === 'content') && (
-              <ContentFieldsEditor
-                boundFields={studio.boundFields}
-                activeCardType={studio.activeCardType}
-                activeFlagship={studio.activeFlagship}
-                isOverflow={studio.currentFlagshipResult.isOverflow}
-                onUpdateField={studio.handleUpdatePositionalInput}
-                onRelinkField={studio.handleRelinkField}
-              />
-            )}
+            <ContentFieldsEditor
+              boundFields={studio.boundFields}
+              activeCardType={studio.activeCardType}
+              activeFlagship={studio.activeFlagship}
+              isOverflow={studio.currentFlagshipResult.isOverflow}
+              onUpdateField={studio.handleUpdatePositionalInput}
+              onRelinkField={studio.handleRelinkField}
+            />
           </View>
         </ScrollView>
       )}

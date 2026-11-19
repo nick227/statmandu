@@ -50,7 +50,7 @@ import { areFontsReady, waitForFontsLoaded } from '@/modules/typography/textFit'
 export const INITIAL_FLAGSHIP_ID = 'classic-collector'
 export const INITIAL_CARD_TYPE_ID = 'profile'
 export const INITIAL_IMAGE_ID = 'art-angelou'
-export const INITIAL_PROFILE = BENCHMARK_PROFILES[0]
+export const INITIAL_PROFILE: UniversalProfile | null = null
 
 const initialFlagship = getFlagshipDesignById(INITIAL_FLAGSHIP_ID) || FLAGSHIP_DESIGNS[0]
 const initialCardType = getCardTypeById(INITIAL_CARD_TYPE_ID)
@@ -111,7 +111,7 @@ export function useCardStudioState() {
   // ---------------------------------------------------------------------------
   // Subject Profile & Identity State
   // ---------------------------------------------------------------------------
-  const [activeProfile, setActiveProfile] = useState<UniversalProfile>(BENCHMARK_PROFILES[0])
+  const [activeProfile, setActiveProfile] = useState<UniversalProfile | null>(INITIAL_PROFILE)
   const [personDropdownOpen, setPersonDropdownOpen] = useState(false)
 
   // ---------------------------------------------------------------------------
@@ -194,7 +194,7 @@ export function useCardStudioState() {
   // Inline Publishing Drawer State
   // ---------------------------------------------------------------------------
   const [isPublishDrawerOpen, setIsPublishDrawerOpen] = useState(false)
-  const [publishSubjectName, setPublishSubjectName] = useState(activeProfile?.displayName || 'MAYA ANGELOU')
+  const [publishSubjectName, setPublishSubjectName] = useState(activeProfile?.displayName || '')
   const [publishSubjectBio, setPublishSubjectBio] = useState(activeProfile?.bio || '')
   const [publishEditionMode, setPublishEditionMode] = useState<CardEditionMode>('LIMITED')
   const [publishEditionSize, setPublishEditionSize] = useState('25')
@@ -331,20 +331,24 @@ export function useCardStudioState() {
   // ---------------------------------------------------------------------------
   const handleSelectPersonProfile = useCallback(
     (person: any) => {
-      const universal = toUniversalProfile(person)
+      const universal = person ? toUniversalProfile(person) : null
       setActiveProfile(universal)
       setPersonDropdownOpen(false)
-      setPublishSubjectName(universal.displayName)
-      setPublishSubjectBio(universal.bio || '')
+      setPublishSubjectName(universal?.displayName || '')
+      setPublishSubjectBio(universal?.bio || '')
+
+      // Switching subjects must not transfer another subject's linked values or custom overrides
+      setFieldOverrides({})
+      setUnlinkedSlotIds(new Set())
 
       const newBound = buildBoundCardFields(
         activeCardType,
         universal,
         activeFlagship.inputs.map((i) => i.id),
-        fieldOverrides,
-        unlinkedSlotIds,
+        {},
+        new Set(),
       )
-      const newStore: ContentStore = { ...currentContentStore }
+      const newStore: ContentStore = { ...INITIAL_CONTENT_STORE }
       for (const bf of newBound) {
         newStore[bf.slotId] = bf.effectiveValue
       }
@@ -362,9 +366,6 @@ export function useCardStudioState() {
     [
       activeCardType,
       activeFlagship.inputs,
-      fieldOverrides,
-      unlinkedSlotIds,
-      currentContentStore,
       activeFlagshipId,
       assetsList,
       activeCardTypeId,
@@ -387,16 +388,22 @@ export function useCardStudioState() {
       const loadedCardTypeId = meta?.cardTypeId || INITIAL_CARD_TYPE_ID
       const loadedImageId = meta?.selectedImageId || INITIAL_IMAGE_ID
       const loadedContent = meta?.contentStore || meta?.inputs || INITIAL_CONTENT_STORE
+      const rawProfile = meta?.profile || null
+      const loadedProfile = rawProfile ? toUniversalProfile(rawProfile) : null
 
       setActiveFlagshipId(loadedFlagshipId)
       setActiveCardTypeId(loadedCardTypeId)
       setSelectedImageId(loadedImageId)
       setFieldOverrides(loadedContent)
+      setUnlinkedSlotIds(new Set())
+      setActiveProfile(loadedProfile)
+      setPublishSubjectName(loadedProfile?.displayName || '')
+      setPublishSubjectBio(loadedProfile?.bio || '')
 
       const result = compileFlagshipDesign(
         loadedFlagshipId,
         loadedContent,
-        activeProfile,
+        loadedProfile,
         assetsList,
         loadedCardTypeId,
         loadedImageId,
@@ -406,7 +413,7 @@ export function useCardStudioState() {
       setHistoryIndex(0)
       setSaveSuccessMsg(false)
     },
-    [activeProfile, assetsList],
+    [assetsList],
   )
 
   const handleStartNewDesign = useCallback(() => {
@@ -418,12 +425,14 @@ export function useCardStudioState() {
     setSelectedImageId(INITIAL_IMAGE_ID)
     setFieldOverrides({})
     setUnlinkedSlotIds(new Set())
-    setActiveProfile(BENCHMARK_PROFILES[0])
+    setActiveProfile(null)
+    setPublishSubjectName('')
+    setPublishSubjectBio('')
 
     const result = compileFlagshipDesign(
       INITIAL_FLAGSHIP_ID,
       INITIAL_CONTENT_STORE,
-      BENCHMARK_PROFILES[0],
+      null,
       assetsList,
       INITIAL_CARD_TYPE_ID,
       INITIAL_IMAGE_ID,
@@ -536,29 +545,32 @@ export function useCardStudioState() {
 
   const handleRelinkField = useCallback(
     (slotId: string) => {
-      setFieldOverrides((prev) => {
-        const next = { ...prev }
-        delete next[slotId]
-        return next
-      })
-      setUnlinkedSlotIds((prev) => {
-        const next = new Set(prev)
-        next.delete(slotId)
-        return next
-      })
-
       const clearedOverrides = { ...fieldOverrides }
       delete clearedOverrides[slotId]
+      const nextUnlinked = new Set(unlinkedSlotIds)
+      nextUnlinked.delete(slotId)
+
+      setFieldOverrides(clearedOverrides)
+      setUnlinkedSlotIds(nextUnlinked)
+
       const nextBound = buildBoundCardFields(
         activeCardType,
         activeProfile,
         activeFlagship.inputs.map((i) => i.id),
         clearedOverrides,
-        unlinkedSlotIds,
+        nextUnlinked,
       )
       const nextStore: ContentStore = { ...currentContentStore }
       for (const bf of nextBound) {
         nextStore[bf.slotId] = bf.effectiveValue
+      }
+      for (const [k, v] of Object.entries(clearedOverrides)) {
+        nextStore[k] = v
+      }
+      delete nextStore[slotId]
+      const relinkedBf = nextBound.find((bf) => bf.slotId === slotId)
+      if (relinkedBf) {
+        nextStore[slotId] = relinkedBf.effectiveValue
       }
 
       const result = compileFlagshipDesign(
@@ -699,7 +711,49 @@ export function useCardStudioState() {
     setConflictMessage(null)
     setPublishSuccessMsg(null)
     try {
-      // 1. Ensure design is saved
+      // 1. Require a real selected subject for publication
+      const subjectName = (
+        publishSubjectName ||
+        activeProfile?.displayName ||
+        currentContentStore.input1 ||
+        ''
+      ).trim()
+
+      if (!activeProfile && !subjectName) {
+        setConflictMessage('A real selected subject is required for publication.')
+        setIsPublishing(false)
+        return
+      }
+
+      // 2. Validate required card-type fields
+      for (const field of activeCardType.fields) {
+        if (field.required) {
+          const bound = boundFields.find((bf) => bf.fieldId === field.id)
+          let val = (bound?.effectiveValue || currentContentStore[bound?.slotId || ''] || '').trim()
+          if (
+            !val &&
+            (field.id === 'name' ||
+              field.id === 'subject' ||
+              field.id === 'recipient' ||
+              field.id === 'presenter' ||
+              field.id === 'artist' ||
+              field.id === 'athleteName' ||
+              field.id === 'author' ||
+              field.id === 'speaker' ||
+              field.id === 'alias') &&
+            subjectName
+          ) {
+            val = subjectName
+          }
+          if (!val) {
+            setConflictMessage(`"${field.label}" is required for ${activeCardType.name}.`)
+            setIsPublishing(false)
+            return
+          }
+        }
+      }
+
+      // 3. Ensure design is saved
       let currentDesign = activeDesign
       if (!currentDesign) {
         currentDesign = await createDesignMutation.mutateAsync({
@@ -717,15 +771,7 @@ export function useCardStudioState() {
         setActiveDesign(currentDesign)
       }
 
-      // 2. Explicit Subject Attribution
-      const subjectName = (
-        publishSubjectName ||
-        activeProfile?.displayName ||
-        currentContentStore.input1 ||
-        designTitle ||
-        'Creator'
-      ).trim()
-
+      // 4. Explicit Subject Attribution
       let personId: string
       const matched = people.find(
         (p) => p.displayName?.toLowerCase() === subjectName.toLowerCase(),

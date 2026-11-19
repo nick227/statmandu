@@ -9,7 +9,7 @@ import {
 
 export interface SubjectProfileSelectorProps {
   /** The currently active subject profile */
-  activeProfile: UniversalProfile
+  activeProfile: UniversalProfile | null
   /** Whether the profile selector dropdown is open */
   isOpen: boolean
   /** Toggle dropdown */
@@ -49,7 +49,7 @@ export function SubjectProfileSelector({
               {activeProfile?.displayName || 'Select Profile'}
             </Text>
             <Text variant="caption" numberOfLines={1}>
-              {activeProfile?.originEra || activeProfile?.hometown || 'Universal Profile'}
+              {activeProfile ? (activeProfile.originEra || activeProfile.hometown || 'Universal Profile') : 'No subject selected'}
             </Text>
           </View>
         </View>
@@ -58,11 +58,11 @@ export function SubjectProfileSelector({
 
       {/* Floating Dropdown Menu (Overlays content without pushing down) */}
       {isOpen && (
-        <View className="absolute top-full left-0 right-0 mt-1 max-h-64 rounded-xl border border-border bg-card-surface shadow-2xl overflow-hidden z-50">
-          <ScrollView nestedScrollEnabled style={{ maxHeight: 240 }}>
+        <View className="absolute top-full left-0 right-0 mt-1 max-h-64 rounded-xl border border-border bg-surface shadow-2xl overflow-hidden z-50">
+          <ScrollView nestedScrollEnabled style={{ maxHeight: 240 }} className="bg-surface">
             {/* Benchmark Cultural Profiles */}
-            <Text variant="caption" className="px-md py-1 font-bold text-muted-text bg-canvas">
-              Benchmark Profiles
+            <Text variant="caption" className="px-md py-1.5 font-bold text-muted-text bg-canvas border-b border-border/40">
+              Benchmark Profiles (Dev Fixtures)
             </Text>
             {BENCHMARK_PROFILES.map((p) => {
               const isSelected = p.id === activeProfile?.id
@@ -72,7 +72,7 @@ export function SubjectProfileSelector({
                   testID={`benchmark-person-${p.slug}`}
                   onPress={() => onSelectProfile(p)}
                   className={`flex-row items-center justify-between px-md py-sm border-b border-border/50 ${
-                    isSelected ? 'bg-brand/10' : 'hover:bg-canvas'
+                    isSelected ? 'bg-brand/10' : 'bg-surface hover:bg-canvas'
                   }`}
                 >
                   <View className="flex-1">
@@ -95,7 +95,7 @@ export function SubjectProfileSelector({
             {/* Custom Profiles */}
             {customPeople && customPeople.length > 0 && (
               <>
-                <Text variant="caption" className="px-md py-1 font-bold text-muted-text bg-canvas">
+                <Text variant="caption" className="px-md py-1.5 font-bold text-muted-text bg-canvas border-b border-border/40">
                   Custom Profiles
                 </Text>
                 {customPeople.map((p) => (
@@ -103,7 +103,7 @@ export function SubjectProfileSelector({
                     key={p.id}
                     testID={`custom-person-${p.id}`}
                     onPress={() => onSelectProfile(p)}
-                    className="flex-row items-center justify-between px-md py-sm border-b border-border/50 hover:bg-canvas"
+                    className="flex-row items-center justify-between px-md py-sm border-b border-border/50 bg-surface hover:bg-canvas"
                   >
                     <Text className="text-sm font-medium text-text">{p.displayName}</Text>
                   </Pressable>
