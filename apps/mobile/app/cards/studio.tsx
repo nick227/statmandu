@@ -1,5 +1,6 @@
-import { CardStudioScreen } from '@/modules/cards/CardStudioScreen'
+import { CardStudioScreen } from '@/modules/studio/CardStudioScreen'
 
 export default function CardStudioRoute() {
   return <CardStudioScreen />
 }
+

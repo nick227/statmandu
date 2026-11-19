@@ -2,11 +2,19 @@ import {
   fitTextToSlot,
   estimateTextWidth,
   measureTextWidth,
+  measureTextLine,
   breakTextIntoLines,
+  areFontsReady,
+  waitForFontsLoaded,
+  clearFitCache,
   type TextSlotBounds,
 } from '../textFit'
 
 describe('Deterministic Adaptive Typography (textFit)', () => {
+  beforeEach(() => {
+    clearFitCache()
+  })
+
   const defaultSlot: TextSlotBounds = {
     width: 480,
     height: 70,
@@ -21,6 +29,7 @@ describe('Deterministic Adaptive Typography (textFit)', () => {
     expect(result.fontSize).toBe(36)
     expect(result.lines).toEqual(['Maya Angelou'])
     expect(result.isOverflow).toBe(false)
+    expect(result.renderedBounds.height).toBeGreaterThan(0)
   })
 
   test('medium text dynamically scales down within [minFontSize, preferredFontSize]', () => {
@@ -52,6 +61,21 @@ describe('Deterministic Adaptive Typography (textFit)', () => {
     expect(result.isOverflow).toBe(true)
   })
 
+  test('validates vertical bounds when height is strictly constrained', () => {
+    const heightConstrainedSlot: TextSlotBounds = {
+      width: 400,
+      height: 20, // very tight height constraint
+      preferredFontSize: 24,
+      minFontSize: 10,
+      maxLines: 3,
+    }
+    const multiLineText = 'First line of text that needs to wrap into multiple lines for height check'
+    const result = fitTextToSlot(multiLineText, heightConstrainedSlot)
+    // Should scale down font size to fit vertical height constraint or mark overflow
+    expect(result.fontSize).toBeLessThan(24)
+    expect(result.totalHeight).toBeGreaterThan(0)
+  })
+
   test('respects character weighting: wide characters require more width than narrow characters', () => {
     const narrowWidth = estimateTextWidth('iiiiiii', 20, 'sans')
     const wideWidth = estimateTextWidth('WWWWWWW', 20, 'sans')
@@ -63,9 +87,27 @@ describe('Deterministic Adaptive Typography (textFit)', () => {
     expect(width).toBeGreaterThan(0)
   })
 
-  test('caches results for identical parameters', () => {
+  test('measureTextLine provides vertical metrics including ascent, descent, and height', () => {
+    const metrics = measureTextLine('MAYA ANGELOU', 24, 'display')
+    expect(metrics.width).toBeGreaterThan(0)
+    expect(metrics.actualBoundingBoxAscent).toBeGreaterThan(0)
+    expect(metrics.actualBoundingBoxDescent).toBeGreaterThanOrEqual(0)
+    expect(metrics.actualHeight).toBeGreaterThan(0)
+  })
+
+  test('font readiness check and cache clearing operate reliably', async () => {
+    expect(areFontsReady()).toBe(true) // Node environment has no document.fonts
+    const ready = await waitForFontsLoaded(50)
+    expect(ready).toBe(true)
+  })
+
+  test('caches results for identical parameters and clears cache properly', () => {
     const res1 = fitTextToSlot('Cached Headline Text', defaultSlot)
     const res2 = fitTextToSlot('Cached Headline Text', defaultSlot)
     expect(res1).toBe(res2) // Referential equality from map cache
+
+    clearFitCache()
+    const res3 = fitTextToSlot('Cached Headline Text', defaultSlot)
+    expect(res3).toEqual(res1)
   })
 })

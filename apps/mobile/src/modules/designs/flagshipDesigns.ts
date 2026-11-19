@@ -134,8 +134,8 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input1',
         label: 'Headline',
-        bounds: { x: 40, y: 600, width: 520, height: 72 },
-        preferredFontSize: 38,
+        bounds: { x: 40, y: 594, width: 520, height: 64 },
+        preferredFontSize: 36,
         minFontSize: 22,
         maxLines: 1,
         required: true,
@@ -146,7 +146,7 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input2',
         label: 'Title / Moniker',
-        bounds: { x: 40, y: 680, width: 520, height: 30 },
+        bounds: { x: 40, y: 664, width: 520, height: 28 },
         preferredFontSize: 14,
         minFontSize: 10,
         maxLines: 1,
@@ -158,13 +158,25 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input3',
         label: 'Provenance / Citation',
-        bounds: { x: 40, y: 722, width: 520, height: 130 },
-        preferredFontSize: 15,
-        minFontSize: 11,
-        maxLines: 5,
+        bounds: { x: 40, y: 698, width: 520, height: 110 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 4,
         required: false,
         fill: '#A3997F',
         fontRole: 'serif',
+      },
+      {
+        id: 'input4',
+        label: 'Edition & Serial',
+        bounds: { x: 40, y: 820, width: 520, height: 26 },
+        preferredFontSize: 12,
+        minFontSize: 9,
+        maxLines: 1,
+        required: false,
+        fill: '#D4AF37',
+        fontRole: 'mono',
+        allCaps: true,
       },
     ],
     decorations: (p) => [
@@ -193,7 +205,7 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input1',
         label: 'Subject',
-        bounds: { x: 36, y: 560, width: 528, height: 90 },
+        bounds: { x: 36, y: 560, width: 528, height: 100 },
         preferredFontSize: 46,
         minFontSize: 24,
         maxLines: 2,
@@ -204,22 +216,10 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       },
       {
         id: 'input2',
-        label: 'Discipline',
-        bounds: { x: 36, y: 662, width: 528, height: 28 },
-        preferredFontSize: 15,
-        minFontSize: 11,
-        maxLines: 1,
-        required: false,
-        fill: '#FF4800',
-        fontRole: 'sans',
-        allCaps: true,
-      },
-      {
-        id: 'input3',
-        label: 'Statement',
-        bounds: { x: 36, y: 704, width: 528, height: 140 },
-        preferredFontSize: 14,
-        minFontSize: 11,
+        label: 'Monograph / Statement',
+        bounds: { x: 36, y: 676, width: 528, height: 160 },
+        preferredFontSize: 16,
+        minFontSize: 12,
         maxLines: 6,
         required: false,
         fill: '#52525B',
@@ -309,9 +309,9 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input1',
         label: 'Athlete Name',
-        bounds: { x: 36, y: 554, width: 528, height: 74 },
-        preferredFontSize: 40,
-        minFontSize: 24,
+        bounds: { x: 36, y: 554, width: 528, height: 58 },
+        preferredFontSize: 38,
+        minFontSize: 22,
         maxLines: 1,
         required: true,
         fill: '#FFFFFF',
@@ -321,8 +321,8 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input2',
         label: 'Team & Number',
-        bounds: { x: 36, y: 638, width: 528, height: 32 },
-        preferredFontSize: 17,
+        bounds: { x: 36, y: 618, width: 528, height: 28 },
+        preferredFontSize: 16,
         minFontSize: 12,
         maxLines: 1,
         required: false,
@@ -333,13 +333,49 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input3',
         label: 'Career Milestones & Stats',
-        bounds: { x: 36, y: 684, width: 528, height: 160 },
+        bounds: { x: 36, y: 652, width: 528, height: 100 },
         preferredFontSize: 14,
-        minFontSize: 11,
-        maxLines: 6,
+        minFontSize: 10,
+        maxLines: 4,
         required: false,
         fill: '#A7BED3',
         fontRole: 'sans',
+      },
+      {
+        id: 'input4',
+        label: 'Primary Stat',
+        bounds: { x: 36, y: 764, width: 250, height: 40 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
+        fill: '#FF0055',
+        fontRole: 'display',
+        allCaps: true,
+      },
+      {
+        id: 'input5',
+        label: 'Era / Season',
+        bounds: { x: 314, y: 764, width: 250, height: 40 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
+        fill: '#FFFFFF',
+        fontRole: 'sans',
+        allCaps: true,
+      },
+      {
+        id: 'input6',
+        label: 'Hall of Fame / Badge',
+        bounds: { x: 36, y: 816, width: 528, height: 32 },
+        preferredFontSize: 13,
+        minFontSize: 10,
+        maxLines: 1,
+        required: false,
+        fill: '#A7BED3',
+        fontRole: 'mono',
+        allCaps: true,
       },
     ],
     decorations: (p) => [
@@ -367,8 +403,8 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input1',
         label: 'Player 1',
-        bounds: { x: 40, y: 530, width: 520, height: 70 },
-        preferredFontSize: 36,
+        bounds: { x: 40, y: 524, width: 520, height: 62 },
+        preferredFontSize: 34,
         minFontSize: 20,
         maxLines: 1,
         required: true,
@@ -378,8 +414,8 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       },
       {
         id: 'input2',
-        label: 'Specialty / High Score',
-        bounds: { x: 40, y: 610, width: 520, height: 32 },
+        label: 'Specialty / Class',
+        bounds: { x: 40, y: 594, width: 520, height: 28 },
         preferredFontSize: 15,
         minFontSize: 11,
         maxLines: 1,
@@ -391,13 +427,37 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input3',
         label: 'Quest History',
-        bounds: { x: 40, y: 654, width: 520, height: 180 },
+        bounds: { x: 40, y: 628, width: 520, height: 110 },
         preferredFontSize: 13,
         minFontSize: 10,
-        maxLines: 7,
+        maxLines: 4,
         required: false,
         fill: '#A78BFA',
         fontRole: 'mono',
+      },
+      {
+        id: 'input4',
+        label: 'High Score',
+        bounds: { x: 40, y: 752, width: 250, height: 38 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 1,
+        required: false,
+        fill: '#FFE600',
+        fontRole: 'mono',
+        allCaps: true,
+      },
+      {
+        id: 'input5',
+        label: 'Insert Coin / Credits',
+        bounds: { x: 310, y: 752, width: 250, height: 38 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 1,
+        required: false,
+        fill: '#FF31C8',
+        fontRole: 'mono',
+        allCaps: true,
       },
     ],
     decorations: (p) => [
@@ -428,8 +488,8 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input1',
         label: 'Agent Identifier',
-        bounds: { x: 40, y: 546, width: 520, height: 64 },
-        preferredFontSize: 32,
+        bounds: { x: 40, y: 536, width: 520, height: 58 },
+        preferredFontSize: 30,
         minFontSize: 18,
         maxLines: 1,
         required: true,
@@ -440,7 +500,7 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input2',
         label: 'Sector & Clearance',
-        bounds: { x: 40, y: 620, width: 520, height: 28 },
+        bounds: { x: 40, y: 604, width: 520, height: 26 },
         preferredFontSize: 14,
         minFontSize: 10,
         maxLines: 1,
@@ -452,13 +512,37 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input3',
         label: 'Telemetry Readout',
-        bounds: { x: 40, y: 658, width: 520, height: 180 },
+        bounds: { x: 40, y: 638, width: 520, height: 110 },
         preferredFontSize: 13,
         minFontSize: 10,
-        maxLines: 7,
+        maxLines: 4,
         required: false,
         fill: '#94A3B8',
         fontRole: 'mono',
+      },
+      {
+        id: 'input4',
+        label: 'Net Node / Hash',
+        bounds: { x: 40, y: 760, width: 250, height: 36 },
+        preferredFontSize: 12,
+        minFontSize: 9,
+        maxLines: 1,
+        required: false,
+        fill: '#38BDF8',
+        fontRole: 'mono',
+        allCaps: true,
+      },
+      {
+        id: 'input5',
+        label: 'Security Clearance',
+        bounds: { x: 310, y: 760, width: 250, height: 36 },
+        preferredFontSize: 12,
+        minFontSize: 9,
+        maxLines: 1,
+        required: false,
+        fill: '#22C55E',
+        fontRole: 'mono',
+        allCaps: true,
       },
     ],
     decorations: (p) => [
@@ -1131,10 +1215,10 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input1',
         label: 'Photo Caption',
-        bounds: { x: 50, y: 580, width: 500, height: 60 },
-        preferredFontSize: 30,
+        bounds: { x: 50, y: 580, width: 500, height: 80 },
+        preferredFontSize: 32,
         minFontSize: 18,
-        maxLines: 1,
+        maxLines: 2,
         required: true,
         fill: '#111827',
         fontRole: 'sans',
@@ -1142,24 +1226,14 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       {
         id: 'input2',
         label: 'Date & Location',
-        bounds: { x: 50, y: 650, width: 500, height: 28 },
+        bounds: { x: 50, y: 680, width: 500, height: 35 },
         preferredFontSize: 15,
         minFontSize: 11,
         maxLines: 1,
         required: false,
         fill: '#4B5563',
-        fontRole: 'sans',
-      },
-      {
-        id: 'input3',
-        label: 'Memory Note',
-        bounds: { x: 50, y: 688, width: 500, height: 130 },
-        preferredFontSize: 14,
-        minFontSize: 10,
-        maxLines: 5,
-        required: false,
-        fill: '#6B7280',
-        fontRole: 'sans',
+        fontRole: 'mono',
+        allCaps: true,
       },
     ],
     decorations: (p) => [
@@ -1230,13 +1304,24 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
 // Compiler & Positional Text Fit Engine
 // ----------------------------------------------------------------------------
 
-export type PositionalInputs = Record<string, string>
+export type ContentStore = Record<string, string>
+export type PositionalInputs = ContentStore
+
+export const INITIAL_CONTENT_STORE: ContentStore = {
+  input1: 'MAYA ANGELOU',
+  input2: 'POET & CIVIL RIGHTS ICON',
+  input3: 'Phenomenal Woman, presidential poet, and civil rights champion whose literary voice moved generations.',
+  input4: 'FIRST EDITION · 1/1',
+  input5: '1928 - 2014',
+  input6: 'HALL OF FAME',
+}
 
 export interface FlagshipCompilationResult {
   composition: CardComposition
   design: FlagshipDesign
   fittedFontSizes: Record<string, number>
   isOverflow: Record<string, boolean>
+  contentStore: ContentStore
 }
 
 export function getFlagshipDesignById(id: string): FlagshipDesign | undefined {
@@ -1315,6 +1400,12 @@ export function compileFlagshipDesign(
         rawText = person?.hometown || 'POET & CIVIL RIGHTS ICON'
       } else if (inputDef.id === 'input3') {
         rawText = person?.bio || 'Phenomenal Woman, celebrated author, presidential poet, and civil rights champion whose literary voice moved generations.'
+      } else if (inputDef.id === 'input4') {
+        rawText = 'FIRST EDITION · 1/1'
+      } else if (inputDef.id === 'input5') {
+        rawText = '1928 - 2014'
+      } else if (inputDef.id === 'input6') {
+        rawText = 'HALL OF FAME'
       } else {
         rawText = inputDef.label || ''
       }
@@ -1348,6 +1439,12 @@ export function compileFlagshipDesign(
     })
   }
 
+  // Preserve entire design-independent content store
+  const allContent: ContentStore = {
+    ...inputs,
+    ...resolvedInputs,
+  }
+
   const composition: CardComposition = {
     schemaVersion: 1,
     canvas: { width: 600, height: 900 },
@@ -1357,7 +1454,8 @@ export function compileFlagshipDesign(
       flagship: {
         id: design.id,
         name: design.name,
-        inputs: resolvedInputs,
+        inputs: allContent,
+        contentStore: allContent,
         fittedFontSizes,
         isOverflow,
       },
@@ -1369,5 +1467,6 @@ export function compileFlagshipDesign(
     design,
     fittedFontSizes,
     isOverflow,
+    contentStore: allContent,
   }
 }

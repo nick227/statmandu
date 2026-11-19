@@ -101,8 +101,8 @@ describe('RARE Flagship Designs & Variable Positional Content Engine', () => {
       const designA = compileFlagshipDesign('arcade-1985', userInputs)
       const designB = compileFlagshipDesign('prestige-gold', userInputs)
 
-      expect(designA.composition.metadata?.flagship?.inputs).toEqual(userInputs)
-      expect(designB.composition.metadata?.flagship?.inputs).toEqual(userInputs)
+      expect(designA.composition.metadata?.flagship?.inputs.input1).toBe('Miles Davis')
+      expect(designB.composition.metadata?.flagship?.inputs.input1).toBe('Miles Davis')
 
       // Both cards retain the exact text across distinct visual architectures
       const slot1A = designA.composition.layers.find((l) => l.id === 'slot-input1')
@@ -110,6 +110,42 @@ describe('RARE Flagship Designs & Variable Positional Content Engine', () => {
 
       expect(slot1A?.text).toBe('MILES DAVIS') // allCaps in arcade
       expect(slot1B?.text).toBe('MILES DAVIS') // allCaps in prestige
+    })
+
+    test('preserves design-independent content store when switching from 6 fields to 2 fields and back', () => {
+      // 1. User on Sports Legend (6 fields)
+      const sportsLegendInputs = {
+        input1: 'WILMA RUDOLPH',
+        input2: 'OLYMPIC SPRINTING CHAMPION',
+        input3: 'Overcame childhood polio to become the fastest woman in the world, winning three gold medals at the 1960 Rome Games.',
+        input4: '3x OLYMPIC GOLD',
+        input5: '1960 ROME GAMES',
+        input6: 'HALL OF FAME #1',
+      }
+
+      const sportsResult = compileFlagshipDesign('sports-legend', sportsLegendInputs)
+      expect(sportsResult.design.inputs.length).toBe(6)
+      expect(sportsResult.composition.metadata?.flagship?.contentStore).toEqual(sportsLegendInputs)
+
+      // 2. User switches to Minimalist (2 fields)
+      const minimalistResult = compileFlagshipDesign('minimalist-swiss', sportsResult.contentStore)
+      expect(minimalistResult.design.inputs.length).toBe(2)
+      // The 4 inactive fields MUST NOT be deleted from contentStore
+      expect(minimalistResult.contentStore.input4).toBe('3x OLYMPIC GOLD')
+      expect(minimalistResult.contentStore.input5).toBe('1960 ROME GAMES')
+      expect(minimalistResult.contentStore.input6).toBe('HALL OF FAME #1')
+      expect(minimalistResult.composition.metadata?.flagship?.contentStore.input4).toBe('3x OLYMPIC GOLD')
+
+      // 3. User switches back to Sports Legend
+      const restoredSportsResult = compileFlagshipDesign('sports-legend', minimalistResult.contentStore)
+      expect(restoredSportsResult.contentStore).toEqual(sportsLegendInputs)
+      const slot4 = restoredSportsResult.composition.layers.find((l) => l.id === 'slot-input4')
+      const slot5 = restoredSportsResult.composition.layers.find((l) => l.id === 'slot-input5')
+      const slot6 = restoredSportsResult.composition.layers.find((l) => l.id === 'slot-input6')
+
+      expect(slot4?.text).toBe('3X OLYMPIC GOLD')
+      expect(slot5?.text).toBe('1960 ROME GAMES')
+      expect(slot6?.text).toBe('HALL OF FAME #1')
     })
   })
 })

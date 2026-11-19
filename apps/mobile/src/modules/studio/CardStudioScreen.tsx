@@ -36,8 +36,11 @@ import {
   FLAGSHIP_DESIGNS,
   compileFlagshipDesign,
   getFlagshipDesignById,
+  INITIAL_CONTENT_STORE,
+  type ContentStore,
   type PositionalInputs,
 } from '@/modules/designs/flagshipDesigns'
+import { areFontsReady, waitForFontsLoaded } from '@/modules/typography/textFit'
 import { RecipePickerPanel } from './RecipePickerPanel'
 import { LayerEditorPanel } from './LayerEditorPanel'
 import { PersonSelectorModal, type PersonProfile } from './PersonSelectorModal'
@@ -62,18 +65,25 @@ import {
 } from 'lucide-react-native'
 
 const INITIAL_FLAGSHIP_ID = 'classic-collector'
-const INITIAL_INPUTS: PositionalInputs = {
-  input1: 'MAYA ANGELOU',
-  input2: 'POET & CIVIL RIGHTS ICON',
-  input3: 'Phenomenal Woman, presidential poet, and civil rights champion whose literary voice moved generations.',
-}
-const INITIAL_FLAGSHIP_COMP = compileFlagshipDesign(INITIAL_FLAGSHIP_ID, INITIAL_INPUTS).composition
+const INITIAL_FLAGSHIP_COMP = compileFlagshipDesign(INITIAL_FLAGSHIP_ID, INITIAL_CONTENT_STORE).composition
 
 export function CardStudioScreen() {
   const router = useRouter()
   const params = useLocalSearchParams<{ flagshipId?: string }>()
   const { width } = useWindowDimensions()
   const isDesktop = width >= 1024
+
+  // Font loading readiness
+  const [fontsLoaded, setFontsLoaded] = useState(() => areFontsReady())
+  useEffect(() => {
+    let active = true
+    waitForFontsLoaded().then(() => {
+      if (active) setFontsLoaded(true)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   // Auth / Current user
   const { username: currentUsername } = useStudioUser()
@@ -94,7 +104,7 @@ export function CardStudioScreen() {
   const [activeFlagshipId, setActiveFlagshipId] = useState<string>(
     params.flagshipId || INITIAL_FLAGSHIP_ID,
   )
-  const [positionalInputs, setPositionalInputs] = useState<PositionalInputs>(INITIAL_INPUTS)
+  const [positionalInputs, setPositionalInputs] = useState<ContentStore>(INITIAL_CONTENT_STORE)
 
   // Taxonomy Selections (5 dimensions)
   const [selections, setSelections] = useState<TaxonomySelections>(DEFAULT_TAXONOMY_SELECTIONS)
@@ -137,6 +147,14 @@ export function CardStudioScreen() {
     }
   }, [params.flagshipId])
 
+  // Re-fit typography when fonts finish loading
+  useEffect(() => {
+    if (fontsLoaded && editorMode === 'flagship') {
+      const result = compileFlagshipDesign(activeFlagshipId, positionalInputs, selectedPerson)
+      setComposition(result.composition)
+    }
+  }, [fontsLoaded])
+
   // Push to history when composition changes
   const updateCompositionWithHistory = useCallback((nextComp: CardComposition) => {
     setComposition(nextComp)
@@ -158,8 +176,9 @@ export function CardStudioScreen() {
       // Restore mode-specific state
       if (prevComp.metadata?.flagship) {
         setActiveFlagshipId(prevComp.metadata.flagship.id)
-        if (prevComp.metadata.flagship.inputs) {
-          setPositionalInputs(prevComp.metadata.flagship.inputs)
+        const loadedStore = prevComp.metadata.flagship.contentStore || prevComp.metadata.flagship.inputs
+        if (loadedStore) {
+          setPositionalInputs((prev) => ({ ...prev, ...loadedStore }))
         }
         setEditorMode('flagship')
       } else {
@@ -181,8 +200,9 @@ export function CardStudioScreen() {
 
       if (nextComp.metadata?.flagship) {
         setActiveFlagshipId(nextComp.metadata.flagship.id)
-        if (nextComp.metadata.flagship.inputs) {
-          setPositionalInputs(nextComp.metadata.flagship.inputs)
+        const loadedStore = nextComp.metadata.flagship.contentStore || nextComp.metadata.flagship.inputs
+        if (loadedStore) {
+          setPositionalInputs((prev) => ({ ...prev, ...loadedStore }))
         }
         setEditorMode('flagship')
       } else {
@@ -198,27 +218,32 @@ export function CardStudioScreen() {
   // --- Flagship Actions ---
   function handleSelectFlagshipDesign(designId: string) {
     setActiveFlagshipId(designId)
-    // Preserve positional inputs across design switching!
+    // Design-independent content store: switching designs NEVER deletes existing values!
     const result = compileFlagshipDesign(designId, positionalInputs, selectedPerson)
     updateCompositionWithHistory(result.composition)
   }
 
   function handleUpdatePositionalInput(field: string, value: string) {
-    const nextInputs = { ...positionalInputs, [field]: value }
-    setPositionalInputs(nextInputs)
-    const result = compileFlagshipDesign(activeFlagshipId, nextInputs, selectedPerson)
-    updateCompositionWithHistory(result.composition)
+    setPositionalInputs((prev) => {
+      const nextInputs: ContentStore = { ...prev, [field]: value }
+      const result = compileFlagshipDesign(activeFlagshipId, nextInputs, selectedPerson)
+      updateCompositionWithHistory(result.composition)
+      return nextInputs
+    })
   }
 
   function handleAutofillFromPerson(p: PersonProfile) {
-    const autofilled: PositionalInputs = {
-      input1: p.displayName || '',
-      input2: p.hometown || '',
-      input3: p.bio || '',
-    }
-    setPositionalInputs(autofilled)
-    const result = compileFlagshipDesign(activeFlagshipId, autofilled, p)
-    updateCompositionWithHistory(result.composition)
+    setPositionalInputs((prev) => {
+      const autofilled: ContentStore = {
+        ...prev,
+        input1: p.displayName || prev.input1 || '',
+        input2: p.hometown || prev.input2 || '',
+        input3: p.bio || prev.input3 || '',
+      }
+      const result = compileFlagshipDesign(activeFlagshipId, autofilled, p)
+      updateCompositionWithHistory(result.composition)
+      return autofilled
+    })
   }
 
   // --- 5D Recipe Actions ---
@@ -264,8 +289,9 @@ export function CardStudioScreen() {
     const compMetadata = (design.composition as CardComposition).metadata
     if (compMetadata?.flagship) {
       setActiveFlagshipId(compMetadata.flagship.id)
-      if (compMetadata.flagship.inputs) {
-        setPositionalInputs(compMetadata.flagship.inputs)
+      const loadedStore = compMetadata.flagship.contentStore || compMetadata.flagship.inputs
+      if (loadedStore) {
+        setPositionalInputs((prev) => ({ ...prev, ...loadedStore }))
       }
       setEditorMode('flagship')
       return
@@ -285,8 +311,8 @@ export function CardStudioScreen() {
     setActiveDesign(null)
     setDesignTitle('New Collectible')
     setActiveFlagshipId(INITIAL_FLAGSHIP_ID)
-    setPositionalInputs(INITIAL_INPUTS)
-    const initialComp = compileFlagshipDesign(INITIAL_FLAGSHIP_ID, INITIAL_INPUTS).composition
+    setPositionalInputs(INITIAL_CONTENT_STORE)
+    const initialComp = compileFlagshipDesign(INITIAL_FLAGSHIP_ID, INITIAL_CONTENT_STORE).composition
     setComposition(initialComp)
     setHistory([initialComp])
     setHistoryIndex(0)
@@ -661,8 +687,15 @@ export function CardStudioScreen() {
               {/* Positional Adaptive Content Slots Editor */}
               <View className="rounded-2xl border border-border bg-surface p-md gap-sm">
                 <View className="flex-row items-center justify-between border-b border-border pb-xs">
-                  <Text className="font-bold text-text">Adaptive Positional Content</Text>
-                  <Text variant="caption">Auto-fits into {activeFlagship.name} slots</Text>
+                  <View>
+                    <Text className="font-bold text-text">Adaptive Positional Content</Text>
+                    <Text variant="caption">
+                      Showing {activeFlagship.inputs.length} slots for {activeFlagship.name} ({Object.keys(positionalInputs).length} fields preserved in store)
+                    </Text>
+                  </View>
+                  <View className="rounded-full bg-brand/10 px-sm py-xs">
+                    <Text className="text-[10px] font-semibold text-brand">Content Store Active</Text>
+                  </View>
                 </View>
 
                 {/* Dynamically render all defined variable positional slots */}
