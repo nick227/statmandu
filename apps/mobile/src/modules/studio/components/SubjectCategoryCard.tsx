@@ -1,6 +1,6 @@
 import React from 'react'
-import { Image, TextInput, View } from 'react-native'
-import { Scissors, Upload, User } from 'lucide-react-native'
+import { Image, Pressable, TextInput, View } from 'react-native'
+import { Scissors, Upload, User, X } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
 import { Button } from '@/shared/ui/Button'
 import { Avatar } from '@/shared/ui/Avatar'

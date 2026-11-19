@@ -44,7 +44,7 @@ import {
   getFieldSemanticKey,
   type BoundCardField,
 } from '@/modules/profiles/profileAttributeResolver'
-import type { FinishedPrefabCard } from '../data/finishedPrefabCards'
+import { FINISHED_PREFAB_CARDS, type FinishedPrefabCard } from '../data/finishedPrefabCards'
 import {
   useUnifiedMediaLibrary,
   type MediaLibraryItem,
@@ -98,7 +98,17 @@ export type MediaCategoryFilter = 'ALL' | 'USER' | 'PROFILE' | 'CURATED'
  */
 export function useCardStudioState() {
   const router = useRouter()
-  const params = useLocalSearchParams<{ flagshipId?: string; imageId?: string }>()
+  const params = useLocalSearchParams<{
+    flagshipId?: string
+    imageId?: string
+    prefabId?: string
+    face?: 'front' | 'back'
+  }>()
+
+  const initialPrefab = useMemo(() => {
+    if (!params.prefabId) return null
+    return FINISHED_PREFAB_CARDS.find((p) => p.id === params.prefabId) || null
+  }, [params.prefabId])
 
   // ---------------------------------------------------------------------------
   // Font Readiness
@@ -125,22 +135,33 @@ export function useCardStudioState() {
   const [activeProfile, setActiveProfile] = useState<UniversalProfile | null>(INITIAL_PROFILE)
   const [personDropdownOpen, setPersonDropdownOpen] = useState(false)
 
+  // Subject Image Cutout & Background Removal State
+  const [subjectCutoutUri, setSubjectCutoutUri] = useState<string | null>(null)
+  const [originalSubjectAssetId, setOriginalSubjectAssetId] = useState<string>(
+    initialPrefab?.imageAssetId || params.imageId || INITIAL_IMAGE_ID,
+  )
+  const [activeSubjectImageType, setActiveSubjectImageType] = useState<'original' | 'cutout'>('original')
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false)
   // ---------------------------------------------------------------------------
   // Active Design Document State
   // ---------------------------------------------------------------------------
   const [activeDesign, setActiveDesign] = useState<CardDesign | null>(null)
-  const [designTitle, setDesignTitle] = useState('Untitled Collectible')
+  const [designTitle, setDesignTitle] = useState(initialPrefab?.title || 'Untitled Collectible')
 
   // ---------------------------------------------------------------------------
   // Taxonomy, Flagship & Artwork Selection State
   // ---------------------------------------------------------------------------
-  const [activeCardTypeId, setActiveCardTypeId] = useState<string>(INITIAL_CARD_TYPE_ID)
-  const [activeFlagshipId, setActiveFlagshipId] = useState<string>(
-    params.flagshipId || INITIAL_FLAGSHIP_ID,
+  const [activeCardTypeId, setActiveCardTypeId] = useState<string>(
+    initialPrefab?.cardTypeId || INITIAL_CARD_TYPE_ID,
   )
-  const [activePrefabId, setActivePrefabId] = useState<string | null>(null)
+  const [activeFlagshipId, setActiveFlagshipId] = useState<string>(
+    initialPrefab?.flagshipId || params.flagshipId || INITIAL_FLAGSHIP_ID,
+  )
+  const [activePrefabId, setActivePrefabId] = useState<string | null>(
+    initialPrefab?.id || null,
+  )
   const [selectedImageId, setSelectedImageId] = useState<string>(
-    params.imageId || INITIAL_IMAGE_ID,
+    initialPrefab?.imageAssetId || params.imageId || INITIAL_IMAGE_ID,
   )
 
   useEffect(() => {
@@ -150,13 +171,17 @@ export function useCardStudioState() {
   }, [params.imageId])
 
   // Linked content overrides & unlinked slots
-  const [fieldOverrides, setFieldOverrides] = useState<Record<string, string>>({})
+  const [fieldOverrides, setFieldOverrides] = useState<Record<string, string>>(
+    initialPrefab ? { ...initialPrefab.contentStore } : {},
+  )
   const [unlinkedSlotIds, setUnlinkedSlotIds] = useState<Set<string>>(new Set())
 
   // ---------------------------------------------------------------------------
   // Creative Levers (Appearance Customization)
   // ---------------------------------------------------------------------------
-  const [appearance, setAppearance] = useState<StudioAppearanceState>({})
+  const [appearance, setAppearance] = useState<StudioAppearanceState>(
+    initialPrefab?.appearance || {},
+  )
   const appearanceRef = useRef<StudioAppearanceState>(appearance)
   appearanceRef.current = appearance
 
@@ -220,11 +245,24 @@ export function useCardStudioState() {
   // ---------------------------------------------------------------------------
   // Composition & Local Undo/Redo History
   // ---------------------------------------------------------------------------
-  const [composition, setComposition] = useState<CardComposition>(INITIAL_COMPILATION.composition)
+  const initialComposition = useMemo(() => {
+    if (!initialPrefab) return INITIAL_COMPILATION.composition
+    return compileFlagshipDesign(
+      initialPrefab.flagshipId,
+      initialPrefab.contentStore,
+      null,
+      assetsList,
+      initialPrefab.cardTypeId,
+      initialPrefab.imageAssetId,
+      initialPrefab.appearance,
+    ).composition
+  }, [initialPrefab, assetsList])
+
+  const [composition, setComposition] = useState<CardComposition>(initialComposition)
   const compositionRef = useRef<CardComposition>(composition)
   compositionRef.current = composition
   const [historyState, setHistoryState] = useState(() => ({
-    entries: [INITIAL_COMPILATION.composition] as CardComposition[],
+    entries: [initialComposition] as CardComposition[],
     index: 0,
   }))
   const history = historyState.entries
@@ -233,7 +271,9 @@ export function useCardStudioState() {
   // ---------------------------------------------------------------------------
   // Two-Sided Collectible Face Toggle ('front' | 'back')
   // ---------------------------------------------------------------------------
-  const [activeCardFace, setActiveCardFace] = useState<'front' | 'back'>('front')
+  const [activeCardFace, setActiveCardFace] = useState<'front' | 'back'>(
+    params.face === 'back' ? 'back' : 'front',
+  )
   const handleToggleCardFace = useCallback((face: 'front' | 'back') => {
     setActiveCardFace(face)
   }, [])
@@ -242,8 +282,12 @@ export function useCardStudioState() {
   // Inline Publishing Drawer State
   // ---------------------------------------------------------------------------
   const [isPublishDrawerOpen, setIsPublishDrawerOpen] = useState(false)
-  const [publishSubjectName, setPublishSubjectName] = useState(activeProfile?.displayName || '')
-  const [publishSubjectBio, setPublishSubjectBio] = useState(activeProfile?.bio || '')
+  const [publishSubjectName, setPublishSubjectName] = useState(
+    initialPrefab?.subjectName || activeProfile?.displayName || '',
+  )
+  const [publishSubjectBio, setPublishSubjectBio] = useState(
+    initialPrefab?.subjectBio || activeProfile?.bio || '',
+  )
   const [publishEditionMode, setPublishEditionMode] = useState<CardEditionMode>('LIMITED')
   const [publishEditionSize, setPublishEditionSize] = useState('25')
 

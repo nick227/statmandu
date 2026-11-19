@@ -56,14 +56,14 @@ export function CardStudioScreen() {
   // Dedicated fixed editor tool panel width
   const editorWidth = isDesktop ? 390 : isTablet ? 330 : width
 
-  // Compute stage dimensions on wide screens (viewport minus header & gutters)
-  const availableStageHeight = Math.max(500, height - 130)
-  const availableStageWidth = Math.max(340, width - editorWidth - 64)
+  // Compute stage dimensions on wide screens (viewport minus header, rail & gutters)
+  const availableStageHeight = Math.max(360, height - 340)
+  const availableStageWidth = Math.max(300, width - editorWidth - 64)
   const maxCardWidthByHeight = Math.floor(availableStageHeight * (600 / 900) * 0.94)
 
   // Card canvas scaling: scale to use available height without overflowing; compact on mobile for immediate visual feedback
   const canvasWidth = isWide
-    ? Math.min(560, availableStageWidth, maxCardWidthByHeight)
+    ? Math.min(460, availableStageWidth, maxCardWidthByHeight)
     : Math.min(270, width - 40)
 
   // Encapsulated state, business logic, and mutations
@@ -266,7 +266,12 @@ export function CardStudioScreen() {
   )
 
   return (
-    <Screen layout="workspace" insetTop={false} className="h-full">
+    <Screen
+      layout="workspace"
+      insetTop={false}
+      className="h-full"
+      style={isWide ? ({ height: 'calc(100vh - 56px)', overflow: 'hidden' } as any) : undefined}
+    >
       {/* 1. Full-Width Persistent Compact Header */}
       <View className="px-md md:px-lg border-b border-border bg-surface pt-sm">
         <StudioTopBar

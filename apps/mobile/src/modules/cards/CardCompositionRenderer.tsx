@@ -23,8 +23,16 @@ export type CardCompositionLayer = components['schemas']['CardCompositionLayer']
   bold?: boolean
   italic?: boolean
   tracking?: number
+  letterSpacing?: number
+  textAlign?: 'left' | 'center' | 'right'
   lineHeight?: number
   borderRadius?: number
+  borderColor?: string
+  borderWidth?: number
+  borderLeftWidth?: number
+  borderRightWidth?: number
+  borderTopWidth?: number
+  borderBottomWidth?: number
 }
 
 export const RDC_COMPOSITION_RENDERER_VERSION = 'rdc-composition-v1'

@@ -33,6 +33,7 @@ export interface DesignInput {
   fill?: string
   fontRole?: FontRole
   allCaps?: boolean
+  textAlign?: 'left' | 'center' | 'right'
 }
 
 export interface TextSlotBounds {
