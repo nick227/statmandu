@@ -118,6 +118,9 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
 }))
 
+// Studio integration renders are asynchronous and can exceed Jest's 5s default on CI.
+jest.setTimeout(20_000)
+
 describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests', () => {
   const mockCreate = jest.fn()
   const mockUpdate = jest.fn()
