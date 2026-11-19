@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
+import { useLocalSearchParams } from 'expo-router'
 import { ChevronDown, ChevronRight, ChevronLeft, Layers, Palette, Type, User } from 'lucide-react-native'
 import { Screen } from '@/shared/layout/Screen'
 import { Text } from '@/shared/ui/Text'
@@ -72,8 +73,10 @@ export function CardStudioScreen() {
   // Centralized dynamic document title reacting to the active design title
   usePageTitle(studio.designTitle ? `${studio.designTitle} · Card Studio` : 'Card Studio')
 
+  const params = useLocalSearchParams<{ section?: StudioSection }>()
+
   // Inline expandable accordion state
-  const [openSection, setOpenSection] = useState<StudioSection | null>(null)
+  const [openSection, setOpenSection] = useState<StudioSection | null>(params.section || null)
 
   const toggleSection = useCallback((section: StudioSection) => {
     setOpenSection((current) => current === section ? null : section)
@@ -122,6 +125,9 @@ export function CardStudioScreen() {
               subjectName={studio.publishSubjectName}
               userProfile={studio.currentUserProfile}
               subjectImageUri={studio.subjectImageUri}
+              selectedImageId={studio.selectedImageId}
+              mediaItems={studio.displayedMediaItems}
+              onSelectImage={studio.handleSelectArtwork}
               onUseMyProfile={studio.handleUseMyProfile}
               onClearSubject={studio.handleUnlinkSubject}
               onSubjectNameChange={studio.handleUpdateSubjectName}
@@ -270,10 +276,13 @@ export function CardStudioScreen() {
       layout="workspace"
       insetTop={false}
       className="h-full"
-      style={isWide ? ({ height: 'calc(100vh - 56px)', overflow: 'hidden' } as any) : undefined}
+      style={isWide ? ({ height: 'calc(100vh - 56px)', maxHeight: 'calc(100vh - 56px)', overflow: 'hidden' } as any) : undefined}
     >
-      {/* 1. Full-Width Persistent Compact Header */}
-      <View className="px-md md:px-lg border-b border-border bg-surface pt-sm">
+      {/* 1. Full-Width Persistent Compact Header (Fixed Top) */}
+      <View
+        className="px-md md:px-lg border-b border-border bg-surface pt-sm flex-shrink-0"
+        style={{ flexShrink: 0 }}
+      >
         <StudioTopBar
           designTitle={studio.designTitle}
           onTitleChange={(t) => {
@@ -306,13 +315,18 @@ export function CardStudioScreen() {
       {/* 2. Workspace Body: Left Accordion Panel + Right Live Card Preview */}
       {isWide ? (
         // Desktop / Tablet: Fixed-width editor column + flexible card canvas stage
-        <View className="flex-1 flex-row w-full overflow-hidden">
+        <View
+          className="flex-1 min-h-0 flex-row w-full overflow-hidden"
+          style={{ flex: 1, minHeight: 0 }}
+        >
           {/* Left Column: Fixed Editor Panel with independent scrolling */}
           <View
-            style={{ width: editorWidth }}
-            className="border-r border-border bg-surface flex-shrink-0"
+            style={{ width: editorWidth, height: '100%', minHeight: 0 }}
+            className="border-r border-border bg-surface flex-shrink-0 flex-col overflow-hidden"
           >
             <ScrollView
+              className="flex-1"
+              style={{ flex: 1, height: '100%' }}
               contentContainerClassName="p-md gap-md pb-xxl"
               showsVerticalScrollIndicator={true}
             >
@@ -328,14 +342,12 @@ export function CardStudioScreen() {
             assets={studio.assetsList}
             activeFace={studio.activeCardFace}
             onToggleFace={studio.handleToggleCardFace}
-            displayMode={studio.displayMode}
-            onToggleDisplayMode={studio.handleToggleDisplayMode}
-            className="flex-1 p-lg"
+            className="flex-1 p-lg min-h-0"
           />
         </View>
       ) : (
         // Mobile: Compact card preview at top for immediate feedback, followed by editor controls
-        <ScrollView contentContainerClassName="pb-xxl">
+        <ScrollView contentContainerClassName="pb-xxl" className="flex-1">
           {/* Compact Card Stage at top */}
           <View className="w-full bg-neutral-100 dark:bg-neutral-900/60 py-md items-center justify-center border-b border-border">
             <CardPreviewStage
@@ -345,8 +357,6 @@ export function CardStudioScreen() {
               assets={studio.assetsList}
               activeFace={studio.activeCardFace}
               onToggleFace={studio.handleToggleCardFace}
-              displayMode={studio.displayMode}
-              onToggleDisplayMode={studio.handleToggleDisplayMode}
               className="bg-transparent"
             />
           </View>
@@ -358,12 +368,17 @@ export function CardStudioScreen() {
         </ScrollView>
       )}
 
-      {/* 3. Bottom Rail: Prefabbed Card Browser with Finished Collectibles */}
-      <PrefabCardBrowserRail
-        activePrefabId={studio.activePrefabId}
-        activeFlagshipId={studio.activeFlagshipId}
-        onSelectPrefab={studio.handleSelectPrefabCard}
-      />
+      {/* 3. Bottom Rail: Prefabbed Card Browser with Finished Collectibles (Fixed Bottom) */}
+      <View
+        className="w-full flex-shrink-0 border-t border-border bg-surface"
+        style={{ flexShrink: 0 }}
+      >
+        <PrefabCardBrowserRail
+          activePrefabId={studio.activePrefabId}
+          activeFlagshipId={studio.activeFlagshipId}
+          onSelectPrefab={studio.handleSelectPrefabCard}
+        />
+      </View>
     </Screen>
   )
 }

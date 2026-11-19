@@ -52,24 +52,24 @@ export function Screen({
   if (layout === 'workspace') {
     return (
       <View
-        className={cn('flex-1 w-full bg-canvas', className)}
+        className={cn('flex-1 w-full bg-canvas overflow-hidden', className)}
         style={[
           {
             paddingTop: insetTop ? insets.top : 0,
-            ...(usesDocumentScroll ? ({ flexGrow: 1, minHeight: 'calc(100vh - 56px)', width: '100%' } as unknown as ViewStyle) : null),
+            ...(usesDocumentScroll ? ({ flexGrow: 1, height: 'calc(100vh - 56px)', maxHeight: 'calc(100vh - 56px)', overflow: 'hidden', width: '100%' } as unknown as ViewStyle) : null),
           },
           style,
         ]}
         {...props}
       >
         {showHeader ? (
-          <View className="flex-row items-center gap-sm px-md md:px-lg lg:px-xl pt-md pb-sm border-b border-border bg-surface">
+          <View className="flex-row items-center gap-sm px-md md:px-lg lg:px-xl pt-md pb-sm border-b border-border bg-surface flex-shrink-0">
             {withBack ? <BackButton tone="dark" /> : null}
             {title ? <Text className="flex-1 text-xl font-bold text-text">{title}</Text> : <View className="flex-1" />}
             {headerActions}
           </View>
         ) : null}
-        <View className={cn('flex-1 w-full', contentClassName)}>{children}</View>
+        <View className={cn('flex-1 w-full min-h-0 overflow-hidden flex flex-col', contentClassName)} style={{ minHeight: 0 }}>{children}</View>
       </View>
     )
   }

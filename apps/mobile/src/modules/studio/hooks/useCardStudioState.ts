@@ -135,14 +135,6 @@ export function useCardStudioState() {
   // ---------------------------------------------------------------------------
   const [activeProfile, setActiveProfile] = useState<UniversalProfile | null>(INITIAL_PROFILE)
   const [personDropdownOpen, setPersonDropdownOpen] = useState(false)
-
-  // Subject Image Cutout & Background Removal State
-  const [subjectCutoutUri, setSubjectCutoutUri] = useState<string | null>(null)
-  const [originalSubjectAssetId, setOriginalSubjectAssetId] = useState<string>(
-    initialPrefab?.imageAssetId || params.imageId || INITIAL_IMAGE_ID,
-  )
-  const [activeSubjectImageType, setActiveSubjectImageType] = useState<'original' | 'cutout'>('original')
-  const [isRemovingBackground, setIsRemovingBackground] = useState(false)
   // ---------------------------------------------------------------------------
   // Active Design Document State
   // ---------------------------------------------------------------------------
@@ -270,20 +262,13 @@ export function useCardStudioState() {
   const historyIndex = historyState.index
 
   // ---------------------------------------------------------------------------
-  // Two-Sided Collectible Face Toggle ('front' | 'back') & Display Mode
+  // Two-Sided Collectible Face Toggle ('front' | 'back')
   // ---------------------------------------------------------------------------
   const [activeCardFace, setActiveCardFace] = useState<'front' | 'back'>(
     params.face === 'back' ? 'back' : 'front',
   )
   const handleToggleCardFace = useCallback((face: 'front' | 'back') => {
     setActiveCardFace(face)
-  }, [])
-
-  const [displayMode, setDisplayMode] = useState<'card' | 'slab'>(
-    params.displayMode === 'slab' ? 'slab' : 'card',
-  )
-  const handleToggleDisplayMode = useCallback((mode: 'card' | 'slab') => {
-    setDisplayMode(mode)
   }, [])
 
   // ---------------------------------------------------------------------------
@@ -1181,11 +1166,9 @@ export function useCardStudioState() {
     handleUpdateAppearance,
     handleUnlinkSubject,
 
-    // Two-Sided Collectible Face & Display Mode
+    // Two-Sided Collectible Face
     activeCardFace,
     handleToggleCardFace,
-    displayMode,
-    handleToggleDisplayMode,
     backComposition: currentFlagshipResult.backComposition,
 
     // Core Canvas Composition
