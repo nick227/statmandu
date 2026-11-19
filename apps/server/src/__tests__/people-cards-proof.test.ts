@@ -92,6 +92,20 @@ describe('MR1/MR2 no-sports architectural proof', () => {
     expect(await db.cardGenerationJob.count()).toBe(2)
   })
 
+  it('uses a neutral portrait for people with an unregistered sport', async () => {
+    const subject = await person('Climber and musician')
+    const sport = await db.sport.create({ data: { slug: 'climbing', name: 'Climbing' } })
+    await db.player.create({ data: { athleteProfileId: subject.id, sportId: sport.id } })
+    const image = await source(subject.id)
+    await expect(cards.generateBatch(actor, subject.id, { sourceImageAssetId: image.id, poseIds: ['unknown-pose'] })).rejects.toMatchObject({ statusCode: 400 })
+    const batch = await cards.generateBatch(actor, subject.id, { sourceImageAssetId: image.id })
+    expect(batch).toHaveLength(1)
+    expect(batch[0]!.title).toBe('Portrait')
+    await cardGenerationExecutor.drain()
+    expect((await cards.getCard(batch[0]!.id, actor.id)).status).toBe('READY')
+    expect(await db.player.count()).toBe(1)
+  })
+
   it('keeps uploaded source images private in listings and direct serving', async () => {
     const subject = await person()
     const image = await source(subject.id)

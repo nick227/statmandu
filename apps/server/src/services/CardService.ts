@@ -8,7 +8,7 @@ import { personName, serializePerson } from './PersonService'
 import { randomUUID } from 'crypto'
 import { db } from '@statman/db'
 import type { CardEditionMode, CardTemplateStatus, CardType, CardVisibility, UserRole } from '@statman/db'
-import { getCardPoses, getSportDefinition } from '@statman/sports'
+import { getCardPoses, listSportDefinitions } from '@statman/sports'
 import { createCardImageGenerator, CardGenerationError, type CardImageGenerator } from './CardImageGenerator'
 import { FeedService } from './FeedService'
 import { cardGenerationExecutor, type GenerationExecutor } from '../jobs/GenerationExecutor'
@@ -339,8 +339,11 @@ export class CardService {
       if (recent) throw { statusCode: 429, message: 'Please wait before generating another batch' }
       const active = await tx.cardGenerationJob.findFirst({ where: { status: { in: ['QUEUED', 'PROCESSING'] }, release: { createdByUserId: actor.id, batchRequestId: { not: null } } } })
       if (active) throw { statusCode: 429, message: 'A batch is already generating' }
-      const player = await tx.player.findFirst({ where: { athleteProfileId }, include: { sport: true } })
-      const allPoses = player && !input.poseIds?.includes('portrait') ? getCardPoses(getSportDefinition(player.sport.slug)) : [{ id: 'portrait', label: 'Portrait', promptTemplate: 'Expressive portrait, natural clothing, neutral studio background, cinematic lighting.' }]
+      // Sports presets are optional enrichment. Explicit neutral portraits do
+      // not need a player lookup; unregistered sports must not block card creation.
+      const player = input.poseIds?.includes('portrait') ? null : await tx.player.findFirst({ where: { athleteProfileId }, include: { sport: true } })
+      const sport = player ? listSportDefinitions().find(definition => definition.slug === player.sport.slug) : undefined
+      const allPoses = sport ? getCardPoses(sport) : [{ id: 'portrait', label: 'Portrait', promptTemplate: 'Expressive portrait, natural clothing, neutral studio background, cinematic lighting.' }]
       const poses = input.poseIds?.length ? allPoses.filter(pose => input.poseIds!.includes(pose.id)) : allPoses
       if (!poses.length) throw { statusCode: 400, message: 'No matching poses' }
       const requestId = input.batchRequestId ?? randomUUID()
