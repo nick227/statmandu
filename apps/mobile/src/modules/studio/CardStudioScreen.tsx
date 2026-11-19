@@ -6,8 +6,6 @@ import { Screen } from '@/shared/layout/Screen'
 import { Text } from '@/shared/ui/Text'
 import { Input } from '@/shared/ui/Input'
 import { Button } from '@/shared/ui/Button'
-import { LoadingState } from '@/shared/ui/LoadingState'
-import { ErrorState } from '@/shared/ui/ErrorState'
 import {
   CardCompositionRenderer,
   RDC_COMPOSITION_RENDERER_VERSION,
@@ -21,6 +19,20 @@ import {
   type CardComposition,
   type CardCompositionLayer,
 } from './hooks/useCardDesigns'
+import {
+  DEFAULT_TAXONOMY_SELECTIONS,
+  DIMENSIONS,
+  getVariationsForDimension,
+} from '@/modules/taxonomy/catalog'
+import {
+  compileDesignRecipe,
+  extractTaxonomySelections,
+} from '@/modules/taxonomy/compiler'
+import type {
+  TaxonomyDimensionKey,
+  TaxonomySelections,
+} from '@/modules/taxonomy/types'
+import { RecipePickerPanel } from './RecipePickerPanel'
 import { LayerEditorPanel } from './LayerEditorPanel'
 import { PersonSelectorModal, type PersonProfile } from './PersonSelectorModal'
 import { ReleaseModal } from './ReleaseModal'
@@ -28,62 +40,19 @@ import {
   Save,
   Undo2,
   Redo2,
-  Plus,
-  Type,
-  Square,
-  ImageIcon,
   Rocket,
   AlertTriangle,
   User,
   FolderOpen,
+  Sliders,
+  Sparkles,
+  Type,
+  Square,
+  ImageIcon,
 } from 'lucide-react-native'
 
-const DEFAULT_COMPOSITION: CardComposition = {
-  schemaVersion: 1,
-  canvas: { width: 600, height: 900 },
-  layers: [
-    {
-      id: 'bg-card',
-      type: 'RECTANGLE',
-      x: 0,
-      y: 0,
-      width: 600,
-      height: 900,
-      fill: '#18181B',
-    },
-    {
-      id: 'frame-accent',
-      type: 'RECTANGLE',
-      x: 20,
-      y: 20,
-      width: 560,
-      height: 860,
-      fill: '#27272A',
-    },
-    {
-      id: 'name-plate',
-      type: 'TEXT',
-      x: 40,
-      y: 720,
-      width: 520,
-      height: 70,
-      personField: 'displayName',
-      fontSize: 34,
-      fill: '#FFFFFF',
-    },
-    {
-      id: 'bio-plate',
-      type: 'TEXT',
-      x: 40,
-      y: 800,
-      width: 520,
-      height: 50,
-      personField: 'bio',
-      fontSize: 16,
-      fill: '#94A3B8',
-    },
-  ],
-}
+const INITIAL_TAXONOMY_SELECTIONS = DEFAULT_TAXONOMY_SELECTIONS
+const INITIAL_COMPOSITION = compileDesignRecipe(INITIAL_TAXONOMY_SELECTIONS)
 
 export function CardStudioScreen() {
   const router = useRouter()
@@ -102,12 +71,18 @@ export function CardStudioScreen() {
   const [activeDesign, setActiveDesign] = useState<CardDesign | null>(null)
   const [designTitle, setDesignTitle] = useState('Untitled Collectible')
 
+  // Taxonomy Selections (5 dimensions)
+  const [selections, setSelections] = useState<TaxonomySelections>(INITIAL_TAXONOMY_SELECTIONS)
+
+  // Editor Mode: 'recipes' (default) | 'advanced'
+  const [editorMode, setEditorMode] = useState<'recipes' | 'advanced'>('recipes')
+
   // Composition & Local History (Undo/Redo)
-  const [composition, setComposition] = useState<CardComposition>(DEFAULT_COMPOSITION)
-  const [history, setHistory] = useState<CardComposition[]>([DEFAULT_COMPOSITION])
+  const [composition, setComposition] = useState<CardComposition>(INITIAL_COMPOSITION)
+  const [history, setHistory] = useState<CardComposition[]>([INITIAL_COMPOSITION])
   const [historyIndex, setHistoryIndex] = useState(0)
 
-  // Active selected layer
+  // Active selected layer in advanced mode
   const [selectedLayerIndex, setSelectedLayerIndex] = useState<number>(0)
 
   // Subject / Person
@@ -122,7 +97,7 @@ export function CardStudioScreen() {
   const [conflictMessage, setConflictMessage] = useState<string | null>(null)
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false)
 
-  // Push to history when composition changes via user edit
+  // Push to history when composition changes
   const updateCompositionWithHistory = useCallback((nextComp: CardComposition) => {
     setComposition(nextComp)
     setHistory((prev) => {
@@ -137,7 +112,12 @@ export function CardStudioScreen() {
     if (historyIndex > 0) {
       const nextIndex = historyIndex - 1
       setHistoryIndex(nextIndex)
-      setComposition(history[nextIndex])
+      const prevComp = history[nextIndex]
+      setComposition(prevComp)
+      const extracted = extractTaxonomySelections(prevComp)
+      if (extracted) {
+        setSelections(extracted)
+      }
     }
   }
 
@@ -145,8 +125,42 @@ export function CardStudioScreen() {
     if (historyIndex < history.length - 1) {
       const nextIndex = historyIndex + 1
       setHistoryIndex(nextIndex)
-      setComposition(history[nextIndex])
+      const nextComp = history[nextIndex]
+      setComposition(nextComp)
+      const extracted = extractTaxonomySelections(nextComp)
+      if (extracted) {
+        setSelections(extracted)
+      }
     }
+  }
+
+  // Handle changing a single dimension in the taxonomy recipe
+  function handleSelectVariation(dimension: TaxonomyDimensionKey, variationKey: string) {
+    const nextSelections: TaxonomySelections = {
+      ...selections,
+      [dimension]: { key: variationKey, version: 1 },
+    }
+    setSelections(nextSelections)
+    const nextComp = compileDesignRecipe(nextSelections)
+    updateCompositionWithHistory(nextComp)
+  }
+
+  // Surprise Me / Randomize Recipe
+  function handleRandomizeRecipe() {
+    const randomized: any = {}
+    for (const dim of DIMENSIONS) {
+      const variations = getVariationsForDimension(dim.key)
+      if (variations.length > 0) {
+        const randomIndex = Math.floor(Math.random() * variations.length)
+        randomized[dim.key] = { key: variations[randomIndex].key, version: 1 }
+      } else {
+        randomized[dim.key] = selections[dim.key]
+      }
+    }
+    const nextSelections = randomized as TaxonomySelections
+    setSelections(nextSelections)
+    const nextComp = compileDesignRecipe(nextSelections)
+    updateCompositionWithHistory(nextComp)
   }
 
   // Load existing design
@@ -159,18 +173,29 @@ export function CardStudioScreen() {
     setSelectedLayerIndex(0)
     setConflictMessage(null)
     setDesignsPickerVisible(false)
+
+    // Restore taxonomy selections if available
+    const extracted = extractTaxonomySelections(design.composition)
+    if (extracted) {
+      setSelections(extracted)
+      setEditorMode('recipes')
+    } else {
+      setEditorMode('advanced')
+    }
   }
 
   // Start new design
   function startNewDesign() {
     setActiveDesign(null)
     setDesignTitle('New Collectible')
-    setComposition(DEFAULT_COMPOSITION)
-    setHistory([DEFAULT_COMPOSITION])
+    setSelections(INITIAL_TAXONOMY_SELECTIONS)
+    setComposition(INITIAL_COMPOSITION)
+    setHistory([INITIAL_COMPOSITION])
     setHistoryIndex(0)
     setSelectedLayerIndex(0)
     setConflictMessage(null)
     setDesignsPickerVisible(false)
+    setEditorMode('recipes')
   }
 
   // Save design (respects expectedRevision and handles 409 without discarding unsaved changes)
@@ -207,7 +232,7 @@ export function CardStudioScreen() {
     }
   }
 
-  // Layer editing callbacks
+  // Layer editing callbacks (Advanced mode)
   const layers = composition.layers || []
   const activeLayer = layers[selectedLayerIndex]
 
@@ -411,82 +436,130 @@ export function CardStudioScreen() {
           <Text variant="caption" className="mt-sm text-center">
             Canvas {composition.canvas.width} × {composition.canvas.height} ({RDC_COMPOSITION_RENDERER_VERSION})
           </Text>
+
+          {/* Mode Switcher Toggle: Visual Recipe vs Advanced Layers */}
+          <View className="mt-md flex-row items-center gap-xs rounded-xl border border-border bg-card-surface p-1">
+            <Pressable
+              testID="mode-recipes-button"
+              onPress={() => setEditorMode('recipes')}
+              className={`flex-row items-center gap-xs rounded-lg px-md py-xs ${
+                editorMode === 'recipes' ? 'bg-brand' : 'bg-transparent'
+              }`}
+            >
+              <Sparkles size={16} color={editorMode === 'recipes' ? '#FFFFFF' : '#94A3B8'} />
+              <Text
+                className={`text-xs font-bold ${
+                  editorMode === 'recipes' ? 'text-white' : 'text-muted-text'
+                }`}
+              >
+                Visual Recipes
+              </Text>
+            </Pressable>
+
+            <Pressable
+              testID="mode-advanced-button"
+              onPress={() => setEditorMode('advanced')}
+              className={`flex-row items-center gap-xs rounded-lg px-md py-xs ${
+                editorMode === 'advanced' ? 'bg-brand' : 'bg-transparent'
+              }`}
+            >
+              <Sliders size={16} color={editorMode === 'advanced' ? '#FFFFFF' : '#94A3B8'} />
+              <Text
+                className={`text-xs font-bold ${
+                  editorMode === 'advanced' ? 'text-white' : 'text-muted-text'
+                }`}
+              >
+                Advanced Layers
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         {/* Controls Column */}
         <View className={`gap-md ${isDesktop ? 'flex-1' : 'w-full'}`}>
-          {/* Add Layer Toolbar */}
-          <View className="rounded-2xl border border-border bg-surface p-md">
-            <View className="flex-row items-center justify-between pb-xs">
-              <Text className="font-bold text-text">Layers ({layers.length}/100)</Text>
-              <Text variant="caption">Back to Front</Text>
-            </View>
-            <View className="flex-row gap-xs pt-xs">
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={Type}
-                disabled={layers.length >= 100}
-                onPress={() => handleAddLayer('TEXT')}
-              >
-                Add Text
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={Square}
-                disabled={layers.length >= 100}
-                onPress={() => handleAddLayer('RECTANGLE')}
-              >
-                Add Shape
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={ImageIcon}
-                disabled={layers.length >= 100}
-                onPress={() => handleAddLayer('IMAGE')}
-              >
-                Add Image
-              </Button>
-            </View>
-
-            {/* Layer Stack Horizontal Selector */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="gap-xs pt-md">
-              {layers.map((layer, index) => {
-                const isSelected = index === selectedLayerIndex
-                return (
-                  <Pressable
-                    key={layer.id || index}
-                    onPress={() => setSelectedLayerIndex(index)}
-                    className={`rounded-lg border px-sm py-xs ${
-                      isSelected ? 'border-brand bg-brand/10' : 'border-border bg-card-surface'
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs font-semibold ${
-                        isSelected ? 'text-brand' : 'text-muted-text'
-                      }`}
-                    >
-                      #{index + 1} {layer.type}
-                    </Text>
-                  </Pressable>
-                )
-              })}
-            </ScrollView>
-          </View>
-
-          {/* Active Layer Editor */}
-          {activeLayer && (
-            <LayerEditorPanel
-              layer={activeLayer}
-              layerIndex={selectedLayerIndex}
-              totalLayers={layers.length}
-              onChange={handleUpdateActiveLayer}
-              onMoveUp={() => handleMoveLayer(selectedLayerIndex, selectedLayerIndex + 1)}
-              onMoveDown={() => handleMoveLayer(selectedLayerIndex, selectedLayerIndex - 1)}
-              onDelete={() => handleDeleteLayer(selectedLayerIndex)}
+          {editorMode === 'recipes' ? (
+            /* Visual Recipe Selector (Default Primary Experience) */
+            <RecipePickerPanel
+              selections={selections}
+              onSelectVariation={handleSelectVariation}
+              onRandomizeRecipe={handleRandomizeRecipe}
             />
+          ) : (
+            /* Technical Layer Stack Editor (Advanced Power Mode) */
+            <View className="gap-md">
+              <View className="rounded-2xl border border-border bg-surface p-md">
+                <View className="flex-row items-center justify-between pb-xs">
+                  <Text className="font-bold text-text">Layers ({layers.length}/100)</Text>
+                  <Text variant="caption">Back to Front</Text>
+                </View>
+                <View className="flex-row gap-xs pt-xs">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Type}
+                    disabled={layers.length >= 100}
+                    onPress={() => handleAddLayer('TEXT')}
+                  >
+                    Add Text
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Square}
+                    disabled={layers.length >= 100}
+                    onPress={() => handleAddLayer('RECTANGLE')}
+                  >
+                    Add Shape
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={ImageIcon}
+                    disabled={layers.length >= 100}
+                    onPress={() => handleAddLayer('IMAGE')}
+                  >
+                    Add Image
+                  </Button>
+                </View>
+
+                {/* Layer Stack Horizontal Selector */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="gap-xs pt-md">
+                  {layers.map((layer, index) => {
+                    const isSelected = index === selectedLayerIndex
+                    return (
+                      <Pressable
+                        key={layer.id || index}
+                        onPress={() => setSelectedLayerIndex(index)}
+                        className={`rounded-lg border px-sm py-xs ${
+                          isSelected ? 'border-brand bg-brand/10' : 'border-border bg-card-surface'
+                        }`}
+                      >
+                        <Text
+                          className={`text-xs font-semibold ${
+                            isSelected ? 'text-brand' : 'text-muted-text'
+                          }`}
+                        >
+                          #{index + 1} {layer.type}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                </ScrollView>
+              </View>
+
+              {/* Active Layer Editor */}
+              {activeLayer && (
+                <LayerEditorPanel
+                  layer={activeLayer}
+                  layerIndex={selectedLayerIndex}
+                  totalLayers={layers.length}
+                  onChange={handleUpdateActiveLayer}
+                  onMoveUp={() => handleMoveLayer(selectedLayerIndex, selectedLayerIndex + 1)}
+                  onMoveDown={() => handleMoveLayer(selectedLayerIndex, selectedLayerIndex - 1)}
+                  onDelete={() => handleDeleteLayer(selectedLayerIndex)}
+                />
+              )}
+            </View>
           )}
         </View>
       </View>
@@ -521,7 +594,7 @@ export function CardStudioScreen() {
               </Button>
             </View>
 
-            <Button variant="primary" icon={Plus} onPress={startNewDesign} className="mb-md">
+            <Button variant="primary" icon={Square} onPress={startNewDesign} className="mb-md">
               Create Blank Design
             </Button>
 

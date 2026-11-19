@@ -4,7 +4,17 @@ import type { components } from '@statman/sdk'
 import { SmartImage } from '@/shared/media/SmartImage'
 import { cn } from '@/lib/utils'
 
-export type CardComposition = components['schemas']['CardComposition']
+export type CardComposition = components['schemas']['CardComposition'] & {
+  metadata?: {
+    rendererVersion?: string
+    taxonomy?: {
+      version: number
+      selections: any
+      overrides?: any
+    }
+    [key: string]: any
+  }
+}
 export type CardCompositionLayer = components['schemas']['CardCompositionLayer']
 
 export const RDC_COMPOSITION_RENDERER_VERSION = 'rdc-composition-v1'

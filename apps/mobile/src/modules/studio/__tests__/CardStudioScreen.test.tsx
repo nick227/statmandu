@@ -116,37 +116,91 @@ describe('CardStudioScreen', () => {
     })
   })
 
-  it('renders studio canvas with default layers and action buttons', async () => {
+  it('renders studio canvas with 5-dimensional Recipe Studio by default', async () => {
     const screen = await render(<CardStudioScreen />)
 
     expect(screen.getByTestId('card-composition-renderer')).toBeTruthy()
     expect(screen.getByPlaceholderText('Design title...')).toBeTruthy()
-    expect(screen.getByText('Add Text')).toBeTruthy()
-    expect(screen.getByText('Add Shape')).toBeTruthy()
-    expect(screen.getByText('Add Image')).toBeTruthy()
+    expect(screen.getByText('Design Recipe Studio')).toBeTruthy()
+
+    // 5 Dimension tabs
+    expect(screen.getByTestId('dimension-tab-style')).toBeTruthy()
+    expect(screen.getByTestId('dimension-tab-layout')).toBeTruthy()
+    expect(screen.getByTestId('dimension-tab-artwork')).toBeTruthy()
+    expect(screen.getByTestId('dimension-tab-content')).toBeTruthy()
+    expect(screen.getByTestId('dimension-tab-effects')).toBeTruthy()
+
     expect(screen.getByText('Save')).toBeTruthy()
     expect(screen.getByText('Publish Release')).toBeTruthy()
   })
 
-  it('adds a new text layer to the composition', async () => {
+  it('switches dimensions and updates variations without resetting other choices', async () => {
     const screen = await render(<CardStudioScreen />)
 
-    const addTextBtn = screen.getByText('Add Text')
-    fireEvent.press(addTextBtn)
+    // Switch to Layout dimension tab
+    fireEvent.press(screen.getByTestId('dimension-tab-layout'))
+
+    await waitFor(() => {
+      expect(screen.getByText('layout Families (5)')).toBeTruthy()
+    })
+
+    // Click on split-editorial family chip
+    fireEvent.press(screen.getByTestId('family-chip-layout.split-editorial'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('variation-card-layout.split-editorial.balanced')).toBeTruthy()
+    })
+
+    // Select the balanced split variation
+    fireEvent.press(screen.getByTestId('variation-card-layout.split-editorial.balanced'))
+
+    // Studio canvas remains valid and updated
+    expect(screen.getByTestId('card-composition-renderer')).toBeTruthy()
+  })
+
+  it('toggles to Advanced Layers mode and allows adding layers', async () => {
+    const screen = await render(<CardStudioScreen />)
+
+    // Click mode toggle for Advanced Layers
+    fireEvent.press(screen.getByTestId('mode-advanced-button'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Add Text')).toBeTruthy()
+      expect(screen.getByText('Add Shape')).toBeTruthy()
+      expect(screen.getByText('Add Image')).toBeTruthy()
+    })
+
+    // Add a text layer in advanced mode
+    fireEvent.press(screen.getByText('Add Text'))
 
     await waitFor(() => {
       expect(screen.getByText('New Text Layer')).toBeTruthy()
     })
   })
 
-  it('saves design via createCardDesign', async () => {
+  it('saves design with compiled composition and metadata', async () => {
     const screen = await render(<CardStudioScreen />)
 
     const saveBtn = screen.getByTestId('save-design-button')
     fireEvent.press(saveBtn)
 
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalled()
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Untitled Collectible',
+          composition: expect.objectContaining({
+            schemaVersion: 1,
+            canvas: { width: 600, height: 900 },
+            metadata: expect.objectContaining({
+              rendererVersion: 'rdc-composition-v1',
+              taxonomy: expect.objectContaining({
+                version: 1,
+                selections: expect.any(Object),
+              }),
+            }),
+          }),
+        }),
+      )
       expect(screen.getByText('Saved')).toBeTruthy()
     })
   })
@@ -160,7 +214,7 @@ describe('CardStudioScreen', () => {
       expect(screen.getByText('v1')).toBeTruthy()
     })
 
-    // Now configure update mutation to throw revision conflict
+    // Configure update mutation to throw revision conflict
     mockUpdate.mockRejectedValueOnce(
       new RevisionConflictError(
         'Conflict: This design was updated elsewhere. Your unsaved changes are preserved locally.',
