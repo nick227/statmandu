@@ -78,6 +78,29 @@ me:
       '401':
         $ref: '../components/responses/common.yaml#/Unauthorized'
 
+  patch:
+    operationId: updateCurrentUserProfile
+    summary: Update the authenticated user's profile and linked person identity
+    tags: [auth]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas/auth.yaml#/UpdateCurrentUserProfileInput' }
+    responses:
+      '200':
+        description: Updated current user
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/auth.yaml#/AuthResponse' }
+      '400':
+        description: Invalid profile input
+        content:
+          application/json:
+            schema: { $ref: '../components/schemas/common.yaml#/ErrorResponse' }
+      '401':
+        $ref: '../components/responses/common.yaml#/Unauthorized'
+
 capabilities:
   get:
     operationId: getMeCapabilities
