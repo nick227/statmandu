@@ -9,7 +9,11 @@ const MAX_IMAGE_BYTES = Number(process.env.IMAGE_UPLOAD_MAX_BYTES ?? 5 * 1024 * 
 
 export class ImageService {
   async list(targetType: EntityType, targetId: string, usage?: ImageAssetUsage, viewerId?: string, isAdmin = false) {
-    await targetService.requireTarget(targetType, targetId)
+    await targetService.requireTarget(targetType, targetId, true)
+    if (targetType === 'CARD_DESIGN') {
+      const design = await db.cardTemplate.findUnique({ where: { id: targetId } })
+      if (!design || (!isAdmin && design.createdByUserId !== viewerId)) throw { statusCode: 404, message: 'Not found' }
+    }
     if (targetType === 'CARD_TEMPLATE') {
       const card = await db.cardRelease.findUnique({ where: { id: targetId } })
       if (!card || (!isAdmin && card.createdByUserId !== viewerId && !(card.status === 'PUBLISHED' && card.visibility === 'PUBLIC'))) throw { statusCode: 404, message: 'Not found' }
@@ -31,14 +35,14 @@ export class ImageService {
     height?: number
   }) {
     if (!ALLOWED_CONTENT_TYPES.has(data.contentType)) throw { statusCode: 400, message: 'Unsupported image type' }
-    await targetService.requireTarget(data.targetType, data.targetId)
+    await targetService.requireTarget(data.targetType, data.targetId, true)
     await this.requireUploadPermission(userId, isAdmin, data.targetType, data.targetId, data.usage)
 
     const buffer = data.fileBuffer
     if (buffer.byteLength === 0) throw { statusCode: 400, message: 'Image payload is empty' }
     if (buffer.byteLength > MAX_IMAGE_BYTES) throw { statusCode: 413, message: 'Image is too large' }
 
-    const visibility = data.targetType === 'CARD_TEMPLATE' || (data.targetType === 'ATHLETE_PROFILE' && data.usage === 'GALLERY') ? 'PRIVATE' : 'PUBLIC'
+    const visibility = data.targetType === 'CARD_DESIGN' || data.targetType === 'CARD_TEMPLATE' || (data.targetType === 'ATHLETE_PROFILE' && data.usage === 'GALLERY') ? 'PRIVATE' : 'PUBLIC'
     const stored = await storeImage({
       private: visibility === 'PRIVATE',
       buffer,
@@ -97,6 +101,11 @@ export class ImageService {
     targetId: string,
     usage: ImageAssetUsage
   ) {
+    if (targetType === 'CARD_DESIGN') {
+      const design = await db.cardTemplate.findUnique({ where: { id: targetId } })
+      if (!design || design.archivedAt || (!isAdmin && design.createdByUserId !== userId)) throw { statusCode: 403, message: 'Forbidden' }
+      return
+    }
     if (isAdmin) return
     if (targetType === 'CARD_TEMPLATE') {
       const card = await db.cardRelease.findUnique({ where: { id: targetId } })

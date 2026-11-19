@@ -1,3 +1,5 @@
+import type { Prisma } from '@prisma/client'
+import { requireActiveCreator, requireCardCreator } from './CardAccess'
 import { personName, serializePerson } from './PersonService'
 import { createHash, randomUUID } from 'crypto'
 import { db } from '@statman/db'
@@ -142,6 +144,7 @@ function serializeAthlete(athleteProfile: any) {
 }
 
 function serialize(card: any, viewerUserId?: string | null) {
+  if (card.templateSnapshotJson?.person) card = { ...card, athleteProfile: { ...card.athleteProfile, ...card.templateSnapshotJson.person } }
   const snapshot = card.contentSnapshotJson
   if (snapshot?.schemaVersion === 1) card = { ...card, title: snapshot.title, athleteProfile: { ...card.athleteProfile, ...snapshot.person }, frontImageAsset: snapshot.frontImage, statsSnapshotJson: snapshot.facts }
   const currentUserIssue = viewerUserId
@@ -149,6 +152,10 @@ function serialize(card: any, viewerUserId?: string | null) {
     : null
   return {
     id: card.id,
+    templateId: card.templateId,
+    templateRevision: card.templateRevision,
+    templateSnapshot: card.templateSnapshotJson,
+    storefrontId: card.storefrontId,
     personProfileId: card.athleteProfileId,
     person: serializePerson(card.athleteProfile),
     publicationType: card.publicationType,
@@ -215,6 +222,7 @@ function serialize(card: any, viewerUserId?: string | null) {
       ? {
           id: currentUserIssue.id,
           cardTemplateId: currentUserIssue.releaseId,
+          releaseId: currentUserIssue.releaseId,
           issueNumber: currentUserIssue.issueNumber,
           ownerUserId: currentUserIssue.ownerUserId,
           claimedByUserId: currentUserIssue.claimedByUserId,
@@ -233,6 +241,7 @@ function serializeSave(save: any) {
     id: save.id,
     userId: save.userId,
     cardTemplateId: save.releaseId,
+    releaseId: save.releaseId,
     createdAt: save.createdAt,
     card: save.release ? serialize(save.release, save.userId) : null,
   }
@@ -243,6 +252,7 @@ function serializeIssue(issue: any) {
   return {
     id: issue.id,
     cardTemplateId: issue.releaseId,
+    releaseId: issue.releaseId,
     issueNumber: issue.issueNumber,
     ownerUserId: issue.ownerUserId,
     claimedByUserId: issue.claimedByUserId,
@@ -264,6 +274,7 @@ function authenticityPayload(issue: any) {
   const json = {
     schema: 'statman.card.authenticity.v1',
     cardTemplateId: issue.releaseId,
+    releaseId: issue.releaseId,
     cardTitle: card?.title ?? null,
     athleteProfileId: card?.athleteProfileId ?? null,
     athleteName: card?.contentSnapshotJson?.person?.displayName ?? (athlete ? personName(athlete) : null),
@@ -295,13 +306,13 @@ export class CardService {
     private readonly executor: GenerationExecutor = cardGenerationExecutor
   ) {}
 
-  async createDraftCard(userId: string, input: CreateDraftCardInput) {
+  async createDraftCard(userId: string, input: CreateDraftCardInput, tx: Prisma.TransactionClient = db) {
     input = this.normalizeSubject(input)
     await this.requireActiveUser(userId)
     await this.requireCardTargets(input, userId)
     const editionMode = input.editionMode ?? 'UNLIMITED'
     const editionSize = validateEdition(editionMode, input.editionSize)
-    const card = await db.cardRelease.create({
+    const card = await tx.cardRelease.create({
       data: {
         athleteProfileId: input.athleteProfileId!,
         teamId: input.teamId ?? null,
@@ -368,6 +379,7 @@ export class CardService {
     if (!existing) throw { statusCode: 404, message: 'Card not found' }
     await this.requireOwner(actor, existing)
 
+    if (existing.templateId && (input.athleteProfileId || input.personProfileId || input.statsSnapshotJson !== undefined)) throw { statusCode: 409, message: 'Create a new release to change its subject or resolved design' }
     if (existing.publishedAt && input.status === 'ARCHIVED' && Object.keys(input).every(key => key === 'status')) {
       const archived = await db.cardRelease.update({ where: { id }, data: { status: 'ARCHIVED', visibility: 'PRIVATE' }, include: CARD_INCLUDE })
       return serialize(archived, actor.id)
@@ -472,13 +484,14 @@ export class CardService {
     })
   }
 
-  private buildGenerationInput(card: { id: string; title: string; cardType: string; stylePreset: string; createdByUserId: string; statsSnapshotJson: unknown; athleteProfile: { displayName?: string; firstName: string; lastName: string }; sourceImageAsset: { id: string; url: string } | null }) {
+  private buildGenerationInput(card: { templateSnapshotJson?: unknown; id: string; title: string; cardType: string; stylePreset: string; createdByUserId: string; statsSnapshotJson: unknown; athleteProfile: { displayName?: string; firstName: string; lastName: string }; sourceImageAsset: { id: string; url: string } | null }) {
     return {
       cardTemplateId: card.id,
       title: card.title,
       cardType: card.cardType,
       stylePreset: card.stylePreset,
-      athleteName: personName(card.athleteProfile),
+      athleteName: personName((card.templateSnapshotJson as any)?.person ?? card.athleteProfile),
+      designSnapshot: card.templateSnapshotJson ?? null,
       createdByUserId: card.createdByUserId,
       sourceImageAssetId: card.sourceImageAsset?.id ?? null,
       sourceImageUrl: card.sourceImageAsset?.url ?? null,
@@ -542,12 +555,14 @@ export class CardService {
       if (existing.publishedAt || ['ARCHIVED', 'GENERATING'].includes(existing.status)) throw { statusCode: 409, message: 'Card cannot be published in this state' }
       const editionMode = options.editionMode ?? existing.editionMode
       const editionSize = validateEdition(editionMode, options.editionSize === undefined ? existing.editionSize : options.editionSize)
+      const storefront = await tx.storefront.upsert({ where: { userId: existing.createdByUserId }, update: {}, create: { userId: existing.createdByUserId } })
       const presentation = serialize(existing)
       const snapshot = {
         schemaVersion: 1,
         presentation: { athlete: presentation.athlete, team: presentation.team, game: presentation.game },
         title: existing.title,
-        person: serializePerson(existing.athleteProfile),
+        person: (existing.templateSnapshotJson as any)?.person ?? serializePerson(existing.athleteProfile),
+        ...(existing.templateSnapshotJson ? { design: existing.templateSnapshotJson } : {}),
         frontImage: existing.frontImageAsset ? { id: existing.frontImageAsset.id, url: existing.frontImageAsset.url } : null,
         facts: existing.statsSnapshotJson,
         createdByUserId: existing.createdByUserId,
@@ -555,7 +570,7 @@ export class CardService {
         publicationType: 'COMMUNITY',
       }
       const originHash = sha256({ schemaVersion: 2, cardTemplateId: id, editionMode, editionSize, content: snapshot })
-      return tx.cardRelease.update({ where: { id }, data: { status: 'PUBLISHED', visibility: options.visibility ?? 'PUBLIC', editionMode, editionSize, originHash, publishedAt: new Date(), publishedByUserId: actor.id, publicationType: 'COMMUNITY', contentSnapshotJson: snapshot as any }, include: CARD_INCLUDE })
+      return tx.cardRelease.update({ where: { id }, data: { storefrontId: storefront.id, status: 'PUBLISHED', visibility: options.visibility ?? 'PUBLIC', editionMode, editionSize, originHash, publishedAt: new Date(), publishedByUserId: actor.id, publicationType: 'COMMUNITY', contentSnapshotJson: snapshot as any }, include: CARD_INCLUDE })
     })
     await feedService.record({ type: 'CARD_PUBLISHED', targetType: 'CARD_TEMPLATE', targetId: card.id, summary: `Card published: ${card.title}` })
     return serialize(card, actor.id)
@@ -618,8 +633,8 @@ export class CardService {
     }
   }
 
-  async getCard(id: string, viewerUserId?: string | null, isAdmin = false) {
-    const card = await db.cardRelease.findUnique({ where: { id }, include: CARD_INCLUDE })
+  async getCard(id: string, viewerUserId?: string | null, isAdmin = false, tx: Prisma.TransactionClient = db) {
+    const card = await tx.cardRelease.findUnique({ where: { id }, include: CARD_INCLUDE })
     if (!card) throw { statusCode: 404, message: 'Card not found' }
     if ((card.visibility !== 'PUBLIC' || card.status !== 'PUBLISHED') && card.createdByUserId !== viewerUserId && !isAdmin) {
       throw { statusCode: 404, message: 'Card not found' }
@@ -643,7 +658,7 @@ export class CardService {
 
       const issueNumber = card.issuedCount + 1
       const issueHash = sha256({
-        releaseId: card.id,
+        cardTemplateId: card.id,
         originHash: card.originHash,
         issueNumber,
         claimedByUserId: userId,
@@ -751,8 +766,8 @@ export class CardService {
   // SocialService.createFollow. The prerequisite for a personal
   // "Collections" view before any trading/rarity/marketplace concept.
   async saveCard(userId: string, cardTemplateId: string) {
-    const card = await db.cardRelease.findUnique({ where: { id: cardTemplateId }, select: { id: true } })
-    if (!card) throw { statusCode: 404, message: 'Card not found' }
+    await this.requireActiveUser(userId)
+    await this.getCard(cardTemplateId, userId)
     const save = await db.cardSave.upsert({
       where: { userId_releaseId: { userId, releaseId: cardTemplateId } },
       update: {},
@@ -786,8 +801,7 @@ export class CardService {
   }
 
   private async requireActiveUser(id: string) {
-    const user = await db.user.findUnique({ where: { id } })
-    if (!user || user.suspendedAt || user.deletedAt) throw { statusCode: 403, message: 'Active account required' }
+    await requireActiveCreator(id)
   }
 
   private async requireCardTargets(input: Pick<CreateDraftCardInput, 'athleteProfileId' | 'teamId' | 'gameId' | 'sourceImageAssetId'>, actorId: string) {
@@ -813,11 +827,8 @@ export class CardService {
     }
   }
 
-  private async requireOwner(actor: Actor, card: { createdByUserId: string; athleteProfile?: { claimedByUserId: string | null } | null }) {
-    await this.requireActiveUser(actor.id)
-    if (actor.role === 'ADMIN') return
-    if (card.createdByUserId === actor.id) return
-    throw { statusCode: 403, message: 'Forbidden' }
+  private async requireOwner(actor: Actor, card: { createdByUserId: string }) {
+    await requireCardCreator(actor, card.createdByUserId)
   }
 
   private async requirePublishPermission(actor: Actor, card: { createdByUserId: string; athleteProfile?: { claimedByUserId: string | null } | null }) {

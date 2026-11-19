@@ -177,6 +177,8 @@ CardIssue:
       type:
         - string
         - 'null'
+    releaseId:
+      type: string
 Card:
   type: object
   required:
@@ -291,6 +293,22 @@ Card:
         - string
         - 'null'
     contentSnapshotJson: true
+    templateId:
+      type:
+        - string
+        - 'null'
+    templateRevision:
+      type:
+        - integer
+        - 'null'
+    templateSnapshot:
+      anyOf:
+        - $ref: ./studio.yaml#/CardDesignSnapshot
+        - type: 'null'
+    storefrontId:
+      type:
+        - string
+        - 'null'
 CreateCardInput:
   type: object
   required:
@@ -587,6 +605,8 @@ CardSave:
       oneOf:
         - $ref: '#/Card'
         - type: 'null'
+    releaseId:
+      type: string
 CreateCardSaveInput:
   type: object
   required:

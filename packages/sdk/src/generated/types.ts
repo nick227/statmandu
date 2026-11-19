@@ -1550,6 +1550,196 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/card-designs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** list Card Designs */
+        get: operations["listCardDesigns"];
+        put?: never;
+        /** create Card Design */
+        post: operations["createCardDesign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/card-designs/{designId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** get Card Design */
+        get: operations["getCardDesign"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** update Card Design */
+        patch: operations["updateCardDesign"];
+        trace?: never;
+    };
+    "/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** create Release */
+        post: operations["createRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/releases/{releaseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** get Release */
+        get: operations["getRelease"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/releases/{releaseId}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** generate Release */
+        post: operations["generateRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/releases/{releaseId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** publish Release */
+        post: operations["publishRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/releases/{releaseId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** archive Release */
+        post: operations["archiveRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/releases/{releaseId}/issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** claim Release */
+        post: operations["claimRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/storefront": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** get My Storefront */
+        get: operations["getMyStorefront"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** update My Storefront */
+        patch: operations["updateMyStorefront"];
+        trace?: never;
+    };
+    "/storefronts/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** get Storefront */
+        get: operations["getStorefront"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storefronts/{username}/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** list Storefront Releases */
+        get: operations["listStorefrontReleases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2162,6 +2352,10 @@ export interface components {
             publicationType?: "COMMUNITY" | "OFFICIAL";
             publishedByUserId?: string | null;
             contentSnapshotJson?: unknown;
+            templateId?: string | null;
+            templateRevision?: number | null;
+            templateSnapshot?: components["schemas"]["CardDesignSnapshot"] | null;
+            storefrontId?: string | null;
         };
         CardIssue: {
             id: string;
@@ -2181,6 +2375,7 @@ export interface components {
             editionSize?: number | null;
             issuedCount?: number;
             originHash?: string | null;
+            releaseId?: string;
         };
         CreateCardInput: {
             athleteProfileId?: string;
@@ -2251,6 +2446,100 @@ export interface components {
             displayName?: string;
             bio?: string;
             aliases?: string[];
+        };
+        /** @description Ordered back-to-front. TEXT requires exactly one text or personField. IMAGE requires an owned imageAssetId. RECTANGLE requires fill. Bounds must fit the canvas. Text is plain text, never HTML. */
+        CardCompositionLayer: {
+            id: string;
+            /** @enum {string} */
+            type: "TEXT" | "IMAGE" | "RECTANGLE";
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+            text?: string;
+            /** @enum {string} */
+            personField?: "displayName" | "bio" | "hometown";
+            imageAssetId?: string;
+            fill?: string;
+            fontSize?: number;
+        };
+        CardComposition: {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            canvas: {
+                width: number;
+                height: number;
+            };
+            layers: components["schemas"]["CardCompositionLayer"][];
+        };
+        CardDesign: {
+            id: string;
+            createdByUserId: string;
+            title: string;
+            revision: number;
+            rendererVersion: string;
+            composition: components["schemas"]["CardComposition"];
+            /** Format: date-time */
+            archivedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreateCardDesignInput: {
+            title: string;
+            composition: components["schemas"]["CardComposition"];
+        };
+        UpdateCardDesignInput: {
+            expectedRevision: number;
+            title?: string;
+            composition?: components["schemas"]["CardComposition"];
+            archived?: boolean;
+        };
+        CreateReleaseInput: {
+            templateId: string;
+            expectedRevision: number;
+            personProfileId: string;
+            title: string;
+            editionMode: components["schemas"]["CardEditionMode"];
+            editionSize?: number | null;
+            requestId: string;
+            sourceImageAssetId?: string | null;
+        };
+        CardRelease: components["schemas"]["Card"];
+        Storefront: {
+            id: string;
+            userId: string;
+            username: string | null;
+            displayName: string | null;
+            avatarUrl: string | null;
+            description: string | null;
+            /** @enum {boolean} */
+            commerceEnabled: false;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        UpdateStorefrontInput: {
+            description: string | null;
+        };
+        CardDesignSnapshot: {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            templateId: string;
+            revision: number;
+            rendererVersion: string;
+            composition: components["schemas"]["CardComposition"];
+            person: components["schemas"]["PersonProfile"];
+            assetIds: string[];
+            assets: {
+                id: string;
+                objectKey: string;
+                url: string;
+                contentType: string;
+                byteSize: number;
+            }[];
         };
         MeAthleteProfileCapability: {
             athleteProfileId: string;
@@ -2326,7 +2615,7 @@ export interface components {
          * @description Shared polymorphic target vocabulary (mirrors the Prisma EntityType enum).
          * @enum {string}
          */
-        EntityType: "PLAYER" | "TEAM" | "GAME" | "FEED_ITEM" | "ATHLETE_PROFILE" | "GAME_STAT_LINE" | "GAME_EVENT" | "PROFILE_FIELD" | "SOURCE_REFERENCE" | "PLAYER_SEASON_STAT" | "TEAM_SEASON_STAT" | "CARD_TEMPLATE" | "CARD_ISSUE";
+        EntityType: "PLAYER" | "TEAM" | "GAME" | "FEED_ITEM" | "ATHLETE_PROFILE" | "GAME_STAT_LINE" | "GAME_EVENT" | "PROFILE_FIELD" | "SOURCE_REFERENCE" | "PLAYER_SEASON_STAT" | "TEAM_SEASON_STAT" | "CARD_TEMPLATE" | "CARD_ISSUE" | "CARD_DESIGN" | "CARD_RELEASE";
         /** @enum {string} */
         ImageAssetUsage: "AVATAR" | "LOGO" | "HERO" | "EVIDENCE" | "GALLERY";
         /** @enum {string} */
@@ -2516,6 +2805,7 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             card?: components["schemas"]["Card"] | null;
+            releaseId?: string;
         };
         CreateCardSaveInput: {
             cardTemplateId: string;
@@ -5953,6 +6243,482 @@ export interface operations {
                 };
             };
             /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listCardDesigns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardDesign"][];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createCardDesign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCardDesignInput"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardDesign"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getCardDesign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                designId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardDesign"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateCardDesign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                designId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCardDesignInput"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardDesign"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReleaseInput"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardRelease"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                releaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardRelease"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    generateRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                releaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardRelease"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    publishRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                releaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PublishCardInput"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardRelease"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    archiveRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                releaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardRelease"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    claimRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                releaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardIssue"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMyStorefront: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Storefront"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateMyStorefront: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStorefrontInput"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Storefront"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getStorefront: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Storefront"];
+                    };
+                };
+            };
+            /** @description Request failed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listStorefrontReleases: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardRelease"][];
+                        meta?: components["schemas"]["PaginatedMeta"];
+                    };
+                };
+            };
+            /** @description Request failed */
             default: {
                 headers: {
                     [name: string]: unknown;

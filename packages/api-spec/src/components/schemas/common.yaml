@@ -49,3 +49,5 @@ EntityType:
     - TEAM_SEASON_STAT
     - CARD_TEMPLATE
     - CARD_ISSUE
+    - CARD_DESIGN
+    - CARD_RELEASE

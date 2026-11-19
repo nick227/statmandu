@@ -12,6 +12,7 @@ export class AuthService {
       data: {
         email: data.email,
         passwordHash: hash,
+        storefront: { create: {} },
         profile: {
           create: {
             username: data.username,

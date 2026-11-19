@@ -1,0 +1,299 @@
+CardCompositionLayer:
+  type: object
+  additionalProperties: false
+  required:
+    - id
+    - type
+    - x
+    - 'y'
+    - width
+    - height
+  properties:
+    id:
+      type: string
+      pattern: ^[a-zA-Z0-9_-]{1,80}$
+    type:
+      type: string
+      enum:
+        - TEXT
+        - IMAGE
+        - RECTANGLE
+    x:
+      type: number
+      minimum: 0
+    'y':
+      type: number
+      minimum: 0
+    width:
+      type: number
+      minimum: 1
+    height:
+      type: number
+      minimum: 1
+    text:
+      type: string
+      maxLength: 4000
+    personField:
+      type: string
+      enum:
+        - displayName
+        - bio
+        - hometown
+    imageAssetId:
+      type: string
+    fill:
+      type: string
+      pattern: ^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$
+    fontSize:
+      type: number
+      minimum: 1
+      maximum: 512
+  description: >-
+    Ordered back-to-front. TEXT requires exactly one text or personField. IMAGE requires an owned imageAssetId.
+    RECTANGLE requires fill. Bounds must fit the canvas. Text is plain text, never HTML.
+CardComposition:
+  type: object
+  additionalProperties: false
+  required:
+    - schemaVersion
+    - canvas
+    - layers
+  properties:
+    schemaVersion:
+      type: integer
+      enum:
+        - 1
+    canvas:
+      type: object
+      additionalProperties: false
+      required:
+        - width
+        - height
+      properties:
+        width:
+          type: integer
+          minimum: 1
+          maximum: 4096
+        height:
+          type: integer
+          minimum: 1
+          maximum: 4096
+    layers:
+      type: array
+      maxItems: 100
+      items:
+        $ref: ../../root.yaml#/components/schemas/CardCompositionLayer
+CardDesign:
+  type: object
+  additionalProperties: false
+  required:
+    - id
+    - createdByUserId
+    - title
+    - revision
+    - rendererVersion
+    - composition
+    - archivedAt
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+    createdByUserId:
+      type: string
+    title:
+      type: string
+    revision:
+      type: integer
+      minimum: 1
+    rendererVersion:
+      type: string
+    composition:
+      $ref: ../../root.yaml#/components/schemas/CardComposition
+    archivedAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+CreateCardDesignInput:
+  type: object
+  additionalProperties: false
+  required:
+    - title
+    - composition
+  properties:
+    title:
+      type: string
+      minLength: 1
+      maxLength: 160
+    composition:
+      $ref: ../../root.yaml#/components/schemas/CardComposition
+UpdateCardDesignInput:
+  type: object
+  additionalProperties: false
+  required:
+    - expectedRevision
+  properties:
+    expectedRevision:
+      type: integer
+      minimum: 1
+    title:
+      type: string
+      minLength: 1
+      maxLength: 160
+    composition:
+      $ref: ../../root.yaml#/components/schemas/CardComposition
+    archived:
+      type: boolean
+CreateReleaseInput:
+  type: object
+  additionalProperties: false
+  required:
+    - templateId
+    - expectedRevision
+    - personProfileId
+    - title
+    - editionMode
+    - requestId
+  properties:
+    templateId:
+      type: string
+    expectedRevision:
+      type: integer
+      minimum: 1
+    personProfileId:
+      type: string
+    title:
+      type: string
+      minLength: 1
+      maxLength: 160
+    editionMode:
+      $ref: ./cards.yaml#/CardEditionMode
+    editionSize:
+      type:
+        - integer
+        - 'null'
+      minimum: 1
+    requestId:
+      type: string
+      minLength: 1
+      maxLength: 100
+    sourceImageAssetId:
+      type:
+        - string
+        - 'null'
+CardRelease:
+  allOf:
+    - $ref: ../../root.yaml#/components/schemas/Card
+Storefront:
+  type: object
+  additionalProperties: false
+  required:
+    - id
+    - userId
+    - username
+    - displayName
+    - avatarUrl
+    - description
+    - commerceEnabled
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+    userId:
+      type: string
+    username:
+      type:
+        - string
+        - 'null'
+    displayName:
+      type:
+        - string
+        - 'null'
+    avatarUrl:
+      type:
+        - string
+        - 'null'
+    description:
+      type:
+        - string
+        - 'null'
+    commerceEnabled:
+      type: boolean
+      enum:
+        - false
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+UpdateStorefrontInput:
+  type: object
+  additionalProperties: false
+  required:
+    - description
+  properties:
+    description:
+      type:
+        - string
+        - 'null'
+      maxLength: 2000
+CardDesignSnapshot:
+  type: object
+  required:
+    - schemaVersion
+    - templateId
+    - revision
+    - rendererVersion
+    - composition
+    - person
+    - assets
+    - assetIds
+  properties:
+    schemaVersion:
+      type: integer
+      enum:
+        - 1
+    templateId:
+      type: string
+    revision:
+      type: integer
+    rendererVersion:
+      type: string
+    composition:
+      $ref: '#/CardComposition'
+    person:
+      $ref: ./people.yaml#/PersonProfile
+    assetIds:
+      type: array
+      items:
+        type: string
+    assets:
+      type: array
+      items:
+        type: object
+        required:
+          - id
+          - objectKey
+          - url
+          - contentType
+          - byteSize
+        properties:
+          id:
+            type: string
+          objectKey:
+            type: string
+          url:
+            type: string
+          contentType:
+            type: string
+          byteSize:
+            type: integer

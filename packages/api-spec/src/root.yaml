@@ -213,6 +213,26 @@ components:
       $ref: ./components/schemas/people.yaml#/CreatePersonInput
     UpdatePersonInput:
       $ref: ./components/schemas/people.yaml#/UpdatePersonInput
+    CardCompositionLayer:
+      $ref: ./components/schemas/studio.yaml#/CardCompositionLayer
+    CardComposition:
+      $ref: ./components/schemas/studio.yaml#/CardComposition
+    CardDesign:
+      $ref: ./components/schemas/studio.yaml#/CardDesign
+    CreateCardDesignInput:
+      $ref: ./components/schemas/studio.yaml#/CreateCardDesignInput
+    UpdateCardDesignInput:
+      $ref: ./components/schemas/studio.yaml#/UpdateCardDesignInput
+    CreateReleaseInput:
+      $ref: ./components/schemas/studio.yaml#/CreateReleaseInput
+    CardRelease:
+      $ref: ./components/schemas/studio.yaml#/CardRelease
+    Storefront:
+      $ref: ./components/schemas/studio.yaml#/Storefront
+    UpdateStorefrontInput:
+      $ref: ./components/schemas/studio.yaml#/UpdateStorefrontInput
+    CardDesignSnapshot:
+      $ref: ./components/schemas/studio.yaml#/CardDesignSnapshot
 paths:
   /auth/register:
     $ref: ./paths/auth.yaml#/register
@@ -394,3 +414,25 @@ paths:
     $ref: ./paths/people.yaml#/cards
   /people/{personId}/claim:
     $ref: ./paths/people.yaml#/claim
+  /card-designs:
+    $ref: ./paths/studio.yaml#/route0
+  /card-designs/{designId}:
+    $ref: ./paths/studio.yaml#/route1
+  /releases:
+    $ref: ./paths/studio.yaml#/route2
+  /releases/{releaseId}:
+    $ref: ./paths/studio.yaml#/route3
+  /releases/{releaseId}/generate:
+    $ref: ./paths/studio.yaml#/route4
+  /releases/{releaseId}/publish:
+    $ref: ./paths/studio.yaml#/route5
+  /releases/{releaseId}/archive:
+    $ref: ./paths/studio.yaml#/route6
+  /releases/{releaseId}/issues:
+    $ref: ./paths/studio.yaml#/route7
+  /me/storefront:
+    $ref: ./paths/studio.yaml#/route8
+  /storefronts/{username}:
+    $ref: ./paths/studio.yaml#/route9
+  /storefronts/{username}/releases:
+    $ref: ./paths/studio.yaml#/route10

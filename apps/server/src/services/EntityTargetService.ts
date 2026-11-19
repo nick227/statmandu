@@ -7,7 +7,8 @@ export type EntityTarget = {
 }
 
 export class EntityTargetService {
-  async requireTarget(targetType: EntityType, targetId: string) {
+  async requireTarget(targetType: EntityType, targetId: string, allowPrivateDesign = false) {
+    if (targetType === 'CARD_DESIGN' && !allowPrivateDesign) throw { statusCode: 400, message: 'Designs are private studio resources; use the design or image API' }
     const exists = await this.exists(targetType, targetId)
     if (!exists) throw { statusCode: 404, message: `${this.labelFor(targetType)} target not found` }
   }
@@ -34,6 +35,8 @@ export class EntityTargetService {
         return Boolean(await db.playerSeasonStat.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'TEAM_SEASON_STAT':
         return Boolean(await db.teamSeasonStat.findUnique({ where: { id: targetId }, select: { id: true } }))
+      case 'CARD_DESIGN':
+        return Boolean(await db.cardTemplate.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'CARD_TEMPLATE':
         return Boolean(await db.cardRelease.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'CARD_ISSUE':

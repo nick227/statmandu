@@ -53,6 +53,9 @@ async function requireImageServeAccess(objectKey: string, request: any) {
   const asset = await db.imageAsset.findFirst({ where: { objectKey, deletedAt: null } })
   if (!asset) throw { statusCode: 404, message: 'Not found' }
   const user = await optionalUser(request)
+  // Only explicitly selected design layers become readable through a public release.
+  const publishedUse = await db.cardRelease.findFirst({ where: { status: 'PUBLISHED', visibility: 'PUBLIC', templateSnapshotJson: { path: '$.assetIds', array_contains: asset.id } }, select: { id: true } })
+  if (publishedUse) return
   if (asset.targetType === 'CARD_TEMPLATE') {
     const card = await db.cardRelease.findUnique({ where: { id: asset.targetId } })
     if (!card) throw { statusCode: 404, message: 'Not found' }

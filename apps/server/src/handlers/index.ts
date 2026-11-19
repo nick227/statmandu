@@ -20,3 +20,4 @@ export * from './admin'
 export * from './discovery'
 
 export * from './people'
+export * from './studio'
