@@ -30,7 +30,13 @@ export function CardClaimButtonView({ card, isAuthenticated, isAuthLoading, comp
   if (isAuthLoading) return null
 
   if (!isAuthenticated) {
-    return <SignInPrompt message="Sign in to claim this card" className={className ?? (compact ? 'py-xs' : 'py-sm')} />
+    return (
+      <SignInPrompt
+        variant="primary"
+        message="Sign in to claim this card"
+        className={className ?? (compact ? 'py-xs' : 'py-sm')}
+      />
+    )
   }
 
   if (card.currentUserHasClaimed) {

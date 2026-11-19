@@ -26,9 +26,9 @@ const SIZE_WIDTHS: Record<StatmanCardSize, number> = {
 // Sizing adapter around CardCompositionRenderer (RDC) or Card 1A (legacy).
 export function StatmanCard({ card, size = 'rail', showStatus = false, className, style, ...props }: StatmanCardProps) {
   const hasCompositionSnapshot = Boolean(card.templateSnapshot?.composition)
+  const width = SIZE_WIDTHS[size]
 
   if (hasCompositionSnapshot) {
-    const width = SIZE_WIDTHS[size]
     return (
       <View className={cn('items-center', className)} style={style} {...props}>
         <CardCompositionRenderer
@@ -43,8 +43,9 @@ export function StatmanCard({ card, size = 'rail', showStatus = false, className
   }
 
   return (
-    <View className={cn(className)} style={style} {...props}>
+    <View className={cn('items-center', className)} style={style} {...props}>
       <Card1AStage
+        maxWidth={width}
         data={cardFaceDataFromCard(card)}
         statusBadge={showStatus ? { label: CARD_STATUS_LABEL[card.status], tone: CARD_STATUS_TONE[card.status] } : undefined}
       />

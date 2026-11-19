@@ -1361,9 +1361,31 @@ export function compileFlagshipDesign(
     fill: palette.background,
   })
 
-  // 2. Pre-artwork decorations (e.g. polaroid white body casing)
-  if (design.id === 'polaroid-instant' && design.decorations) {
-    layers.push(...design.decorations(palette))
+  // Partition decorations into background mats/frames (behind artwork) and foreground accents (above artwork)
+  const rawDecorations = design.decorations ? design.decorations(palette) : []
+  const bgDecorations: CardCompositionLayer[] = []
+  const fgDecorations: CardCompositionLayer[] = []
+
+  for (const dec of rawDecorations) {
+    const isLargeRect = dec.type === 'RECTANGLE' && ((dec.width ?? 0) >= 480 && (dec.height ?? 0) >= 550)
+    const isFrameOrMat = dec.id && (
+      dec.id.includes('frame') ||
+      dec.id.includes('mat') ||
+      dec.id.includes('casing') ||
+      dec.id.includes('void') ||
+      dec.id.includes('inset') ||
+      dec.id.includes('pillar')
+    )
+    if (dec.type === 'RECTANGLE' && (isLargeRect || isFrameOrMat)) {
+      bgDecorations.push(dec)
+    } else {
+      fgDecorations.push(dec)
+    }
+  }
+
+  // 2. Pre-artwork decorations (e.g. outer frames, inner mats, casings)
+  if (bgDecorations.length > 0) {
+    layers.push(...bgDecorations)
   }
 
   // 3. Artwork backdrop tint
@@ -1390,9 +1412,9 @@ export function compileFlagshipDesign(
     imageAssetId: effectiveImageAssetId,
   })
 
-  // 5. Non-polaroid decorations
-  if (design.id !== 'polaroid-instant' && design.decorations) {
-    layers.push(...design.decorations(palette))
+  // 5. Post-artwork foreground decorations (e.g. accent lines, dividers, badges)
+  if (fgDecorations.length > 0) {
+    layers.push(...fgDecorations)
   }
 
   // 6. Variable Positional Content Slots

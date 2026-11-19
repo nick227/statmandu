@@ -28,6 +28,8 @@ export interface ConnectedStatmanCardProps {
    *  instead of subscribing to useCurrentUser() a second time. Required
    *  for any caller rendering inside a FlatList — see the fix note below. */
   authState?: { isAuthenticated: boolean; isAuthLoading: boolean }
+  /** When false, omits the secondary text navigation link below the card (used when parent tile wraps the card). Defaults to true. */
+  withDetailLink?: boolean
   className?: string
 }
 
@@ -53,6 +55,7 @@ export function ConnectedStatmanCard({
   editInStudio = false,
   source,
   authState,
+  withDetailLink = true,
   className,
 }: ConnectedStatmanCardProps) {
   const openStudio = editInStudio && showStatus && isEditableCardStatus(card.status)
@@ -61,21 +64,23 @@ export function ConnectedStatmanCard({
   return (
     <View className={cn('gap-xs', className)}>
       <StatmanCard card={card} size={size} showStatus={showStatus} />
-      <Link
-        href={
-          openStudio
-            ? ({ pathname: '/cards/studio', params: { cardId: card.id } } as never)
-            : ({ pathname: '/cards/[cardId]', params: { cardId: card.id, ...(source ? { source } : {}) } } as never)
-        }
-        asChild
-      >
-        <Pressable
-          accessibilityRole="link"
-          className="min-h-11 flex-row items-center justify-center active:opacity-70"
+      {withDetailLink ? (
+        <Link
+          href={
+            openStudio
+              ? ({ pathname: '/cards/studio', params: { cardId: card.id } } as never)
+              : ({ pathname: '/cards/[cardId]', params: { cardId: card.id, ...(source ? { source } : {}) } } as never)
+          }
+          asChild
         >
-          <Text className="text-sm font-semibold text-brand">{openStudio ? 'Edit card' : 'View card details'}</Text>
-        </Pressable>
-      </Link>
+          <Pressable
+            accessibilityRole="link"
+            className="min-h-11 flex-row items-center justify-center active:opacity-70"
+          >
+            <Text className="text-sm font-semibold text-brand">{openStudio ? 'Edit card' : 'View card details'}</Text>
+          </Pressable>
+        </Link>
+      ) : null}
       {showFooter ? (
         authState ? (
           <CardClaimButtonView

@@ -1,258 +1,493 @@
-import { useCallback, useMemo, type ReactNode } from 'react'
-import { FlatList, View, useWindowDimensions } from 'react-native'
-import { useLocalSearchParams } from 'expo-router'
-import { CreditCard } from 'lucide-react-native'
-import { PageFrame, Screen, GlobalFilterBar, ContentSection } from '@/shared/layout'
-import { LAYOUT } from '@/shared/layout/layoutConstants'
-import { EntityProfileTabs } from '@/shared/layout/entity-profile/EntityProfileTabs'
+import { useMemo } from 'react'
+import { Pressable, View, useWindowDimensions } from 'react-native'
+import { Link } from 'expo-router'
+import {
+  CreditCard,
+  Plus,
+  TrendingUp,
+  Layers,
+  Store,
+  CheckCircle2,
+} from 'lucide-react-native'
+import { Screen } from '@/shared/layout/Screen'
+import { Text } from '@/shared/ui/Text'
+import { Badge } from '@/shared/ui/Badge'
+import { Button } from '@/shared/ui/Button'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { SignInPrompt } from '@/shared/ui/SignInPrompt'
-import { Text } from '@/shared/ui/Text'
 import { ConnectedStatmanCard } from '@/modules/cards/ConnectedStatmanCard'
-import { CardRail } from '@/modules/cards/CardRail'
-import { CardsSidebar, partitionOwnedCards } from '@/modules/cards/CardsSidebar'
-import { CARDS_BROWSE_TABS, useCardsBrowse, type CardsBrowseTab } from '@/modules/cards/useCardsBrowse'
+import { athleteFullName, editionLabel } from '@/modules/cards/cardDisplay'
+import { isEditableCardStatus } from '@/modules/cards/builder/cardFromApi'
 import { useCardManager } from '@/modules/cards/useCardManager'
+import { useCardsBrowse, type CardsBrowseTab } from '@/modules/cards/useCardsBrowse'
 import { useAuthGate } from '@/modules/auth/useAuthGate'
+import { useNativeColor } from '@/lib/theme'
+import { cn } from '@/lib/utils'
 
-function browseColumns(width: number) {
-  if (width >= 1440) return 3
-  if (width >= 768) return 2
+function gridColumns(width: number): number {
+  if (width >= 1440) return 4
+  if (width >= 1024) return 3
+  if (width >= 640) return 2
   return 1
 }
 
-const TAB_DESCRIPTION: Record<CardsBrowseTab, string> = {
-  featured: 'Limited-edition drops getting the most traction right now.',
-  new: 'Browse published collectible cards — claim a drop, then create your own in Card Studio.',
-  popular: 'Ranked by total downloads across every published card.',
-  collections: 'Cards you\'ve claimed and saved.',
-}
-
-export function CardManagerScreen({ initialTab }: { initialTab?: CardsBrowseTab } = {}) {
-  const { tab: paramTab } = useLocalSearchParams<{ tab?: CardsBrowseTab }>()
-  const effectiveTab = initialTab ?? paramTab ?? 'new'
+export function CardManagerScreen({ initialTab: _initialTab }: { initialTab?: CardsBrowseTab } = {}) {
   const { width } = useWindowDimensions()
-  const columns = browseColumns(width)
+  const columns = gridColumns(width)
+  const brandColor = useNativeColor('brand')
+
   const { isAuthenticated, isAuthLoading } = useAuthGate()
-  const browse = useCardsBrowse(isAuthenticated, effectiveTab)
+  const browse = useCardsBrowse(isAuthenticated, 'collections')
   const manager = useCardManager(isAuthenticated && !isAuthLoading)
-  const { inProgress } = partitionOwnedCards(manager.createdCards)
 
-  const sidebar = (
-    <CardsSidebar
-      filter={browse.filter}
-      onFilterChange={browse.setFilter}
-      isAuthenticated={isAuthenticated}
-      inProgress={inProgress}
-      claimed={manager.claimedCards}
-    />
-  )
+  const createdCards = manager.createdCards
+  const claimedCards = browse.claimedCards
+  const savedCards = browse.savedCards
 
-  // Memoized with a stable dependency array (browse.tab is a primitive,
-  // browse.setTab is a useState setter — stable by React's own guarantee)
-  // so this element's reference only changes when the active tab actually
-  // does. Necessary, not just tidy: CardsGrid below memoizes FlatList's
-  // ListHeaderComponent keyed partly off this value, and an unstable
-  // tabBar reference would invalidate that memo every render.
-  const tabBar = useMemo(() => <CardsTabBar tab={browse.tab} setTab={browse.setTab} />, [browse.tab, browse.setTab])
+  // Sales and Collection Metrics for Hot Sellers
+  const salesMetrics = useMemo(() => {
+    const totalSold = createdCards.reduce((acc, c) => acc + (c.issuedCount ?? 0), 0)
+    const activeReleases = createdCards.filter((c) => c.status === 'PUBLISHED').length
+    const limitedCards = createdCards.filter((c) => c.editionMode === 'LIMITED' && (c.editionSize ?? 0) > 0)
+    const totalLimitedCapacity = limitedCards.reduce((acc, c) => acc + (c.editionSize ?? 0), 0)
+    const totalLimitedClaimed = limitedCards.reduce((acc, c) => acc + (c.issuedCount ?? 0), 0)
+    const sellThroughRate =
+      totalLimitedCapacity > 0 ? Math.round((totalLimitedClaimed / totalLimitedCapacity) * 100) : 0
 
-  if (browse.isError) {
+    return {
+      totalSold,
+      activeReleases,
+      totalOwned: claimedCards.length,
+      totalSaved: savedCards.length,
+      sellThroughRate,
+    }
+  }, [createdCards, claimedCards.length, savedCards.length])
+
+  if (browse.isError || manager.isError) {
     return (
-      <Screen title="Digital Collectibles" insetTop={false}>
-        <PageFrame
-          main={<ErrorState message="Trading cards couldn't be loaded." />}
-          sidebar={sidebar}
-          narrowSidebar="below"
-        />
+      <Screen title="Collection" insetTop={false}>
+        <View className="px-lg py-xl">
+          <ErrorState message="Could not load your collection and releases." />
+        </View>
       </Screen>
     )
   }
 
-  if (browse.isLoading || isAuthLoading) {
+  if (browse.isLoading || manager.isLoading || isAuthLoading) {
     return (
-      <Screen title="Digital Collectibles" insetTop={false}>
-        <GlobalFilterBar />
-        <PageFrame
-          main={
-            <View className="gap-md">
-              <Skeleton className="h-80 w-full rounded-lg" />
-              <View className="flex-row gap-md">
-                {[0, 1].map((i) => (
-                  <Skeleton key={i} className="h-56 flex-1 rounded-lg" />
-                ))}
-              </View>
+      <Screen title="Collection" insetTop={false}>
+        <View className="w-full max-w-[1800px] mx-auto px-4 md:px-8 lg:px-12 py-8 gap-8">
+          <View className="flex-row gap-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-28 flex-1 rounded-2xl" />
+            ))}
+          </View>
+          <Skeleton className="h-80 w-full rounded-2xl" />
+        </View>
+      </Screen>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Screen title="Collection" insetTop={false}>
+        <View className="w-full max-w-xl mx-auto px-4 py-16 items-center">
+          <View className="w-full rounded-2xl border border-border bg-surface p-8 md:p-12 items-center gap-5 shadow-xs">
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-brand/10">
+              <Store size={28} color={brandColor} />
             </View>
-          }
-          sidebar={sidebar}
-          narrowSidebar="below"
-        />
-      </Screen>
-    )
-  }
-
-  if (browse.tab === 'collections') {
-    return (
-      <Screen title="My Collection" insetTop={false} scroll>
-        <PageFrame
-          main={
-            <View className="gap-lg">
-              <GlobalFilterBar />
-              {tabBar}
-              {!isAuthenticated ? (
-                <SignInPrompt message="Sign in to see your collection" className="items-start py-lg" />
-              ) : (
-                <>
-                  <ContentSection title="Owned Copies" subtitle="Individually numbered copies claimed and owned by your account.">
-                    {browse.claimedCards.length > 0 ? (
-                      <CardRail cards={browse.claimedCards} source="EXPLORE" className="gap-sm" />
-                    ) : (
-                      <EmptyState icon={CreditCard} title="No owned copies yet" description="Claim a public card release to receive a numbered copy." />
-                    )}
-                  </ContentSection>
-                  <ContentSection title="Saved Releases" subtitle="Card releases and designs you've saved to your collection.">
-                    {browse.savedCards.length > 0 ? (
-                      <CardRail cards={browse.savedCards} source="EXPLORE" className="gap-sm" />
-                    ) : (
-                      <EmptyState icon={CreditCard} title="Nothing saved yet" description="Tap Save on any card release to bookmark it here." />
-                    )}
-                  </ContentSection>
-                </>
-              )}
+            <View className="items-center gap-1.5">
+              <Text className="text-2xl font-bold text-text text-center">Your Collection</Text>
+              <Text variant="caption" className="text-sm text-muted-text text-center max-w-md">
+                Sign in to collect digital cards, manage your vault, and track editions you've created.
+              </Text>
             </View>
-          }
-          sidebar={sidebar}
-          narrowSidebar="below"
-        />
+            <View className="w-full max-w-xs pt-2">
+              <SignInPrompt variant="primary" message="Sign in to your account" />
+            </View>
+          </View>
+        </View>
       </Screen>
     )
   }
 
-  const gridCards = browse.featured ? browse.rest : browse.cards
+  // Exact responsive grid layout calculation with 24px gaps
+  const gridColClass =
+    'w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)]'
 
   return (
-    <Screen title="Digital Collectibles" insetTop={false}>
-      <PageFrame
-        main={
-          <CardsGrid
-            columns={columns}
-            gridCards={gridCards}
-            tab={browse.tab}
-            featured={browse.featured}
-            tabBar={tabBar}
-            isAuthenticated={isAuthenticated}
-            isAuthLoading={isAuthLoading}
+    <Screen insetTop={false} scroll>
+      <View className="w-full max-w-[1800px] mx-auto px-4 md:px-8 lg:px-12 py-8 md:py-12 gap-12 md:gap-16 pb-28">
+        {/* Header & Seller Actions */}
+        <View className="flex-row flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-6">
+          <View className="gap-1">
+            <View className="flex-row items-center gap-2">
+              <View className="h-8 w-8 items-center justify-center rounded-xl bg-brand/10">
+                <Store size={18} color={brandColor} />
+              </View>
+              <Text className="text-3xl md:text-4xl font-extrabold tracking-tight text-text">
+                Collection & Sales
+              </Text>
+            </View>
+            <Text variant="caption" className="text-sm text-muted-text">
+              Track public collectible sales, monitor edition velocity, and manage your vault.
+            </Text>
+          </View>
+
+          <Link href="/cards/studio" asChild>
+            <Button size="md" variant="primary" icon={Plus}>
+              New Drop in Studio
+            </Button>
+          </Link>
+        </View>
+
+        {/* 1. Hot Seller's Performance Metrics Deck */}
+        <View className="flex-row flex-wrap gap-4">
+          <MetricCard
+            icon={TrendingUp}
+            label="Copies Sold / Claimed"
+            value={salesMetrics.totalSold.toString()}
+            detail="Across all published drops"
+            tone="brand"
           />
-        }
-        sidebar={sidebar}
-        narrowSidebar="below"
-      />
+          <MetricCard
+            icon={Store}
+            label="Active Drops for Sale"
+            value={salesMetrics.activeReleases.toString()}
+            detail={`${createdCards.length} total designs`}
+            tone="brand"
+          />
+          <MetricCard
+            icon={CheckCircle2}
+            label="Sell-Through Rate"
+            value={`${salesMetrics.sellThroughRate}%`}
+            detail="Of limited inventory claimed"
+            tone="verified"
+          />
+          <MetricCard
+            icon={Layers}
+            label="Owned in Vault"
+            value={salesMetrics.totalOwned.toString()}
+            detail="Numbered copies collected"
+            tone="neutral"
+          />
+        </View>
+
+        {/* 2. For Sale & Created Releases (Seller's Watchlist) */}
+        <View className="gap-6">
+          <View className="flex-row items-end justify-between">
+            <View className="gap-1">
+              <Text className="text-2xl md:text-3xl font-extrabold tracking-tight text-text">
+                Your Releases & Editions for Sale
+              </Text>
+              <Text variant="caption" className="text-sm text-muted-text">
+                Live edition inventory, claiming velocity, and collector traction.
+              </Text>
+            </View>
+            <Link href="/cards/studio" asChild>
+              <Pressable className="active:opacity-70">
+                <Text className="text-sm font-semibold text-brand">+ Create Release</Text>
+              </Pressable>
+            </Link>
+          </View>
+
+          {createdCards.length > 0 ? (
+            <View className="flex-row flex-wrap gap-6">
+              {createdCards.map((card) => {
+                const isLimited = card.editionMode === 'LIMITED' && Boolean(card.editionSize)
+                const soldCount = card.issuedCount ?? 0
+                const sizeCount = card.editionSize ?? 0
+                const percent = isLimited && sizeCount > 0 ? Math.min(100, Math.round((soldCount / sizeCount) * 100)) : 100
+                const isEditable = isEditableCardStatus(card.status)
+
+                const targetHref = isEditable
+                  ? ({ pathname: '/cards/studio', params: { cardId: card.id } } as const)
+                  : ({ pathname: '/cards/[cardId]', params: { cardId: card.id } } as const)
+
+                return (
+                  <View
+                    key={card.id}
+                    className={cn(
+                      'overflow-hidden rounded-2xl border border-border/70 bg-surface p-4 gap-4 shadow-xs hover:border-brand/40 hover:shadow-md transition-all',
+                      gridColClass
+                    )}
+                  >
+                    {/* Primary Action Target: Card Preview Well */}
+                    <Link href={targetHref as never} asChild>
+                      <Pressable
+                        accessibilityRole="link"
+                        accessibilityLabel={`View ${card.title}`}
+                        className="w-full items-center justify-center rounded-xl bg-neutral-100/80 dark:bg-neutral-900/40 py-4 shadow-inner active:opacity-80"
+                      >
+                        <ConnectedStatmanCard
+                          card={card}
+                          size="rail"
+                          showStatus={true}
+                          editInStudio={true}
+                          withDetailLink={false}
+                          authState={{ isAuthenticated, isAuthLoading }}
+                        />
+                      </Pressable>
+                    </Link>
+
+                    {/* Sales Performance Tracker */}
+                    <View className="gap-2">
+                      <View className="flex-row items-center justify-between">
+                        <Badge tone={card.status === 'PUBLISHED' ? 'verified' : 'muted-text'}>
+                          {card.status}
+                        </Badge>
+                        <Text variant="caption" className="text-xs font-bold text-text">
+                          {isLimited ? `${soldCount} / ${sizeCount} claimed` : `${soldCount} claimed`}
+                        </Text>
+                      </View>
+
+                      {/* Visual Sales Progress Bar */}
+                      {isLimited ? (
+                        <View className="w-full h-2 rounded-full bg-border overflow-hidden">
+                          <View
+                            style={{ width: `${percent}%` }}
+                            className="h-full bg-brand rounded-full"
+                          />
+                        </View>
+                      ) : null}
+
+                      <Link href={targetHref as never} asChild>
+                        <Pressable accessibilityRole="link" className="active:opacity-70">
+                          <Text className="font-bold text-base text-text pt-0.5 hover:text-brand transition-colors" numberOfLines={1}>
+                            {card.title}
+                          </Text>
+                        </Pressable>
+                      </Link>
+
+                      <View className="flex-row items-center justify-between pt-1 border-t border-border/40">
+                        <Text variant="caption" className="text-xs text-muted-text" numberOfLines={1}>
+                          {editionLabel(card)}
+                        </Text>
+                        <Link href={targetHref as never} asChild>
+                          <Pressable className="active:opacity-70">
+                            <Text className="text-xs font-bold text-brand">
+                              {isEditable ? 'Edit in Studio →' : 'View details →'}
+                            </Text>
+                          </Pressable>
+                        </Link>
+                      </View>
+                    </View>
+                  </View>
+                )
+              })}
+            </View>
+          ) : (
+            <View className="items-center py-12 gap-4 rounded-2xl border border-border/60 bg-surface">
+              <EmptyState
+                icon={Store}
+                title="No releases created yet"
+                description="Design your first collectible in Card Studio and publish a numbered release for collectors to claim."
+              />
+              <Link href="/cards/studio" asChild>
+                <Button size="sm" variant="primary" icon={Plus}>
+                  Open Card Studio
+                </Button>
+              </Link>
+            </View>
+          )}
+        </View>
+
+        {/* 3. Your Vault (Owned Copies) */}
+        <View className="gap-6">
+          <View className="gap-1">
+            <Text className="text-2xl md:text-3xl font-extrabold tracking-tight text-text">
+              Owned Copies in Your Vault
+            </Text>
+            <Text variant="caption" className="text-sm text-muted-text">
+              Individually numbered collectible copies claimed and cryptographically verified.
+            </Text>
+          </View>
+
+          {claimedCards.length > 0 ? (
+            <View className="flex-row flex-wrap gap-6">
+              {claimedCards.map((card) => {
+                const issueNumber = card.currentUserIssue?.issueNumber
+                const totalCopies = card.editionSize
+
+                return (
+                  <View
+                    key={card.id}
+                    className={cn(
+                      'overflow-hidden rounded-2xl border border-border/70 bg-surface p-4 gap-4 shadow-xs hover:border-brand/40 hover:shadow-md transition-all',
+                      gridColClass
+                    )}
+                  >
+                    <Link
+                      href={{ pathname: '/cards/[cardId]', params: { cardId: card.id, source: 'EXPLORE' } }}
+                      asChild
+                    >
+                      <Pressable
+                        accessibilityRole="link"
+                        accessibilityLabel={`View owned ${card.title}`}
+                        className="w-full items-center justify-center rounded-xl bg-neutral-100/80 dark:bg-neutral-900/40 py-4 shadow-inner active:opacity-80"
+                      >
+                        <ConnectedStatmanCard
+                          card={card}
+                          size="rail"
+                          source="EXPLORE"
+                          withDetailLink={false}
+                          authState={{ isAuthenticated, isAuthLoading }}
+                        />
+                      </Pressable>
+                    </Link>
+
+                    <View className="gap-1.5">
+                      <View className="flex-row items-center justify-between">
+                        <Badge tone="verified">Owned Vault Copy</Badge>
+                        {issueNumber ? (
+                          <Text variant="caption" className="text-xs font-bold text-brand font-mono">
+                            #{issueNumber} {totalCopies ? `of ${totalCopies}` : ''}
+                          </Text>
+                        ) : null}
+                      </View>
+
+                      <Link
+                        href={{ pathname: '/cards/[cardId]', params: { cardId: card.id, source: 'EXPLORE' } }}
+                        asChild
+                      >
+                        <Pressable accessibilityRole="link" className="active:opacity-70">
+                          <Text className="font-bold text-base text-text hover:text-brand transition-colors" numberOfLines={1}>
+                            {card.title}
+                          </Text>
+                        </Pressable>
+                      </Link>
+
+                      <Text variant="caption" className="text-xs text-muted-text" numberOfLines={1}>
+                        {athleteFullName(card)} · {editionLabel(card)}
+                      </Text>
+                    </View>
+                  </View>
+                )
+              })}
+            </View>
+          ) : (
+            <View className="items-center py-10 gap-2 rounded-2xl border border-border/60 bg-surface">
+              <EmptyState
+                icon={CreditCard}
+                title="No owned copies yet"
+                description="Browse public releases on Discover to claim your first numbered collectible copy."
+              />
+            </View>
+          )}
+        </View>
+
+        {/* 4. Saved Drops (Bookmarked) */}
+        {savedCards.length > 0 ? (
+          <View className="gap-6">
+            <View className="gap-1">
+              <Text className="text-2xl md:text-3xl font-extrabold tracking-tight text-text">
+                Saved & Bookmarked Releases
+              </Text>
+              <Text variant="caption" className="text-sm text-muted-text">
+                Collectible drops you are watching for upcoming editions or releases.
+              </Text>
+            </View>
+
+            <View className="flex-row flex-wrap gap-6">
+              {savedCards.map((card) => (
+                <View
+                  key={card.id}
+                  className={cn(
+                    'overflow-hidden rounded-2xl border border-border/70 bg-surface p-4 gap-4 shadow-xs hover:border-brand/40 hover:shadow-md transition-all',
+                    gridColClass
+                  )}
+                >
+                  <Link
+                    href={{ pathname: '/cards/[cardId]', params: { cardId: card.id, source: 'EXPLORE' } }}
+                    asChild
+                  >
+                    <Pressable
+                      accessibilityRole="link"
+                      accessibilityLabel={`View saved ${card.title}`}
+                      className="w-full items-center justify-center rounded-xl bg-neutral-100/80 dark:bg-neutral-900/40 py-4 shadow-inner active:opacity-80"
+                    >
+                      <ConnectedStatmanCard
+                        card={card}
+                        size="rail"
+                        source="EXPLORE"
+                        withDetailLink={false}
+                        authState={{ isAuthenticated, isAuthLoading }}
+                      />
+                    </Pressable>
+                  </Link>
+
+                  <View className="gap-1">
+                    <View className="flex-row items-center justify-between">
+                      <Badge tone="muted-text">Bookmarked</Badge>
+                      <Text variant="caption" className="text-xs font-semibold text-muted-text">
+                        {editionLabel(card)}
+                      </Text>
+                    </View>
+                    <Link
+                      href={{ pathname: '/cards/[cardId]', params: { cardId: card.id, source: 'EXPLORE' } }}
+                      asChild
+                    >
+                      <Pressable accessibilityRole="link" className="active:opacity-70">
+                        <Text className="font-bold text-base text-text hover:text-brand transition-colors" numberOfLines={1}>
+                          {card.title}
+                        </Text>
+                      </Pressable>
+                    </Link>
+                    <Text variant="caption" className="text-xs text-muted-text" numberOfLines={1}>
+                      {athleteFullName(card)}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+      </View>
     </Screen>
   )
 }
 
-// The featured card's ConnectedStatmanCard here gets an explicit
-// `authState` (this screen already subscribes to it via useAuthGate at
-// the top) instead of letting it fall back to ConnectedCardClaimButton's
-// own internal useCurrentUser() call. That fallback is what caused a real,
-// confirmed infinite loop: a second independent useCurrentUser() subscriber
-// mounted inside this FlatList's ListHeaderComponent sent react-query into
-// a runaway refetch cycle specific to this FlatList context (live-observed
-// at 200+ /auth/me requests/sec, page never rendering for an anonymous
-// visitor) — memoizing ListHeaderComponent/renderItem alone did not fix it;
-// only removing the second subscription did. ListHeaderComponent/renderItem
-// are still memoized below since FlatList remeasures on identity changes
-// regardless — real, just not sufficient on its own for this bug.
-function CardsGrid({
-  columns,
-  gridCards,
-  tab,
-  featured,
-  tabBar,
-  isAuthenticated,
-  isAuthLoading,
+/** Individual Metric Summary Tile for the Seller Performance Deck */
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone = 'neutral',
 }: {
-  columns: number
-  gridCards: ReturnType<typeof useCardsBrowse>['cards']
-  tab: CardsBrowseTab
-  featured: ReturnType<typeof useCardsBrowse>['featured']
-  tabBar: ReactNode
-  isAuthenticated: boolean
-  isAuthLoading: boolean
+  icon: any
+  label: string
+  value: string
+  detail: string
+  tone?: 'brand' | 'verified' | 'neutral'
 }) {
-  const listHeader = useMemo(
-    () => (
-      <View className="mb-md gap-md">
-        <GlobalFilterBar />
-        {tabBar}
-        <Text variant="caption">{TAB_DESCRIPTION[tab]}</Text>
-        {featured ? (
-          <View className="gap-sm">
-            <ConnectedStatmanCard
-              card={featured}
-              size="featured"
-              source="EXPLORE"
-              authState={{ isAuthenticated, isAuthLoading }}
-            />
-            {gridCards.length > 0 ? <Text className="pt-sm text-lg font-semibold">More cards</Text> : null}
-          </View>
-        ) : null}
-      </View>
-    ),
-    [tabBar, tab, featured, gridCards.length, isAuthenticated, isAuthLoading]
-  )
-
-  const listEmpty = useMemo(
-    () =>
-      featured ? null : (
-        <EmptyState
-          icon={CreditCard}
-          title="No cards yet"
-          description="When creators publish drops, they'll show up here to browse and claim."
-        />
-      ),
-    [featured]
-  )
-
-  const keyExtractor = useCallback((card: (typeof gridCards)[number]) => card.id, [])
-  const renderItem = useCallback(
-    ({ item }: { item: (typeof gridCards)[number] }) => (
-      <View className={columns > 1 ? 'flex-1' : 'w-full'}>
-        <ConnectedStatmanCard
-          card={item}
-          size="rail"
-          source="EXPLORE"
-          className="w-full"
-          authState={{ isAuthenticated, isAuthLoading }}
-        />
-      </View>
-    ),
-    [columns, isAuthenticated, isAuthLoading]
-  )
+  const iconColor =
+    tone === 'brand' ? '#2563eb' : tone === 'verified' ? '#16a34a' : '#64748b'
+  const iconBg =
+    tone === 'brand'
+      ? 'bg-brand/10'
+      : tone === 'verified'
+      ? 'bg-emerald-500/10'
+      : 'bg-neutral-100 dark:bg-neutral-800'
 
   return (
-    <FlatList
-      key={`cards-${tab}-${columns}`}
-      data={gridCards}
-      keyExtractor={keyExtractor}
-      numColumns={columns}
-      contentContainerClassName="gap-md pb-xxl"
-      columnWrapperClassName={columns > 1 ? 'gap-12' : undefined}
-      ListHeaderComponent={listHeader}
-      renderItem={renderItem}
-      ListEmptyComponent={listEmpty}
-    />
-  )
-}
-
-function CardsTabBar({ tab, setTab }: { tab: CardsBrowseTab; setTab: (tab: CardsBrowseTab) => void }) {
-  return (
-    <EntityProfileTabs
-      tabs={CARDS_BROWSE_TABS.map((t) => t.label)}
-      active={CARDS_BROWSE_TABS.find((t) => t.key === tab)!.label}
-      onChange={(label) => setTab(CARDS_BROWSE_TABS.find((t) => t.label === label)!.key)}
-      className="px-0 mb-md"
-    />
+    <View className="flex-1 min-w-[220px] rounded-2xl border border-border/80 bg-surface p-5 gap-2 shadow-xs">
+      <View className="flex-row items-center justify-between">
+        <Text variant="caption" className="text-xs font-semibold text-muted-text uppercase tracking-wider">
+          {label}
+        </Text>
+        <View className={cn('h-8 w-8 items-center justify-center rounded-xl', iconBg)}>
+          <Icon size={16} color={iconColor} />
+        </View>
+      </View>
+      <Text className="text-3xl font-extrabold tracking-tight text-text">
+        {value}
+      </Text>
+      <Text variant="caption" className="text-xs text-muted-text">
+        {detail}
+      </Text>
+    </View>
   )
 }

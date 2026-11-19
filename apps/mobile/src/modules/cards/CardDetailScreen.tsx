@@ -22,6 +22,7 @@ import {
   CARD_TYPE_LABEL,
   athleteFullName,
   cardFaceDataFromCard,
+  creatorDisplayHandle,
   editionLabel,
 } from './cardDisplay'
 
@@ -119,48 +120,31 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
                   {card.publicationType === 'OFFICIAL' ? 'Official Release' : 'Community Edition'}
                 </Badge>
                 <Text variant="caption">
-                  {card.createdByUserId ? `Created by @${card.createdByUserId}` : 'Community release'}
+                  {card.createdByUserId ? `Created by ${creatorDisplayHandle(card.createdByUserId)}` : 'Community release'}
                   {card.publishedByUserId && card.publishedByUserId !== card.createdByUserId
-                    ? ` · Published by @${card.publishedByUserId}`
+                    ? ` · Published by ${creatorDisplayHandle(card.publishedByUserId)}`
                     : ''}
                 </Text>
               </View>
             </View>
 
-            {/* Edition Details Card */}
-            <View className="gap-xs rounded-2xl border border-border bg-surface p-md shadow-sm">
-              <Text variant="caption" className="font-semibold text-muted-text uppercase tracking-wider text-[11px]">
-                Edition
-              </Text>
-              <Text className="text-lg font-bold text-text">{editionLabel(card)}</Text>
+            {/* Edition Metadata Strip */}
+            <View className="flex-row items-center justify-between rounded-xl border border-border/80 bg-surface px-4 py-3 shadow-xs">
+              <View className="gap-0.5">
+                <Text variant="caption" className="font-semibold text-muted-text uppercase tracking-wider text-[10px]">
+                  Edition Mode
+                </Text>
+                <Text className="text-base font-bold text-text">{editionLabel(card)}</Text>
+              </View>
+              {card.game?.seasonName ? (
+                <Text variant="caption" className="text-xs font-medium text-muted-text">
+                  {card.game.seasonName} season
+                </Text>
+              ) : null}
             </View>
 
-            {card.game?.seasonName ? (
-              <Text variant="caption">{card.game.seasonName} season</Text>
-            ) : null}
-
-            {/* Cryptographic Origin Hash & Authenticity Verification */}
-            {card.originHash ? (
-              <Pressable
-                onPress={() => setAuthenticityVisible(true)}
-                className="flex-row items-center justify-between rounded-2xl border border-border bg-surface p-md active:opacity-70 hover:border-brand/40 shadow-sm transition-all"
-              >
-                <View className="flex-1 pr-sm gap-0.5">
-                  <Text variant="caption" className="font-semibold text-muted-text uppercase tracking-wider text-[11px]">
-                    Origin hash
-                  </Text>
-                  <Text className="font-mono text-xs text-text" numberOfLines={1}>
-                    {card.originHash}
-                  </Text>
-                </View>
-                <Text variant="caption" className="font-semibold text-brand">
-                  Verify authenticity
-                </Text>
-              </Pressable>
-            ) : null}
-
-            {/* Primary & Secondary Actions */}
-            <View className="gap-sm pt-sm">
+            {/* Primary Collecting Action (Dominant call to action) */}
+            <View className="gap-sm pt-xs">
               <ConnectedCardClaimButton card={card} />
 
               <View className="flex-row flex-wrap gap-sm">
@@ -175,6 +159,26 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
                 ) : null}
               </View>
             </View>
+
+            {/* Compact Cryptographic Origin Hash & Authenticity Verification */}
+            {card.originHash ? (
+              <Pressable
+                onPress={() => setAuthenticityVisible(true)}
+                className="flex-row items-center justify-between rounded-xl border border-border/60 bg-canvas px-3.5 py-2.5 active:opacity-70 hover:border-brand/40 transition-all mt-1"
+              >
+                <View className="flex-1 pr-sm gap-0.5">
+                  <Text variant="caption" className="font-semibold text-muted-text uppercase tracking-wider text-[10px]">
+                    Cryptographic Origin
+                  </Text>
+                  <Text className="font-mono text-xs text-muted-text" numberOfLines={1}>
+                    {card.originHash.slice(0, 16)}...{card.originHash.slice(-8)}
+                  </Text>
+                </View>
+                <Text variant="caption" className="font-semibold text-brand text-xs">
+                  Verify authenticity →
+                </Text>
+              </Pressable>
+            ) : null}
 
             {/* Context Navigation Pills */}
             <View className="flex-row flex-wrap gap-sm pt-xs border-t border-border mt-xs">

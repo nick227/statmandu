@@ -20,3 +20,14 @@ export const CARD_GEOMETRY = {
   printInches: { width: 2.75, height: 3.75 },
   dpi: 600,
 } as const
+
+/**
+ * Canonical RDC (RARE Digital Collectible) geometry for Card Studio and modern releases.
+ * Standard 2:3 aspect ratio (600 x 900 px canvas), preserving physical collectible scale.
+ */
+export const RDC_CARD_GEOMETRY = {
+  aspectRatio: 2 / 3,
+  canvasWidth: 600,
+  canvasHeight: 900,
+  displayPixels: { width: 300, height: 450 },
+} as const

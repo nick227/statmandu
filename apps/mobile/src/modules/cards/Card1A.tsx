@@ -24,23 +24,26 @@ export function Card1A({ side, initialSide, onSideChange, ...faceProps }: Card1A
   )
 }
 
-export type Card1AStageProps = Omit<Card1AProps, 'dense'>
+export type Card1AStageProps = Omit<Card1AProps, 'dense'> & {
+  maxWidth?: number
+}
 
 /**
  * The only approved online Card 1A viewport. The outer width reserves the
  * exterior flip controls; the inner card is locked to 320 x 448. It may
  * shrink only when its parent is narrower than the complete 368px stage.
  */
-export function Card1AStage(props: Card1AStageProps) {
+export function Card1AStage({ maxWidth, ...props }: Card1AStageProps) {
   const { width } = useWindowDimensions()
-  const stageWidth = Math.min(CARD_GEOMETRY.interactionStageWidth, width)
+  const baseWidth = maxWidth ? Math.min(maxWidth, CARD_GEOMETRY.interactionStageWidth) : CARD_GEOMETRY.interactionStageWidth
+  const stageWidth = Math.min(baseWidth, width)
 
   return (
     <View
       style={{
         width: stageWidth,
         alignSelf: 'center',
-        paddingHorizontal: CARD_GEOMETRY.interactionGutter,
+        paddingHorizontal: Math.min(CARD_GEOMETRY.interactionGutter, Math.max(8, stageWidth * 0.06)),
       }}
     >
       <View style={{ width: '100%', aspectRatio: CARD_GEOMETRY.aspectRatio, overflow: 'visible' }}>

@@ -50,11 +50,30 @@ import { areFontsReady, waitForFontsLoaded } from '@/modules/typography/textFit'
 export const INITIAL_FLAGSHIP_ID = 'classic-collector'
 export const INITIAL_CARD_TYPE_ID = 'profile'
 export const INITIAL_IMAGE_ID = 'art-angelou'
+export const INITIAL_PROFILE = BENCHMARK_PROFILES[0]
+
+const initialFlagship = getFlagshipDesignById(INITIAL_FLAGSHIP_ID) || FLAGSHIP_DESIGNS[0]
+const initialCardType = getCardTypeById(INITIAL_CARD_TYPE_ID)
+const initialBoundFields = buildBoundCardFields(
+  initialCardType,
+  INITIAL_PROFILE,
+  initialFlagship.inputs.map((i) => i.id),
+  {},
+  new Set(),
+)
+
+export const INITIAL_RESOLVED_CONTENT_STORE: ContentStore = (() => {
+  const store: ContentStore = { ...INITIAL_CONTENT_STORE }
+  for (const bf of initialBoundFields) {
+    store[bf.slotId] = bf.effectiveValue
+  }
+  return store
+})()
 
 export const INITIAL_COMPILATION = compileFlagshipDesign(
   INITIAL_FLAGSHIP_ID,
-  INITIAL_CONTENT_STORE,
-  undefined,
+  INITIAL_RESOLVED_CONTENT_STORE,
+  INITIAL_PROFILE,
   undefined,
   INITIAL_CARD_TYPE_ID,
   INITIAL_IMAGE_ID,

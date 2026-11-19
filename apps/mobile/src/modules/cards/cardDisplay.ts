@@ -54,6 +54,15 @@ export function athleteFullName(card: Pick<Card, 'athlete'>): string {
   return card.athlete?.displayName ?? 'Unknown Person'
 }
 
+export function creatorDisplayHandle(userId?: string | null): string {
+  if (!userId) return 'Community'
+  // Internal cuid or uuid identifiers without a human handle
+  if ((userId.startsWith('c') && userId.length >= 20) || (userId.includes('-') && userId.length > 20)) {
+    return 'Community Creator'
+  }
+  return `@${userId}`
+}
+
 function isLoadableUrl(url?: string | null): url is string {
   // The card-image "generator" is currently a stub (see
   // CardImageGenerator.ts) that writes a fake `statman://generated/...`

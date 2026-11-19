@@ -62,6 +62,12 @@ export function useDiscoverFeed() {
     return rawRecent.filter((card) => cardMatchesCategory(card, selectedCategory))
   }, [rawRecent, selectedCategory])
 
+  // Deduplicate new releases so they do not redundantly mirror featured releases
+  const uniqueRecent = useMemo(() => {
+    const featuredIdSet = new Set(filteredFeatured.map((c) => c.id))
+    return filteredRecent.filter((c) => !featuredIdSet.has(c.id))
+  }, [filteredFeatured, filteredRecent])
+
   const filteredPeople = useMemo(() => {
     return rawPeople.filter((person) => personMatchesCategory(person, selectedCategory))
   }, [rawPeople, selectedCategory])
@@ -104,7 +110,7 @@ export function useDiscoverFeed() {
     searchCards,
     searchPeople,
     featuredCards: filteredFeatured,
-    newCards: filteredRecent,
+    newCards: uniqueRecent,
     people: filteredPeople,
     totalCardsCount: rawRecent.length,
     isLoading,

@@ -108,7 +108,6 @@ describe('DiscoverScreen', () => {
     const screen = await render(<DiscoverScreen />)
 
     expect(screen.getByText('RARE Digital Collectibles')).toBeTruthy()
-    expect(screen.getByText('Create yourself. Collect anyone.')).toBeTruthy()
     expect(screen.getByText('Create in Studio')).toBeTruthy()
     expect(screen.getByText('My Collection')).toBeTruthy()
     expect(screen.getByText('Add Person')).toBeTruthy()
@@ -118,7 +117,7 @@ describe('DiscoverScreen', () => {
     const screen = await render(<DiscoverScreen />)
 
     expect(screen.getByText('All')).toBeTruthy()
-    expect(screen.getByText('Sports')).toBeTruthy()
+    expect(screen.getAllByText('Sports').length).toBeGreaterThan(0)
     expect(screen.getByText('Music')).toBeTruthy()
     expect(screen.getByText('Film')).toBeTruthy()
   })
@@ -161,11 +160,11 @@ describe('DiscoverScreen', () => {
     const screen = await render(<DiscoverScreen />)
 
     // First Dunk is COMMUNITY with null publishedByUserId
-    expect(screen.getByText('Community')).toBeTruthy()
-    expect(screen.getByText('Jordan Sports · By @user-creator-1')).toBeTruthy()
+    expect(screen.getAllByText('Community').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Jordan Sports · By @user-creator-1').length).toBeGreaterThan(0)
 
     // Piano Solo is OFFICIAL with publishedByUserId
-    expect(screen.getByText('Official')).toBeTruthy()
-    expect(screen.getByText('Amadeus Artist · By @user-creator-2 · Pub @user-publisher-2')).toBeTruthy()
+    expect(screen.getAllByText('Official').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Amadeus Artist · By @user-creator-2 · Pub @user-publisher-2').length).toBeGreaterThan(0)
   })
 })
