@@ -35,6 +35,7 @@ import { Text } from '@/shared/ui/Text'
 import { ConnectedStatmanCard } from '@/modules/cards/ConnectedStatmanCard'
 import { CardRail } from '@/modules/cards/CardRail'
 import { athleteFullName, editionLabel } from '@/modules/cards/cardDisplay'
+import { FLAGSHIP_DESIGNS } from '@/modules/designs/flagshipDesigns'
 import {
   DISCOVER_CATEGORIES,
   useDiscoverFeed,
@@ -85,27 +86,61 @@ export function DiscoverScreen() {
     )
   }
 
+  const gridColClass =
+    columns === 4
+      ? 'w-[23.5%]'
+      : columns === 3
+      ? 'w-[31.5%]'
+      : columns === 2
+      ? 'w-[48%]'
+      : 'w-full'
+
   return (
     <Screen insetTop={false} scroll>
       <View className="w-full pb-xxl pt-md">
-        {/* Brand Hero & Positioning */}
-        <View className="mb-lg gap-sm border-b border-border pb-lg">
-          <View className="flex-row items-center gap-xs">
-            <Badge tone="brand">RARE Digital Collectibles</Badge>
-            <Badge tone="muted-text">Beta</Badge>
+        {/* Brand Hero & Positioning with Canva-style Spatial Confidence */}
+        <View className="mb-xl gap-md border-b border-border pb-xl">
+          <View className="gap-xs">
+            <View className="flex-row items-center gap-xs">
+              <Badge tone="brand">RARE Digital Collectibles</Badge>
+              <Badge tone="muted-text">Beta</Badge>
+            </View>
+            <Text className="text-3xl font-extrabold tracking-tight text-text md:text-5xl">
+              {brand.tagline}
+            </Text>
+            <Text variant="caption" className="max-w-2xl text-base text-muted-text">
+              The media-rich home for digital card collecting. Design custom cards in Studio,
+              publish numbered releases, and collect people and moments from across culture.
+            </Text>
           </View>
-          <Text className="text-3xl font-extrabold tracking-tight text-text md:text-4xl">
-            {brand.tagline}
-          </Text>
-          <Text variant="caption" className="max-w-2xl text-sm text-muted-text">
-            The media-rich home for digital card collecting. Design custom cards in Studio,
-            publish numbered releases, and collect people and moments from across culture.
-          </Text>
+
+          {/* Prominent Wide Search Bar */}
+          <View className="max-w-3xl flex-row items-center gap-sm rounded-full border border-border bg-surface px-lg py-3 shadow-sm hover:border-brand/40">
+            <Search size={20} color={mutedColor} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search cards, creators, or subjects..."
+              placeholderTextColor={mutedColor}
+              className="flex-1 text-base text-text"
+              style={{ outline: 'none' } as never}
+            />
+            {searchQuery.length > 0 ? (
+              <Pressable
+                onPress={() => setSearchQuery('')}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+                className="p-xs active:opacity-60"
+              >
+                <X size={18} color={mutedColor} />
+              </Pressable>
+            ) : null}
+          </View>
 
           {/* Quick Actions */}
-          <View className="mt-xs flex-row flex-wrap items-center gap-sm">
+          <View className="flex-row flex-wrap items-center gap-sm pt-xs">
             <Link href="/cards/studio" asChild>
-              <Button size="sm" icon={Plus}>
+              <Button size="sm" variant="primary" icon={Plus}>
                 Create in Studio
               </Button>
             </Link>
@@ -121,77 +156,51 @@ export function DiscoverScreen() {
             </Link>
           </View>
 
-          {/* Live Search Bar */}
-          <View className="mt-md flex-row items-center gap-sm rounded-lg border border-border bg-surface px-md py-sm">
-            <Search size={18} color={mutedColor} />
-            <TextInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search cards, creators, or subjects..."
-              placeholderTextColor={mutedColor}
-              className="flex-1 text-sm text-text"
-              style={{ outline: 'none' } as never}
-            />
-            {searchQuery.length > 0 ? (
-              <Pressable
-                onPress={() => setSearchQuery('')}
-                accessibilityRole="button"
-                accessibilityLabel="Clear search"
-                className="p-xs active:opacity-60"
-              >
-                <X size={16} color={mutedColor} />
-              </Pressable>
-            ) : null}
-          </View>
-        </View>
-
-        {/* Category Pills */}
-        <View className="mb-lg">
-          <Text variant="statLabel" className="mb-xs">
-            Browse by Category
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerClassName="gap-xs pr-md py-xs"
-          >
-            {DISCOVER_CATEGORIES.map((cat) => {
-              const active = selectedCategory === cat
-              return (
-                <Pressable
-                  key={cat}
-                  onPress={() => setSelectedCategory(cat)}
-                  accessibilityRole="button"
-                  accessibilityLabel={cat}
-                  accessibilityState={{ selected: active }}
-                  className={cn(
-                    'rounded-pill border px-md py-xs active:opacity-70',
-                    active
-                      ? 'border-text bg-text'
-                      : 'border-border bg-surface hover:border-text/40'
-                  )}
-                >
-                  <Text
+          {/* Category Filter Navigation */}
+          <View className="pt-xs">
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerClassName="gap-xs pr-md py-xs"
+            >
+              {DISCOVER_CATEGORIES.map((cat) => {
+                const active = selectedCategory === cat
+                return (
+                  <Pressable
+                    key={cat}
+                    onPress={() => setSelectedCategory(cat)}
+                    accessibilityRole="button"
+                    accessibilityLabel={cat}
+                    accessibilityState={{ selected: active }}
                     className={cn(
-                      'text-xs font-semibold',
-                      active ? 'text-surface' : 'text-text'
+                      'rounded-full border px-md py-1.5 active:opacity-70 transition-colors',
+                      active
+                        ? 'border-text bg-text'
+                        : 'border-border bg-surface hover:border-text/40'
                     )}
                   >
-                    {cat}
-                  </Text>
-                </Pressable>
-              )
-            })}
-          </ScrollView>
+                    <Text
+                      className={cn(
+                        'text-xs font-semibold',
+                        active ? 'text-surface' : 'text-text'
+                      )}
+                    >
+                      {cat}
+                    </Text>
+                  </Pressable>
+                )
+              })}
+            </ScrollView>
+          </View>
         </View>
 
         {/* Loading state skeleton */}
         {isLoading ? (
           <View className="gap-lg">
-            <Skeleton className="h-80 w-full rounded-lg" />
+            <Skeleton className="h-80 w-full rounded-2xl" />
             <View className="flex-row gap-md">
-              <Skeleton className="h-48 flex-1 rounded-lg" />
-              <Skeleton className="h-48 flex-1 rounded-lg" />
+              <Skeleton className="h-48 flex-1 rounded-2xl" />
+              <Skeleton className="h-48 flex-1 rounded-2xl" />
             </View>
           </View>
         ) : isSearching ? (
@@ -211,22 +220,9 @@ export function DiscoverScreen() {
                 title="Matching Collectibles"
                 subtitle="Cards matching title, subject, or creator."
               >
-                <View
-                  className={cn(
-                    'gap-md',
-                    columns === 3 && 'flex-row flex-wrap',
-                    columns === 2 && 'flex-row flex-wrap'
-                  )}
-                >
+                <View className={cn('gap-md', columns >= 2 && 'flex-row flex-wrap')}>
                   {searchCards.map((card) => (
-                    <View
-                      key={card.id}
-                      className={cn(
-                        columns === 3 && 'w-[31.5%]',
-                        columns === 2 && 'w-[48%]',
-                        columns === 1 && 'w-full'
-                      )}
-                    >
+                    <View key={card.id} className={gridColClass}>
                       <CardPreviewTile card={card} />
                     </View>
                   ))}
@@ -256,9 +252,67 @@ export function DiscoverScreen() {
             ) : null}
           </View>
         ) : (
-          /* Default Discover Feed */
-          <View className="gap-xl">
-            {/* 1. Featured Releases (Large Collectible Artwork) */}
+          /* Default Discover Feed with Canva-like visual sections */
+          <View className="gap-2xl">
+            {/* 1. Flagship Design Templates (Canva-style "Templates for you") */}
+            <ContentSection
+              title="Templates for You"
+              subtitle="Start from authentic flagship designs crafted by master typographers."
+              href={{ pathname: '/cards/studio' }}
+              linkLabel="Browse all templates"
+            >
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerClassName="gap-md py-xs pr-md"
+              >
+                {FLAGSHIP_DESIGNS.slice(0, 8).map((d) => (
+                  <Link
+                    key={d.id}
+                    href={{ pathname: '/cards/studio', params: { flagshipId: d.id } }}
+                    asChild
+                  >
+                    <Pressable className="w-56 rounded-2xl border border-border bg-surface p-md gap-sm hover:border-brand/40 hover:shadow-lg transition-all active:scale-[0.98]">
+                      {/* Mini Template Preview Canvas */}
+                      <View
+                        style={{ backgroundColor: d.palette.background }}
+                        className="h-36 w-full rounded-xl border border-border/60 items-center justify-center p-sm shadow-inner"
+                      >
+                        <View className="items-center gap-1.5">
+                          <View
+                            style={{ backgroundColor: d.palette.surface }}
+                            className="h-16 w-24 rounded-lg border border-border/40 shadow-sm"
+                          />
+                          <Text
+                            style={{ color: d.palette.foreground }}
+                            className="text-[11px] font-bold tracking-wider text-center"
+                            numberOfLines={1}
+                          >
+                            {d.name.toUpperCase()}
+                          </Text>
+                        </View>
+                      </View>
+                      {/* Metadata & Family Tag */}
+                      <View className="gap-[2px]">
+                        <View className="flex-row items-center justify-between">
+                          <Text className="font-bold text-sm text-text" numberOfLines={1}>
+                            {d.name}
+                          </Text>
+                          <View className="rounded bg-brand/10 px-1.5 py-0.5">
+                            <Text className="text-[10px] font-bold text-brand">{d.family} Edition</Text>
+                          </View>
+                        </View>
+                        <Text variant="caption" numberOfLines={2}>
+                          {d.description}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </Link>
+                ))}
+              </ScrollView>
+            </ContentSection>
+
+            {/* 2. Featured Releases (Large Collectible Artwork) */}
             {featuredCards.length > 0 ? (
               <ContentSection
                 title="Featured Releases"
@@ -283,7 +337,7 @@ export function DiscoverScreen() {
               </ContentSection>
             ) : null}
 
-            {/* 2. New & Noteworthy Cards */}
+            {/* 3. New & Noteworthy Cards */}
             {newCards.length > 0 ? (
               <ContentSection
                 title="New & Noteworthy"
@@ -291,22 +345,9 @@ export function DiscoverScreen() {
                 href={{ pathname: '/cards' }}
                 linkLabel="Browse catalog"
               >
-                <View
-                  className={cn(
-                    'gap-md',
-                    columns === 3 && 'flex-row flex-wrap',
-                    columns === 2 && 'flex-row flex-wrap'
-                  )}
-                >
-                  {newCards.slice(0, columns === 3 ? 6 : 4).map((card) => (
-                    <View
-                      key={card.id}
-                      className={cn(
-                        columns === 3 && 'w-[31.5%]',
-                        columns === 2 && 'w-[48%]',
-                        columns === 1 && 'w-full'
-                      )}
-                    >
+                <View className={cn('gap-md', columns >= 2 && 'flex-row flex-wrap')}>
+                  {newCards.slice(0, columns === 4 ? 8 : columns === 3 ? 6 : 4).map((card) => (
+                    <View key={card.id} className={gridColClass}>
                       <CardPreviewTile card={card} />
                     </View>
                   ))}
@@ -318,78 +359,51 @@ export function DiscoverScreen() {
                 title={`No ${selectedCategory} cards classified yet`}
                 description={
                   selectedCategory === 'Sports'
-                    ? 'No public sports cards found. Publish one from Card Studio.'
+                    ? 'No sports cards have been published yet. Be the first to create one!'
                     : `Pursuit classification for ${selectedCategory} is scheduled for the upcoming data release. Browse All cards or design a custom ${selectedCategory} card in Studio.`
                 }
+                actionLabel={
+                  selectedCategory === 'Sports'
+                    ? 'Open Card Studio'
+                    : 'Create in Studio'
+                }
+                onAction={() => setSelectedCategory('All')}
               />
             )}
 
-            {/* 3. Creators and People Worth Discovering */}
+            {/* 4. Cultural Icons & People */}
             {people.length > 0 ? (
               <ContentSection
-                title="People Worth Discovering"
-                subtitle="Notable individuals ready for card collection and creation."
+                title="Cultural Icons & People"
+                subtitle="Discover profiles with rich biographies and achievements."
                 href={{ pathname: '/players' }}
-                linkLabel="View all people"
+                linkLabel="See all people"
               >
                 <View className="gap-sm">
-                  {people.slice(0, 5).map((p) => (
+                  {people.slice(0, 4).map((p) => (
                     <PersonRowTile key={p.id} person={p} />
                   ))}
                 </View>
               </ContentSection>
             ) : null}
 
-            {/* 4. Contextual Sports Exploration Banner */}
-            {selectedCategory === 'Sports' || selectedCategory === 'All' ? (
-              <View className="rounded-xl border border-border bg-surface p-lg">
-                <View className="flex-row items-start justify-between gap-md">
-                  <View className="flex-1 gap-xs">
-                    <View className="flex-row items-center gap-xs">
-                      <Trophy size={16} color={brandColor} />
-                      <Text className="text-xs font-bold uppercase tracking-wide text-brand">
-                        Sports Archive
-                      </Text>
-                    </View>
-                    <Text className="text-base font-bold text-text">
-                      Looking for live scores, games, and rosters?
-                    </Text>
-                    <Text variant="caption">
-                      Sports is an optional module in RARE. You can explore game broadcasts,
-                      team rosters, and player stats in the sports section.
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center gap-xs">
-                    <Link href="/games" asChild>
-                      <Button variant="secondary" size="sm">
-                        Games
-                      </Button>
-                    </Link>
-                    <Link href="/teams" asChild>
-                      <Button variant="secondary" size="sm">
-                        Teams
-                      </Button>
-                    </Link>
-                  </View>
-                </View>
-              </View>
-            ) : null}
-
-            {/* 5. Creator Studio CTA */}
-            <View className="rounded-xl border border-border bg-canvas p-xl text-center">
+            {/* 5. Create in Studio Creative Banner */}
+            <View className="rounded-3xl border border-border bg-surface p-xl shadow-sm">
               <View className="max-w-xl self-center items-center gap-sm">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-brand/10">
-                  <Sparkles size={22} color={brandColor} strokeWidth={2} />
+                <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand/10">
+                  <Sparkles size={24} color={brandColor} strokeWidth={2} />
                 </View>
-                <Text className="text-2xl font-bold tracking-tight text-text">
+                <Text className="text-2xl font-bold tracking-tight text-text md:text-3xl text-center">
                   Design your own collectible card.
                 </Text>
-                <Text variant="caption" className="text-center text-sm">
+                <Text variant="caption" className="text-center text-sm max-w-md">
                   Gather a person's story, compose layers and custom artwork in Card Studio,
                   and publish your own numbered edition.
                 </Text>
                 <Link href="/cards/studio" asChild className="mt-sm">
-                  <Button size="lg">Open Card Studio</Button>
+                  <Button size="lg" variant="primary" icon={Plus}>
+                    Open Card Studio
+                  </Button>
                 </Link>
               </View>
             </View>
@@ -405,18 +419,18 @@ function CardPreviewTile({ card }: { card: Card }) {
   const isOfficial = card.publicationType === 'OFFICIAL'
 
   return (
-    <View className="overflow-hidden rounded-lg border border-border bg-surface p-sm gap-xs">
+    <View className="overflow-hidden rounded-2xl border border-border bg-surface p-md gap-sm shadow-sm hover:border-brand/40 hover:shadow-md transition-all">
       <ConnectedStatmanCard card={card} size="rail" source="EXPLORE" />
-      <View className="gap-[2px] pt-xs">
+      <View className="gap-[3px] pt-xs">
         <View className="flex-row items-center justify-between">
           <Badge tone={isOfficial ? 'verified' : 'muted-text'}>
             {isOfficial ? 'Official' : 'Community'}
           </Badge>
-          <Text variant="caption" className="text-[11px] font-medium">
+          <Text variant="caption" className="text-[11px] font-semibold text-muted-text">
             {editionLabel(card)}
           </Text>
         </View>
-        <Text className="font-semibold text-text" numberOfLines={1}>
+        <Text className="font-bold text-base text-text" numberOfLines={1}>
           {card.title}
         </Text>
         <Text variant="caption" numberOfLines={1}>
@@ -435,7 +449,7 @@ function PersonRowTile({ person }: { person: PersonProfile }) {
   const subtitle = [person.bio, ...(person.aliases ?? [])].filter(Boolean).join(' · ')
 
   return (
-    <View className="flex-row items-center justify-between rounded-lg border border-border bg-surface p-md">
+    <View className="flex-row items-center justify-between rounded-2xl border border-border bg-surface p-md hover:border-brand/30 transition-all">
       <Link
         href={{ pathname: '/people/[personId]', params: { personId: person.id } }}
         asChild

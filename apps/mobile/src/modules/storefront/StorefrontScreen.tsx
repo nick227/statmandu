@@ -17,6 +17,7 @@ import {
   useStorefrontUser,
 } from '@/modules/studio/hooks/useStorefront'
 import { editionLabel } from '@/modules/cards/cardDisplay'
+import { cn } from '@/lib/utils'
 import { Store, Plus, Edit3, Check, X, ShieldCheck, Users } from 'lucide-react-native'
 
 export interface StorefrontScreenProps {
@@ -193,17 +194,23 @@ export function StorefrontScreen({ username }: StorefrontScreenProps) {
             )}
           </View>
         ) : (
-          <View className={`gap-lg ${isWide ? 'flex-row flex-wrap' : 'flex-col'}`}>
+          <View className={cn('gap-lg', width >= 640 && 'flex-row flex-wrap')}>
             {releases.map((release) => {
               const subjectName = release.person?.displayName ?? release.athlete?.displayName ?? 'Subject'
               const isOfficial = release.publicationType === 'OFFICIAL'
+              const colClass =
+                width >= 1440
+                  ? 'w-[23.5%]'
+                  : width >= 1024
+                  ? 'w-[31.5%]'
+                  : width >= 640
+                  ? 'w-[48%]'
+                  : 'w-full'
 
               return (
                 <View
                   key={release.id}
-                  className={`rounded-2xl border border-border bg-surface p-md ${
-                    isWide ? 'w-[48%]' : 'w-full'
-                  }`}
+                  className={cn('rounded-2xl border border-border bg-surface p-md shadow-sm hover:border-brand/40 hover:shadow-md transition-all', colClass)}
                 >
                   {/* Card Artwork */}
                   <Link

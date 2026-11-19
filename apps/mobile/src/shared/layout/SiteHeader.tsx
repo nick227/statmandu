@@ -1,8 +1,9 @@
 import { View, Pressable, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Link, usePathname } from 'expo-router'
-import { User } from 'lucide-react-native'
+import { Plus, User } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
+import { Button } from '@/shared/ui/Button'
 import { Avatar } from '@/shared/ui/Avatar'
 import { brand } from '@/config/brand'
 import { useNativeColor } from '@/lib/theme'
@@ -70,6 +71,14 @@ export function SiteHeader({ user }: SiteHeaderProps) {
         </View>
 
         <View className="flex-row items-center gap-sm">
+          {isWide ? (
+            <Link href="/cards/studio" asChild>
+              <Button size="sm" variant="primary" icon={Plus}>
+                Create
+              </Button>
+            </Link>
+          ) : null}
+
           <Link href="/me" asChild>
             <Pressable accessibilityRole="link" accessibilityLabel={user ? 'Account' : 'Sign in'} className="active:opacity-70">
               {user ? (

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pressable, Share, View } from 'react-native'
+import { Pressable, Share, View, useWindowDimensions } from 'react-native'
 import { Link, useLocalSearchParams } from 'expo-router'
 import { Text } from '@/shared/ui/Text'
 import { Button } from '@/shared/ui/Button'
@@ -26,12 +26,12 @@ import {
 } from './cardDisplay'
 
 export function CardDetailScreen({ cardId }: { cardId: string }) {
+  const { width } = useWindowDimensions()
+  const isDesktop = width >= 1024
+  const cardWidth = isDesktop ? 440 : Math.min(340, width - 32)
+
   const { card, isLoading, isError, markDownloaded, relatedCards } = useCardDetail(cardId)
   const [authenticityVisible, setAuthenticityVisible] = useState(false)
-  // Which surface linked into this card — carried through to
-  // markCardDownloaded so the athlete's distribution panel can show
-  // downloads broken down by where they actually came from. No param (a
-  // bookmarked/typed URL) reports DIRECT server-side.
   const { source } = useLocalSearchParams<{ source?: 'PROFILE' | 'HOME' | 'EXPLORE' | 'CARD_STUDIO' | 'SHARED_LINK' }>()
 
   if (isError) {
@@ -58,15 +58,9 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
   async function handleDownload() {
     if (!issueId) return
     const result = await markDownloaded.mutateAsync({ issueId, context: source })
-    // No on-device file-save yet — expo-file-system/expo-media-library
-    // aren't installed in this app. Share sheet (image URL + authenticity
-    // text) is the UI/action boundary for MVP; swap in a real save-to-disk
-    // call once that native module is added.
     await Share.share({ message: result.data.authenticity.text, url: card!.frontImage?.url ?? undefined })
   }
 
-  // Independent of download — sharing doesn't require a claimed issue or
-  // the authenticity payload, just the card's own public info.
   function handleShare() {
     void sharePublicEntity({
       title: card!.title,
@@ -78,102 +72,141 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
   return (
     <>
       <Screen scroll>
-        <View className="px-lg pb-md"><BackButton tone="dark" /></View>
-
-        <View className="items-center px-sm">
-          {card.templateSnapshot?.composition ? (
-            <CardCompositionRenderer
-              composition={card.templateSnapshot.composition}
-              person={card.person ?? card.templateSnapshot.person}
-              assets={card.templateSnapshot.assets}
-              issue={card.currentUserIssue}
-              width={320}
-            />
-          ) : (
-            <Card1AStage data={cardFaceDataFromCard(card)} />
-          )}
+        <View className="pb-md">
+          <BackButton tone="dark" />
         </View>
 
-        <View className="gap-md px-lg pt-lg">
-          <View className="flex-row items-center justify-between">
-            <Badge tone="muted-text">{CARD_TYPE_LABEL[card.cardType]}</Badge>
-            <Badge tone={CARD_STATUS_TONE[card.status]}>{CARD_STATUS_LABEL[card.status]}</Badge>
-          </View>
-
-          <View className="gap-xs">
-            <Text className="text-2xl font-bold">{card.title}</Text>
-            <Text variant="caption">{athleteFullName(card)}</Text>
-            <View className="flex-row flex-wrap items-center gap-xs">
-              <Badge tone={card.publicationType === 'OFFICIAL' ? 'verified' : 'muted-text'}>
-                {card.publicationType === 'OFFICIAL' ? 'Official Release' : 'Community Edition'}
-              </Badge>
-              <Text variant="caption">
-                {card.createdByUserId ? `Created by @${card.createdByUserId}` : 'Community release'}
-                {card.publishedByUserId && card.publishedByUserId !== card.createdByUserId
-                  ? ` · Published by @${card.publishedByUserId}`
-                  : ''}
-              </Text>
+        {/* Responsive Layout: Adjacent on Desktop, Stacked on Mobile */}
+        <View className={isDesktop ? 'flex-row items-start gap-2xl' : 'flex-col gap-xl'}>
+          {/* Card Presentation Stage */}
+          <View
+            style={{ width: isDesktop ? 500 : '100%' }}
+            className="items-center justify-center rounded-3xl bg-neutral-100 dark:bg-neutral-900/60 p-lg md:p-xl shadow-sm"
+          >
+            <View className="shadow-2xl">
+              {card.templateSnapshot?.composition ? (
+                <CardCompositionRenderer
+                  composition={card.templateSnapshot.composition}
+                  person={card.person ?? card.templateSnapshot.person}
+                  assets={card.templateSnapshot.assets}
+                  issue={card.currentUserIssue}
+                  width={cardWidth}
+                />
+              ) : (
+                <Card1AStage data={cardFaceDataFromCard(card)} />
+              )}
             </View>
           </View>
 
-          <View className="flex-row flex-wrap gap-sm">
-            {card.personProfileId ? (
-              <Link href={{ pathname: '/people/[personId]', params: { personId: card.personProfileId } }} asChild>
-                <Button variant="secondary" size="sm">View person profile</Button>
-              </Link>
-            ) : null}
-            {card.team ? (
-              <Link href={{ pathname: '/teams/[teamId]', params: { teamId: card.team.id } }} asChild>
-                <Button variant="secondary" size="sm">{`View ${card.team.name}`}</Button>
-              </Link>
-            ) : null}
-            {card.game ? (
-              <Link href={{ pathname: '/games/[gameId]', params: { gameId: card.game.id } }} asChild>
-                <Button variant="secondary" size="sm">View game</Button>
-              </Link>
-            ) : null}
-          </View>
+          {/* Adjacent Detail Information & Actions */}
+          <View className="flex-1 gap-md">
+            {/* Status & Type Badges */}
+            <View className="flex-row items-center justify-between">
+              <Badge tone="muted-text">{CARD_TYPE_LABEL[card.cardType]}</Badge>
+              <Badge tone={CARD_STATUS_TONE[card.status]}>{CARD_STATUS_LABEL[card.status]}</Badge>
+            </View>
 
-          <View className="flex-row flex-wrap gap-sm">
-            <Button variant="secondary" size="sm" onPress={handleShare}>Share</Button>
-            <ConnectedCardSaveButton cardTemplateId={card.id} compact />
-          </View>
-
-          <View className="gap-xs rounded-md border border-border bg-surface p-md">
-            <Text variant="caption">Edition</Text>
-            <Text className="font-semibold">{editionLabel(card)}</Text>
-          </View>
-
-          {card.game?.seasonName ? (
-            <Text variant="caption">{card.game.seasonName} season</Text>
-          ) : null}
-
-          {card.originHash ? (
-            <Pressable
-              onPress={() => setAuthenticityVisible(true)}
-              className="flex-row items-center justify-between rounded-md border border-border bg-surface p-md active:opacity-70"
-            >
-              <View className="flex-1 pr-sm">
-                <Text variant="caption">Origin hash</Text>
-                <Text className="font-mono" numberOfLines={1}>{card.originHash}</Text>
+            {/* Title & Attribution */}
+            <View className="gap-xs">
+              <Text className="text-3xl font-extrabold tracking-tight text-text md:text-4xl">
+                {card.title}
+              </Text>
+              <Text variant="caption" className="text-base font-semibold text-text">
+                {athleteFullName(card)}
+              </Text>
+              <View className="flex-row flex-wrap items-center gap-xs pt-xs">
+                <Badge tone={card.publicationType === 'OFFICIAL' ? 'verified' : 'muted-text'}>
+                  {card.publicationType === 'OFFICIAL' ? 'Official Release' : 'Community Edition'}
+                </Badge>
+                <Text variant="caption">
+                  {card.createdByUserId ? `Created by @${card.createdByUserId}` : 'Community release'}
+                  {card.publishedByUserId && card.publishedByUserId !== card.createdByUserId
+                    ? ` · Published by @${card.publishedByUserId}`
+                    : ''}
+                </Text>
               </View>
-              <Text variant="caption" className="font-semibold text-brand">What's this?</Text>
-            </Pressable>
-          ) : null}
+            </View>
 
-          <ConnectedCardClaimButton card={card} />
+            {/* Edition Details Card */}
+            <View className="gap-xs rounded-2xl border border-border bg-surface p-md shadow-sm">
+              <Text variant="caption" className="font-semibold text-muted-text uppercase tracking-wider text-[11px]">
+                Edition
+              </Text>
+              <Text className="text-lg font-bold text-text">{editionLabel(card)}</Text>
+            </View>
 
-          {card.currentUserHasClaimed && issueId ? (
-            <Button variant="secondary" isLoading={markDownloaded.isPending} onPress={handleDownload}>
-              {alreadyDownloaded ? 'Share again' : 'Download'}
-            </Button>
-          ) : null}
+            {card.game?.seasonName ? (
+              <Text variant="caption">{card.game.seasonName} season</Text>
+            ) : null}
 
+            {/* Cryptographic Origin Hash & Authenticity Verification */}
+            {card.originHash ? (
+              <Pressable
+                onPress={() => setAuthenticityVisible(true)}
+                className="flex-row items-center justify-between rounded-2xl border border-border bg-surface p-md active:opacity-70 hover:border-brand/40 shadow-sm transition-all"
+              >
+                <View className="flex-1 pr-sm gap-0.5">
+                  <Text variant="caption" className="font-semibold text-muted-text uppercase tracking-wider text-[11px]">
+                    Origin hash
+                  </Text>
+                  <Text className="font-mono text-xs text-text" numberOfLines={1}>
+                    {card.originHash}
+                  </Text>
+                </View>
+                <Text variant="caption" className="font-semibold text-brand">
+                  Verify authenticity
+                </Text>
+              </Pressable>
+            ) : null}
+
+            {/* Primary & Secondary Actions */}
+            <View className="gap-sm pt-sm">
+              <ConnectedCardClaimButton card={card} />
+
+              <View className="flex-row flex-wrap gap-sm">
+                <Button variant="secondary" size="sm" onPress={handleShare}>
+                  Share
+                </Button>
+                <ConnectedCardSaveButton cardTemplateId={card.id} compact />
+                {card.currentUserHasClaimed && issueId ? (
+                  <Button variant="secondary" size="sm" isLoading={markDownloaded.isPending} onPress={handleDownload}>
+                    {alreadyDownloaded ? 'Share again' : 'Download'}
+                  </Button>
+                ) : null}
+              </View>
+            </View>
+
+            {/* Context Navigation Pills */}
+            <View className="flex-row flex-wrap gap-sm pt-xs border-t border-border mt-xs">
+              {card.personProfileId ? (
+                <Link href={{ pathname: '/people/[personId]', params: { personId: card.personProfileId } }} asChild>
+                  <Button variant="ghost" size="sm">
+                    View profile
+                  </Button>
+                </Link>
+              ) : null}
+              {card.team ? (
+                <Link href={{ pathname: '/teams/[teamId]', params: { teamId: card.team.id } }} asChild>
+                  <Button variant="ghost" size="sm">
+                    {`View ${card.team.name}`}
+                  </Button>
+                </Link>
+              ) : null}
+              {card.game ? (
+                <Link href={{ pathname: '/games/[gameId]', params: { gameId: card.game.id } }} asChild>
+                  <Button variant="ghost" size="sm">
+                    View game
+                  </Button>
+                </Link>
+              ) : null}
+            </View>
+          </View>
         </View>
 
+        {/* Related Collectibles Rail */}
         {relatedCards.length > 0 ? (
-          <View className="gap-sm pt-xl">
-            <Text className="px-lg text-lg font-semibold">More from {athleteFullName(card)}</Text>
+          <View className="gap-sm pt-2xl mt-xl border-t border-border">
+            <Text className="text-xl font-bold text-text">More from {athleteFullName(card)}</Text>
             <CardRail cards={relatedCards} />
           </View>
         ) : null}
