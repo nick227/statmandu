@@ -9,6 +9,7 @@ import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { Screen } from '@/shared/layout'
 import { Card1AStage } from './Card1A'
+import { CardCompositionRenderer } from './CardCompositionRenderer'
 import { ConnectedCardClaimButton } from './ConnectedCardClaimButton'
 import { ConnectedCardSaveButton } from './ConnectedCardSaveButton'
 import { CardAuthenticitySheet } from './CardAuthenticitySheet'
@@ -80,7 +81,17 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
         <View className="px-lg pb-md"><BackButton tone="dark" /></View>
 
         <View className="items-center px-sm">
-          <Card1AStage data={cardFaceDataFromCard(card)} />
+          {card.templateSnapshot?.composition ? (
+            <CardCompositionRenderer
+              composition={card.templateSnapshot.composition}
+              person={card.person ?? card.templateSnapshot.person}
+              assets={card.templateSnapshot.assets}
+              issue={card.currentUserIssue}
+              width={320}
+            />
+          ) : (
+            <Card1AStage data={cardFaceDataFromCard(card)} />
+          )}
         </View>
 
         <View className="gap-md px-lg pt-lg">

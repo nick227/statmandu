@@ -2,6 +2,7 @@ import { View, type ViewProps } from 'react-native'
 import type { components } from '@statman/sdk'
 import { cn } from '@/lib/utils'
 import { Card1AStage } from './Card1A'
+import { CardCompositionRenderer } from './CardCompositionRenderer'
 import { CARD_STATUS_LABEL, CARD_STATUS_TONE, cardFaceDataFromCard } from './cardDisplay'
 
 type Card = components['schemas']['Card']
@@ -16,9 +17,31 @@ export interface StatmanCardProps extends Omit<ViewProps, 'children'> {
   className?: string
 }
 
-// Sizing adapter around Card 1A. Card1A itself owns all online interaction,
-// so no site surface can invent different flip or swipe behavior.
-export function StatmanCard({ card, size: _size = 'rail', showStatus = false, className, style, ...props }: StatmanCardProps) {
+const SIZE_WIDTHS: Record<StatmanCardSize, number> = {
+  rail: 240,
+  featured: 320,
+  detail: 340,
+}
+
+// Sizing adapter around CardCompositionRenderer (RDC) or Card 1A (legacy).
+export function StatmanCard({ card, size = 'rail', showStatus = false, className, style, ...props }: StatmanCardProps) {
+  const hasCompositionSnapshot = Boolean(card.templateSnapshot?.composition)
+
+  if (hasCompositionSnapshot) {
+    const width = SIZE_WIDTHS[size]
+    return (
+      <View className={cn('items-center', className)} style={style} {...props}>
+        <CardCompositionRenderer
+          composition={card.templateSnapshot!.composition}
+          person={card.person ?? card.templateSnapshot!.person}
+          assets={card.templateSnapshot!.assets}
+          issue={card.currentUserIssue}
+          width={width}
+        />
+      </View>
+    )
+  }
+
   return (
     <View className={cn(className)} style={style} {...props}>
       <Card1AStage

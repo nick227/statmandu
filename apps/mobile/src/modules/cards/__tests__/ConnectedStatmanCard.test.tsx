@@ -4,7 +4,7 @@ import { ConnectedStatmanCard } from '../ConnectedStatmanCard'
 
 jest.mock('expo-router', () => ({
   Link: ({ children, href, asChild }: { children: React.ReactNode; href: unknown; asChild?: boolean }) => {
-    const ReactModule = require('react')
+    const ReactModule = jest.requireActual('react')
     const { View } = require('react-native')
     const props = { accessibilityRole: 'link', accessibilityLabel: typeof href === 'string' ? href : 'card-detail-link' }
     return asChild && ReactModule.isValidElement(children)
@@ -22,8 +22,23 @@ jest.mock('../StatmanCard', () => ({
 
 jest.mock('../ConnectedCardClaimButton', () => ({
   ConnectedCardClaimButton: () => {
-    const { SignInPrompt } = require('@/shared/ui/SignInPrompt')
-    return <SignInPrompt message="Sign in to claim this card" />
+    const { Pressable, Text } = require('react-native')
+    return (
+      <Pressable accessibilityRole="link" accessibilityLabel="Sign in to claim this card">
+        <Text>Sign in to claim this card</Text>
+      </Pressable>
+    )
+  },
+}))
+
+jest.mock('@/shared/ui/Button', () => ({
+  Button: ({ children, onPress, isLoading }: { children: React.ReactNode; onPress?: () => void; isLoading?: boolean }) => {
+    const { Pressable, Text } = require('react-native')
+    return (
+      <Pressable accessibilityRole="button" onPress={onPress} disabled={isLoading}>
+        <Text>{children}</Text>
+      </Pressable>
+    )
   },
 }))
 

@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, View } from 'react-native'
 import type { ComponentType, ReactNode } from 'react'
 import { Link, useRouter, type Href } from 'expo-router'
-import { Activity, Radio, ShieldCheck, Trophy, UserRound } from 'lucide-react-native'
+import { Activity, Radio, ShieldCheck, Store, Trophy, UserRound } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
 import { Avatar } from '@/shared/ui/Avatar'
 import { Button } from '@/shared/ui/Button'
@@ -65,6 +65,43 @@ export function AccountScreen() {
           <Text variant="caption">{user.profile?.username ? `@${user.profile.username}` : user.email}</Text>
         </View>
         <Badge tone={isAdmin ? 'verified' : 'muted-text'}>{isAdmin ? 'Admin' : 'Neutral'}</Badge>
+      </View>
+
+      {/* Creator Storefront Section */}
+      <View className="gap-sm">
+        <Text className="font-semibold">Creator Storefront</Text>
+        {user.profile?.username ? (
+          <Link href={`/storefronts/${user.profile.username}` as Href} asChild>
+            <LinkedHubCard>
+              <CardContent className="gap-xs">
+                <View className="flex-row items-center justify-between gap-sm">
+                  <View className="flex-1 flex-row items-center gap-sm">
+                    <HubIcon icon={Store} tone="brand" />
+                    <Text className="font-semibold" numberOfLines={1}>
+                      @{user.profile.username}'s Storefront
+                    </Text>
+                  </View>
+                  <Badge tone="brand">Public Catalog</Badge>
+                </View>
+                <Text variant="caption">
+                  View and manage your public collectible releases, catalog statement, and editions.
+                </Text>
+              </CardContent>
+            </LinkedHubCard>
+          </Link>
+        ) : (
+          <Card>
+            <CardContent className="gap-xs">
+              <View className="flex-row items-center gap-sm">
+                <HubIcon icon={Store} tone="muted-text" />
+                <Text className="font-semibold">Creator Catalog</Text>
+              </View>
+              <Text variant="caption">
+                Set a username to open your public collectible creator storefront.
+              </Text>
+            </CardContent>
+          </Card>
+        )}
       </View>
 
       <View className="gap-sm">
