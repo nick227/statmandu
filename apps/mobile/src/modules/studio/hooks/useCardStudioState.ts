@@ -83,6 +83,13 @@ export const INITIAL_COMPILATION = compileFlagshipDesign(
   INITIAL_IMAGE_ID,
 )
 
+function snapshotComposition(composition: CardComposition, overrides: Record<string, string>, unlinked: Set<string>): CardComposition {
+  return { ...composition, metadata: { ...composition.metadata, flagship: {
+    ...composition.metadata?.flagship,
+    editor: { fieldOverrides: { ...overrides }, unlinkedSlotIds: [...unlinked] },
+  } } }
+}
+
 export type MediaCategoryFilter = 'ALL' | 'USER' | 'PROFILE' | 'CURATED'
 
 /**
@@ -230,8 +237,11 @@ export function useCardStudioState() {
   // Composition & Local Undo/Redo History
   // ---------------------------------------------------------------------------
   const [composition, setComposition] = useState<CardComposition>(INITIAL_COMPILATION.composition)
-  const [history, setHistory] = useState<CardComposition[]>([INITIAL_COMPILATION.composition])
-  const [historyIndex, setHistoryIndex] = useState(0)
+  const [historyState, setHistoryState] = useState(() => ({
+    entries: [INITIAL_COMPILATION.composition] as CardComposition[], index: 0,
+  }))
+  const history = historyState.entries
+  const historyIndex = historyState.index
 
   // ---------------------------------------------------------------------------
   // Inline Publishing Drawer State
@@ -324,68 +334,47 @@ export function useCardStudioState() {
   // History Helpers
   // ---------------------------------------------------------------------------
   const updateCompositionWithHistory = useCallback(
-    (nextComp: CardComposition) => {
-      setComposition(nextComp)
-      setHistory((prev) => {
-        const slice = prev.slice(0, historyIndex + 1)
-        return [...slice, nextComp]
+    (nextComp: CardComposition, overrides = fieldOverrides, unlinked = unlinkedSlotIds) => {
+      const next = snapshotComposition(nextComp, overrides, unlinked)
+      setComposition(next)
+      setHistoryState((prev) => {
+        const entries = [...prev.entries.slice(0, prev.index + 1), next]
+        return { entries, index: entries.length - 1 }
       })
-      setHistoryIndex((prev) => prev + 1)
       setSaveSuccessMsg(false)
       setPublishSuccessMsg(null)
-    },
-    [historyIndex],
+    }, [fieldOverrides, unlinkedSlotIds],
   )
 
-  const handleUndo = useCallback(() => {
-    if (historyIndex > 0) {
-      const nextIndex = historyIndex - 1
-      setHistoryIndex(nextIndex)
-      const prevComp = history[nextIndex]
-      setComposition(prevComp)
+  const restoreHistoryEntry = useCallback((entry: CardComposition) => {
+    setComposition(entry)
+    const meta = entry.metadata?.flagship
+    if (!meta) return
+    setActiveFlagshipId(meta.id || INITIAL_FLAGSHIP_ID)
+    setActiveCardTypeId(meta.cardTypeId || INITIAL_CARD_TYPE_ID)
+    setSelectedImageId(meta.selectedImageId || INITIAL_IMAGE_ID)
+    const profile = meta.profile ? toUniversalProfile(meta.profile) : null
+    setActiveProfile(profile)
+    setPublishSubjectName(profile?.displayName || '')
+    setPublishSubjectBio(profile?.bio || '')
+    setAppearance(meta.appearance || {})
+    setFieldOverrides({ ...(meta.editor?.fieldOverrides ?? meta.contentStore ?? meta.inputs ?? {}) })
+    setUnlinkedSlotIds(new Set<string>(meta.editor?.unlinkedSlotIds ?? []))
+  }, [])
 
-      if (prevComp.metadata?.flagship) {
-        const meta = prevComp.metadata.flagship
-        if (meta.id) setActiveFlagshipId(meta.id)
-        if (meta.cardTypeId) setActiveCardTypeId(meta.cardTypeId)
-        if (meta.selectedImageId) setSelectedImageId(meta.selectedImageId)
-        const loadedStore = meta.contentStore || meta.inputs
-        if (loadedStore) {
-          setFieldOverrides((prev) => ({ ...prev, ...loadedStore }))
-        }
-        if ((meta as any).appearance) {
-          setAppearance((meta as any).appearance)
-        } else {
-          setAppearance({})
-        }
-      }
-    }
-  }, [historyIndex, history])
+  const handleUndo = useCallback(() => {
+    if (historyIndex <= 0) return
+    const nextIndex = historyIndex - 1
+    restoreHistoryEntry(history[nextIndex])
+    setHistoryState((prev) => ({ ...prev, index: nextIndex }))
+  }, [historyIndex, history, restoreHistoryEntry])
 
   const handleRedo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      const nextIndex = historyIndex + 1
-      setHistoryIndex(nextIndex)
-      const nextComp = history[nextIndex]
-      setComposition(nextComp)
-
-      if (nextComp.metadata?.flagship) {
-        const meta = nextComp.metadata.flagship
-        if (meta.id) setActiveFlagshipId(meta.id)
-        if (meta.cardTypeId) setActiveCardTypeId(meta.cardTypeId)
-        if (meta.selectedImageId) setSelectedImageId(meta.selectedImageId)
-        const loadedStore = meta.contentStore || meta.inputs
-        if (loadedStore) {
-          setFieldOverrides((prev) => ({ ...prev, ...loadedStore }))
-        }
-        if ((meta as any).appearance) {
-          setAppearance((meta as any).appearance)
-        } else {
-          setAppearance({})
-        }
-      }
-    }
-  }, [historyIndex, history])
+    if (historyIndex >= history.length - 1) return
+    const nextIndex = historyIndex + 1
+    restoreHistoryEntry(history[nextIndex])
+    setHistoryState((prev) => ({ ...prev, index: nextIndex }))
+  }, [historyIndex, history, restoreHistoryEntry])
 
   // ---------------------------------------------------------------------------
   // Profile Selection & Attribute Linking
@@ -423,7 +412,7 @@ export function useCardStudioState() {
         selectedImageId,
         appearance,
       )
-      updateCompositionWithHistory(result.composition)
+      updateCompositionWithHistory(result.composition, {}, new Set())
     },
     [
       activeCardType,
@@ -458,8 +447,8 @@ export function useCardStudioState() {
       setActiveFlagshipId(loadedFlagshipId)
       setActiveCardTypeId(loadedCardTypeId)
       setSelectedImageId(loadedImageId)
-      setFieldOverrides(loadedContent)
-      setUnlinkedSlotIds(new Set())
+      setFieldOverrides({ ...(meta?.editor?.fieldOverrides ?? loadedContent) })
+      setUnlinkedSlotIds(new Set<string>(meta?.editor?.unlinkedSlotIds ?? []))
       setActiveProfile(loadedProfile)
       setAppearance(loadedAppearance)
       setPublishSubjectName(loadedProfile?.displayName || '')
@@ -474,9 +463,9 @@ export function useCardStudioState() {
         loadedImageId,
         loadedAppearance,
       )
-      setComposition(result.composition)
-      setHistory([result.composition])
-      setHistoryIndex(0)
+      const savedComposition = design.composition as CardComposition
+      setComposition(savedComposition)
+      setHistoryState({ entries: [savedComposition], index: 0 })
       setSaveSuccessMsg(false)
     },
     [assetsList],
@@ -506,8 +495,7 @@ export function useCardStudioState() {
       {},
     )
     setComposition(result.composition)
-    setHistory([result.composition])
-    setHistoryIndex(0)
+    setHistoryState({ entries: [result.composition], index: 0 })
     setSaveSuccessMsg(false)
   }, [assetsList])
 
@@ -619,7 +607,7 @@ export function useCardStudioState() {
         selectedImageId,
         appearance,
       )
-      updateCompositionWithHistory(result.composition)
+      updateCompositionWithHistory(result.composition, nextOverrides, unlinkedSlotIds)
     },
     [
       activeCardType,
@@ -674,7 +662,7 @@ export function useCardStudioState() {
         selectedImageId,
         appearance,
       )
-      updateCompositionWithHistory(result.composition)
+      updateCompositionWithHistory(result.composition, clearedOverrides, nextUnlinked)
     },
     [
       activeCardType,
@@ -765,7 +753,7 @@ export function useCardStudioState() {
       selectedImageId,
       appearance,
     )
-    updateCompositionWithHistory(result.composition)
+    updateCompositionWithHistory(result.composition, {}, new Set())
   }, [
     activeFlagshipId,
     assetsList,
