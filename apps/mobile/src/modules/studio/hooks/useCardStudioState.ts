@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Platform } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
@@ -155,6 +155,8 @@ export function useCardStudioState() {
   // Creative Levers (Appearance Customization)
   // ---------------------------------------------------------------------------
   const [appearance, setAppearance] = useState<StudioAppearanceState>({})
+  const appearanceRef = useRef<StudioAppearanceState>(appearance)
+  appearanceRef.current = appearance
 
   // Dropdown open states
   const [savedDesignsDropdownOpen, setSavedDesignsDropdownOpen] = useState(false)
@@ -217,11 +219,22 @@ export function useCardStudioState() {
   // Composition & Local Undo/Redo History
   // ---------------------------------------------------------------------------
   const [composition, setComposition] = useState<CardComposition>(INITIAL_COMPILATION.composition)
+  const compositionRef = useRef<CardComposition>(composition)
+  compositionRef.current = composition
   const [historyState, setHistoryState] = useState(() => ({
-    entries: [INITIAL_COMPILATION.composition] as CardComposition[], index: 0,
+    entries: [INITIAL_COMPILATION.composition] as CardComposition[],
+    index: 0,
   }))
   const history = historyState.entries
   const historyIndex = historyState.index
+
+  // ---------------------------------------------------------------------------
+  // Two-Sided Collectible Face Toggle ('front' | 'back')
+  // ---------------------------------------------------------------------------
+  const [activeCardFace, setActiveCardFace] = useState<'front' | 'back'>('front')
+  const handleToggleCardFace = useCallback((face: 'front' | 'back') => {
+    setActiveCardFace(face)
+  }, [])
 
   // ---------------------------------------------------------------------------
   // Inline Publishing Drawer State
@@ -316,6 +329,7 @@ export function useCardStudioState() {
   const updateCompositionWithHistory = useCallback(
     (nextComp: CardComposition, overrides = fieldOverrides, unlinked = unlinkedSlotIds) => {
       const next = snapshotComposition(nextComp, overrides, unlinked)
+      compositionRef.current = next
       setComposition(next)
       setHistoryState((prev) => {
         const entries = [...prev.entries.slice(0, prev.index + 1), next]
@@ -323,7 +337,8 @@ export function useCardStudioState() {
       })
       setSaveSuccessMsg(false)
       setPublishSuccessMsg(null)
-    }, [fieldOverrides, unlinkedSlotIds],
+    },
+    [fieldOverrides, unlinkedSlotIds],
   )
 
   const restoreHistoryEntry = useCallback((entry: CardComposition) => {
@@ -692,7 +707,8 @@ export function useCardStudioState() {
   // ---------------------------------------------------------------------------
   const handleUpdateAppearance = useCallback(
     (updates: Partial<StudioAppearanceState>) => {
-      const next = { ...appearance, ...updates }
+      const next = { ...appearanceRef.current, ...updates }
+      appearanceRef.current = next
       setAppearance(next)
       const result = compileFlagshipDesign(
         activeFlagshipId,
@@ -703,10 +719,10 @@ export function useCardStudioState() {
         selectedImageId,
         next,
       )
+      compositionRef.current = result.composition
       updateCompositionWithHistory(result.composition)
     },
     [
-      appearance,
       activeFlagshipId,
       currentContentStore,
       activeProfile,
@@ -744,7 +760,7 @@ export function useCardStudioState() {
   ])
 
   const handleUseMyProfile = useCallback(() => {
-    const myProfile: UniversalProfile = {
+    const myProfile = toUniversalProfile({
       id: currentUser?.id || 'me',
       slug: (currentUserProfile as any)?.slug || currentUsername || currentUser?.id || 'me',
       specializations: [],
@@ -752,7 +768,7 @@ export function useCardStudioState() {
       hometown: (currentUserProfile as any)?.hometown || undefined,
       bio: currentUserProfile?.bio || undefined,
       avatarUrl: currentUserProfile?.avatarUrl || undefined,
-    }
+    })
     handleSelectPersonProfile(myProfile)
   }, [currentUser, currentUserProfile, currentUsername, handleSelectPersonProfile])
 
@@ -804,11 +820,12 @@ export function useCardStudioState() {
   const handleSaveDesign = useCallback(async () => {
     setConflictMessage(null)
     setPublishSuccessMsg(null)
+    const compToSave = compositionRef.current || composition
     try {
       if (!activeDesign) {
         const created = await createDesignMutation.mutateAsync({
           title: designTitle.trim() || 'Untitled Collectible',
-          composition,
+          composition: compToSave,
         })
         setActiveDesign(created)
         setSaveSuccessMsg(true)
@@ -817,7 +834,7 @@ export function useCardStudioState() {
           designId: activeDesign.id,
           expectedRevision: activeDesign.revision,
           title: designTitle.trim() || activeDesign.title,
-          composition,
+          composition: compToSave,
         })
         setActiveDesign(updated)
         setSaveSuccessMsg(true)
@@ -1076,6 +1093,11 @@ export function useCardStudioState() {
     appearance,
     handleUpdateAppearance,
     handleUnlinkSubject,
+
+    // Two-Sided Collectible Face
+    activeCardFace,
+    handleToggleCardFace,
+    backComposition: currentFlagshipResult.backComposition,
 
     // Core Canvas Composition
     composition,

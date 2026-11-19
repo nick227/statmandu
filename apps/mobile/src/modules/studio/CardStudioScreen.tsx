@@ -317,8 +317,11 @@ export function CardStudioScreen() {
           {/* Right Column: Flexible Card Stage with Neutral Workspace Background */}
           <CardPreviewStage
             composition={studio.composition}
+            backComposition={studio.backComposition}
             canvasWidth={canvasWidth}
             assets={studio.assetsList}
+            activeFace={studio.activeCardFace}
+            onToggleFace={studio.handleToggleCardFace}
             className="flex-1 p-lg"
           />
         </View>
@@ -329,8 +332,11 @@ export function CardStudioScreen() {
           <View className="w-full bg-neutral-100 dark:bg-neutral-900/60 py-md items-center justify-center border-b border-border">
             <CardPreviewStage
               composition={studio.composition}
+              backComposition={studio.backComposition}
               canvasWidth={canvasWidth}
               assets={studio.assetsList}
+              activeFace={studio.activeCardFace}
+              onToggleFace={studio.handleToggleCardFace}
               className="bg-transparent"
             />
           </View>

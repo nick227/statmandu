@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, fireEvent, waitFor, cleanup } from '@testing-library/react-native'
+import { render, fireEvent, waitFor, cleanup, act } from '@testing-library/react-native'
 import { CardStudioScreen } from '../CardStudioScreen'
 import { useStudioUser } from '../hooks/useStudioUser'
 import {
@@ -357,8 +357,16 @@ describe('CardStudioScreen', () => {
     await React.act(async () => { fireEvent.press(screen.getByTestId('artwork-style-cinematic')) })
     await waitFor(() => expect(screen.getByTestId('artwork-style-cinematic').props.className).toContain('border-brand'))
 
+    await waitFor(() => {
+      expect(screen.getByTestId('finish-effect-holographic')).toBeTruthy()
+    })
+
     // Select Holographic finish
     await React.act(async () => { fireEvent.press(screen.getByTestId('finish-effect-holographic')) })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('save-design-button')).toBeTruthy()
+    })
 
     // Save design and verify selected appearance is preserved in metadata
     fireEvent.press(screen.getByTestId('save-design-button'))
@@ -378,6 +386,7 @@ describe('CardStudioScreen', () => {
           }),
         }),
       )
+      expect(screen.getByText('Saved')).toBeTruthy()
     })
   })
 

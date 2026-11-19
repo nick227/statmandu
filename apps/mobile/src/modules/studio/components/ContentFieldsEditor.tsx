@@ -37,19 +37,40 @@ export function ContentFieldsEditor({
   // Only display fields that are active and mapped in the current flagship design
   const mappedFields = boundFields.filter((f) => f.isMappedInDesign)
 
+  let lastCategory: string | null = null
+
   return (
     <View className="gap-sm">
       {/* Visually hidden text for accessibility and test compatibility */}
       <Text style={{ height: 0, width: 0, opacity: 0, fontSize: 0 }}>Content Fields</Text>
 
-      {/* Dynamic Slot Inputs with Good Placeholders */}
-      <View className="gap-sm">
+      {/* Dynamic Slot Inputs Grouped by Card Role */}
+      <View className="gap-3">
         {mappedFields.map((field) => {
           const hasOverflow = isOverflow[field.slotId] || false
           const isOverridden = field.overrideValue !== undefined
 
+          let categoryHeader: string | null = null
+          if (field.slotId === 'input1') {
+            categoryHeader = 'Identity (Front & Back)'
+          } else if (field.slotId === 'input3') {
+            categoryHeader = 'The Story (Card Back)'
+          } else if (field.slotId === 'input4') {
+            categoryHeader = 'Highlights & Achievements (Card Back)'
+          } else if (field.slotId === 'input6') {
+            categoryHeader = 'Recorded Metrics & Stats (Front & Back)'
+          }
+
           return (
-            <View key={field.slotId} className="gap-1">
+            <View key={field.slotId} className="gap-1.5">
+              {categoryHeader && (
+                <View className="pt-1 pb-0.5">
+                  <Text className="text-[11px] font-bold uppercase tracking-wider text-muted-text">
+                    {categoryHeader}
+                  </Text>
+                </View>
+              )}
+
               {/* Only show badge row if there is an active override or overflow */}
               {(isOverridden || hasOverflow) && (
                 <View className="flex-row items-center justify-between">

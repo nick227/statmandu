@@ -51,11 +51,383 @@ export interface FlagshipDesign {
 }
 
 // ----------------------------------------------------------------------------
-// The 20 Curated Flagship Designs (with Variable Positional Inputs)
+// The Curated Flagship Prefabs & Classic Designs
 // ----------------------------------------------------------------------------
 
 export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
-  // 1. Classic Collector
+  // 1. Royal Heritage
+  {
+    id: 'royal-heritage',
+    name: 'Royal Heritage',
+    family: 'Heritage',
+    description: 'Deep obsidian, 24k gold leaf ornamentation, regal filigree, and dramatic portrait framing.',
+    visualTradition: 'Royal Portraiture & Regal Numismatics',
+    palette: {
+      background: '#090A0F',
+      surface: '#151922',
+      foreground: '#FFFFFF',
+      accent: '#D4AF37',
+      border: '#F59E0B',
+      subtext: '#94A3B8',
+    },
+    artwork: { x: 44, y: 56, width: 512, height: 480, tint: '#0F172A', borderWidth: 3, borderColor: '#D4AF37' },
+    inputs: [
+      {
+        id: 'input1',
+        label: 'Subject Name',
+        bounds: { x: 50, y: 570, width: 500, height: 60 },
+        preferredFontSize: 34,
+        minFontSize: 20,
+        maxLines: 1,
+        required: true,
+        fill: '#FFFFFF',
+        fontRole: 'serif',
+        allCaps: true,
+      },
+      {
+        id: 'input2',
+        label: 'Title / Moniker',
+        bounds: { x: 50, y: 636, width: 500, height: 32 },
+        preferredFontSize: 16,
+        minFontSize: 12,
+        maxLines: 1,
+        required: false,
+        fill: '#D4AF37',
+        fontRole: 'sans',
+        allCaps: true,
+      },
+      {
+        id: 'input3',
+        label: 'Chronicle / Significance',
+        bounds: { x: 50, y: 680, width: 500, height: 160 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 6,
+        required: false,
+        fill: '#CBD5E1',
+        fontRole: 'serif',
+      },
+    ],
+    decorations: (p) => [
+      { id: 'dec-outer-frame', type: 'RECTANGLE', x: 16, y: 16, width: 568, height: 868, fill: p.border },
+      { id: 'dec-inner-mat', type: 'RECTANGLE', x: 20, y: 20, width: 560, height: 860, fill: p.background },
+      { id: 'dec-gold-filigree-top', type: 'RECTANGLE', x: 44, y: 38, width: 512, height: 2, fill: p.accent },
+      { id: 'dec-gold-bar', type: 'RECTANGLE', x: 44, y: 546, width: 512, height: 4, fill: p.accent },
+      { id: 'dec-corner-tl', type: 'RECTANGLE', x: 26, y: 26, width: 12, height: 12, fill: p.accent },
+      { id: 'dec-corner-tr', type: 'RECTANGLE', x: 562, y: 26, width: 12, height: 12, fill: p.accent },
+      { id: 'dec-corner-bl', type: 'RECTANGLE', x: 26, y: 862, width: 12, height: 12, fill: p.accent },
+      { id: 'dec-corner-br', type: 'RECTANGLE', x: 562, y: 862, width: 12, height: 12, fill: p.accent },
+    ],
+  },
+
+  // 2. Arcade Legends
+  {
+    id: 'arcade-legends',
+    name: 'Arcade Legends',
+    family: 'Retro Arcade',
+    description: 'Electric neon cyan, hot magenta, CRT scanline borders, and retro gaming stat power bars.',
+    visualTradition: 'Coin-Op Arcade Cabinets & Pixel Art Era',
+    palette: {
+      background: '#080B1C',
+      surface: '#121A38',
+      foreground: '#00F0FF',
+      accent: '#FF007A',
+      border: '#FFE600',
+      subtext: '#7DD3FC',
+    },
+    artwork: { x: 40, y: 54, width: 520, height: 460, tint: '#0D142D', borderWidth: 3, borderColor: '#00F0FF' },
+    inputs: [
+      {
+        id: 'input1',
+        label: 'Player Identifier',
+        bounds: { x: 48, y: 540, width: 504, height: 56 },
+        preferredFontSize: 32,
+        minFontSize: 18,
+        maxLines: 1,
+        required: true,
+        fill: '#00F0FF',
+        fontRole: 'display',
+        allCaps: true,
+      },
+      {
+        id: 'input2',
+        label: 'Character Class / Stage',
+        bounds: { x: 48, y: 604, width: 504, height: 30 },
+        preferredFontSize: 16,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
+        fill: '#FFE600',
+        fontRole: 'mono',
+        allCaps: true,
+      },
+      {
+        id: 'input3',
+        label: 'Lore & High Score Feats',
+        bounds: { x: 48, y: 644, width: 504, height: 170 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 6,
+        required: false,
+        fill: '#E0F2FE',
+        fontRole: 'sans',
+      },
+    ],
+    decorations: (p) => [
+      { id: 'dec-neon-outer', type: 'RECTANGLE', x: 14, y: 14, width: 572, height: 872, fill: p.border },
+      { id: 'dec-neon-inner', type: 'RECTANGLE', x: 18, y: 18, width: 564, height: 864, fill: p.background },
+      { id: 'dec-arcade-strip-top', type: 'RECTANGLE', x: 40, y: 32, width: 520, height: 4, fill: p.accent },
+      { id: 'dec-arcade-power-bar', type: 'RECTANGLE', x: 40, y: 524, width: 520, height: 6, fill: p.foreground },
+      { id: 'dec-arcade-box-1', type: 'RECTANGLE', x: 24, y: 24, width: 8, height: 8, fill: p.accent },
+      { id: 'dec-arcade-box-2', type: 'RECTANGLE', x: 568, y: 24, width: 8, height: 8, fill: p.accent },
+    ],
+  },
+
+  // 3. Modern Editorial
+  {
+    id: 'modern-editorial',
+    name: 'Modern Editorial',
+    family: 'Swiss Editorial',
+    description: 'Gallery-quality Swiss typography, confident whitespace, stark monochrome, and vermilion accents.',
+    visualTradition: 'International Typographic Style & Fine Art Monographs',
+    palette: {
+      background: '#0D0D0D',
+      surface: '#1A1A1E',
+      foreground: '#FAFAF9',
+      accent: '#FF3B30',
+      border: '#27272A',
+      subtext: '#A1A1AA',
+    },
+    artwork: { x: 36, y: 44, width: 528, height: 500, tint: '#141416', borderWidth: 0 },
+    inputs: [
+      {
+        id: 'input1',
+        label: 'Subject Name',
+        bounds: { x: 36, y: 570, width: 528, height: 64 },
+        preferredFontSize: 36,
+        minFontSize: 22,
+        maxLines: 1,
+        required: true,
+        fill: '#FAFAF9',
+        fontRole: 'sans',
+        allCaps: false,
+      },
+      {
+        id: 'input2',
+        label: 'Discipline & Origin',
+        bounds: { x: 36, y: 640, width: 528, height: 30 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
+        fill: '#FF3B30',
+        fontRole: 'mono',
+        allCaps: true,
+      },
+      {
+        id: 'input3',
+        label: 'Critical Appraisal / Essay',
+        bounds: { x: 36, y: 680, width: 528, height: 160 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 6,
+        required: false,
+        fill: '#D4D4D8',
+        fontRole: 'sans',
+      },
+    ],
+    decorations: (p) => [
+      { id: 'dec-editorial-bar', type: 'RECTANGLE', x: 36, y: 556, width: 48, height: 4, fill: p.accent },
+      { id: 'dec-grid-rule', type: 'RECTANGLE', x: 36, y: 852, width: 528, height: 1, fill: p.border },
+    ],
+  },
+
+  // 4. Psychedelic Archive
+  {
+    id: 'psychedelic-archive',
+    name: 'Psychedelic Archive',
+    family: 'Art Nouveau Psychedelia',
+    description: 'Cosmic plum, liquid electric pink, amber gold, and ornate 1960s poster graphics.',
+    visualTradition: 'San Francisco Concert Posters & Victoriana Nouveau',
+    palette: {
+      background: '#1A092A',
+      surface: '#2B1245',
+      foreground: '#FDF4FF',
+      accent: '#EC4899',
+      border: '#A855F7',
+      subtext: '#E9D5FF',
+    },
+    artwork: { x: 44, y: 50, width: 512, height: 470, tint: '#230E39', borderWidth: 2, borderColor: '#A855F7' },
+    inputs: [
+      {
+        id: 'input1',
+        label: 'Iconic Name',
+        bounds: { x: 44, y: 544, width: 512, height: 60 },
+        preferredFontSize: 34,
+        minFontSize: 20,
+        maxLines: 1,
+        required: true,
+        fill: '#FDF4FF',
+        fontRole: 'display',
+        allCaps: true,
+      },
+      {
+        id: 'input2',
+        label: 'Movement / Sound',
+        bounds: { x: 44, y: 610, width: 512, height: 32 },
+        preferredFontSize: 16,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
+        fill: '#F59E0B',
+        fontRole: 'sans',
+        allCaps: true,
+      },
+      {
+        id: 'input3',
+        label: 'Mythos & Anthology',
+        bounds: { x: 44, y: 652, width: 512, height: 170 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 6,
+        required: false,
+        fill: '#F3E8FF',
+        fontRole: 'serif',
+      },
+    ],
+    decorations: (p) => [
+      { id: 'dec-psych-outer', type: 'RECTANGLE', x: 18, y: 18, width: 564, height: 864, fill: p.border },
+      { id: 'dec-psych-inner', type: 'RECTANGLE', x: 22, y: 22, width: 556, height: 856, fill: p.background },
+      { id: 'dec-psych-liquid-top', type: 'RECTANGLE', x: 44, y: 34, width: 512, height: 4, fill: p.accent },
+      { id: 'dec-psych-divider', type: 'RECTANGLE', x: 44, y: 530, width: 512, height: 3, fill: '#F59E0B' },
+    ],
+  },
+
+  // 5. Chrome Future
+  {
+    id: 'chrome-future',
+    name: 'Chrome Future',
+    family: 'Titanium Cyber',
+    description: 'Polished metallic titanium, holographic cyan glow, sharp geometry, and futuristic telemetry.',
+    visualTradition: 'Industrial Sci-Fi & Speculative Cybernetics',
+    palette: {
+      background: '#090D16',
+      surface: '#0F172A',
+      foreground: '#E2E8F0',
+      accent: '#06B6D4',
+      border: '#38BDF8',
+      subtext: '#64748B',
+    },
+    artwork: { x: 38, y: 52, width: 524, height: 470, tint: '#0F172A', borderWidth: 2, borderColor: '#38BDF8' },
+    inputs: [
+      {
+        id: 'input1',
+        label: 'Cybernetic Designation',
+        bounds: { x: 42, y: 540, width: 516, height: 58 },
+        preferredFontSize: 32,
+        minFontSize: 18,
+        maxLines: 1,
+        required: true,
+        fill: '#38BDF8',
+        fontRole: 'mono',
+        allCaps: true,
+      },
+      {
+        id: 'input2',
+        label: 'Clearance & Registry',
+        bounds: { x: 42, y: 606, width: 516, height: 28 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 1,
+        required: false,
+        fill: '#06B6D4',
+        fontRole: 'mono',
+        allCaps: true,
+      },
+      {
+        id: 'input3',
+        label: 'System Diagnostics & Telemetry',
+        bounds: { x: 42, y: 642, width: 516, height: 160 },
+        preferredFontSize: 13,
+        minFontSize: 10,
+        maxLines: 5,
+        required: false,
+        fill: '#94A3B8',
+        fontRole: 'mono',
+      },
+    ],
+    decorations: (p) => [
+      { id: 'dec-chrome-frame', type: 'RECTANGLE', x: 16, y: 16, width: 568, height: 868, fill: p.border },
+      { id: 'dec-chrome-mat', type: 'RECTANGLE', x: 20, y: 20, width: 560, height: 860, fill: p.background },
+      { id: 'dec-chrome-accent-bar', type: 'RECTANGLE', x: 38, y: 530, width: 524, height: 3, fill: p.accent },
+      { id: 'dec-hud-notch-1', type: 'RECTANGLE', x: 28, y: 28, width: 14, height: 4, fill: p.accent },
+      { id: 'dec-hud-notch-2', type: 'RECTANGLE', x: 558, y: 28, width: 14, height: 4, fill: p.accent },
+    ],
+  },
+
+  // 6. Museum Archive
+  {
+    id: 'museum-archive',
+    name: 'Museum Archive',
+    family: 'Botanical Naturalist Plate',
+    description: 'Antique vellum paper, botanical sepia ink, hand-ruled borders, and historic wax seal.',
+    visualTradition: '18th Century Naturalist Plates & Archival Herbarium',
+    palette: {
+      background: '#F5EFEB',
+      surface: '#EBE2D8',
+      foreground: '#291811',
+      accent: '#8B4513',
+      border: '#A0522D',
+      subtext: '#6E5D53',
+    },
+    artwork: { x: 44, y: 54, width: 512, height: 470, tint: '#EFE7DD', borderWidth: 2, borderColor: '#A0522D' },
+    inputs: [
+      {
+        id: 'input1',
+        label: 'Specimen Designation',
+        bounds: { x: 48, y: 546, width: 504, height: 56 },
+        preferredFontSize: 30,
+        minFontSize: 18,
+        maxLines: 1,
+        required: true,
+        fill: '#291811',
+        fontRole: 'serif',
+        allCaps: false,
+      },
+      {
+        id: 'input2',
+        label: 'Classification / Taxon',
+        bounds: { x: 48, y: 608, width: 504, height: 28 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 1,
+        required: false,
+        fill: '#8B4513',
+        fontRole: 'serif',
+        allCaps: true,
+      },
+      {
+        id: 'input3',
+        label: 'Curator Notes & Field Observation',
+        bounds: { x: 48, y: 644, width: 504, height: 160 },
+        preferredFontSize: 13,
+        minFontSize: 10,
+        maxLines: 6,
+        required: false,
+        fill: '#4A3728',
+        fontRole: 'serif',
+      },
+    ],
+    decorations: (p) => [
+      { id: 'dec-archive-border-outer', type: 'RECTANGLE', x: 18, y: 18, width: 564, height: 864, fill: p.border },
+      { id: 'dec-archive-border-gap', type: 'RECTANGLE', x: 20, y: 20, width: 560, height: 860, fill: p.background },
+      { id: 'dec-archive-border-inner', type: 'RECTANGLE', x: 24, y: 24, width: 552, height: 852, fill: p.border },
+      { id: 'dec-archive-paper', type: 'RECTANGLE', x: 26, y: 26, width: 548, height: 848, fill: p.background },
+      { id: 'dec-archive-colophon-bar', type: 'RECTANGLE', x: 48, y: 532, width: 504, height: 1, fill: p.accent },
+    ],
+  },
+
+  // 7. Classic Collector (Legacy)
   {
     id: 'classic-collector',
     name: 'Classic Collector',
@@ -1323,14 +1695,43 @@ export const INITIAL_CONTENT_STORE: ContentStore = {
 
 export interface FlagshipCompilationResult {
   composition: CardComposition
+  backComposition: CardComposition
   design: FlagshipDesign
   fittedFontSizes: Record<string, number>
   isOverflow: Record<string, boolean>
   contentStore: ContentStore
 }
 
-export function getFlagshipDesignById(id: string): FlagshipDesign | undefined {
-  return FLAGSHIP_DESIGNS.find((d) => d.id === id) || FLAGSHIP_DESIGNS[0]
+export const CURATED_PREFAB_DESIGNS: FlagshipDesign[] = FLAGSHIP_DESIGNS.slice(0, 6)
+
+export function getFlagshipDesignById(id?: string): FlagshipDesign {
+  if (!id) return FLAGSHIP_DESIGNS[0]
+  const found = FLAGSHIP_DESIGNS.find((d) => d.id === id)
+  if (found) return found
+
+  const ALIASES: Record<string, string> = {
+    'classic': 'royal-heritage',
+    'classic-collector': 'royal-heritage',
+    'prestige-gold': 'royal-heritage',
+    'arcade-1985': 'arcade-legends',
+    'retro-synthwave': 'arcade-legends',
+    'synthwave-outrun': 'arcade-legends',
+    'minimal': 'modern-editorial',
+    'minimalist-swiss': 'modern-editorial',
+    'brutalist-block': 'modern-editorial',
+    'editorial-broadsheet': 'modern-editorial',
+    'concert-poster': 'psychedelic-archive',
+    'cyber-tech': 'chrome-future',
+    'vintage-press': 'museum-archive',
+    'fantasy-parchment': 'museum-archive',
+  }
+  const aliasId = ALIASES[id]
+  if (aliasId) {
+    const aliasFound = FLAGSHIP_DESIGNS.find((d) => d.id === aliasId)
+    if (aliasFound) return aliasFound
+  }
+
+  return FLAGSHIP_DESIGNS[0]
 }
 
 export type LayoutVariant = 'portrait' | 'balanced' | 'editorial'
@@ -1653,6 +2054,15 @@ export function compileFlagshipDesign(
     ...resolvedInputs,
   }
 
+  // Generate coordinated back composition sharing the same content model
+  const backComposition = generateCoordinatedBackComposition({
+    design,
+    palette,
+    inputs: allContent,
+    person,
+    appearance,
+  })
+
   const composition: CardComposition = {
     schemaVersion: 1,
     canvas: { width: 600, height: 900 },
@@ -1670,15 +2080,442 @@ export function compileFlagshipDesign(
         isOverflow,
         profile: person || null,
         appearance: appearance || null,
+        backComposition,
       },
     },
   }
 
   return {
     composition,
+    backComposition,
     design,
     fittedFontSizes,
     isOverflow,
     contentStore: allContent,
+  }
+}
+
+/**
+ * Generates a coordinated, high-information card back composition.
+ * Front and Back share one content model without requiring creator double-work.
+ */
+export function generateCoordinatedBackComposition({
+  design,
+  palette,
+  inputs,
+  person,
+  appearance,
+}: {
+  design: FlagshipDesign
+  palette: FlagshipDesign['palette']
+  inputs: ContentStore
+  person: any
+  appearance?: StudioAppearanceState
+}): CardComposition {
+  const backLayers: CardCompositionLayer[] = []
+
+  // 1. Base card background
+  backLayers.push({
+    id: 'back-base-card-bg',
+    type: 'RECTANGLE',
+    x: 0,
+    y: 0,
+    width: 600,
+    height: 900,
+    fill: palette.background,
+  })
+
+  // 2. Coordinated border
+  backLayers.push({
+    id: 'back-dec-outer-frame',
+    type: 'RECTANGLE',
+    x: 16,
+    y: 16,
+    width: 568,
+    height: 868,
+    fill: palette.border,
+  })
+  backLayers.push({
+    id: 'back-dec-inner-mat',
+    type: 'RECTANGLE',
+    x: 20,
+    y: 20,
+    width: 560,
+    height: 860,
+    fill: palette.background,
+  })
+
+  // 3. Top Header Colophon
+  backLayers.push({
+    id: 'back-header-plate',
+    type: 'RECTANGLE',
+    x: 40,
+    y: 40,
+    width: 520,
+    height: 32,
+    fill: palette.surface,
+  })
+  backLayers.push({
+    id: 'back-header-text',
+    type: 'TEXT',
+    x: 50,
+    y: 48,
+    width: 500,
+    height: 18,
+    text: 'RARE COLLECTIBLE ARCHIVE · OFFICIAL REGISTRY',
+    fontSize: 11,
+    fontRole: 'mono',
+    fill: palette.subtext,
+    allCaps: true,
+  })
+
+  // 4. Subject Identity
+  const subjectName = inputs.input1 || person?.displayName || 'COLLECTIBLE SUBJECT'
+  const subjectRole = inputs.input2 || person?.bio?.slice(0, 40) || 'AUTHENTIC ISSUE'
+  backLayers.push({
+    id: 'back-subject-name',
+    type: 'TEXT',
+    x: 44,
+    y: 88,
+    width: 512,
+    height: 40,
+    text: subjectName,
+    fontSize: 26,
+    fontRole: appearance?.fontRole || design.inputs[0]?.fontRole || 'serif',
+    fill: palette.foreground,
+    allCaps: true,
+  })
+  backLayers.push({
+    id: 'back-subject-role',
+    type: 'TEXT',
+    x: 44,
+    y: 132,
+    width: 512,
+    height: 24,
+    text: subjectRole,
+    fontSize: 13,
+    fontRole: 'sans',
+    fill: palette.accent,
+    allCaps: true,
+  })
+  backLayers.push({
+    id: 'back-divider-1',
+    type: 'RECTANGLE',
+    x: 44,
+    y: 164,
+    width: 512,
+    height: 2,
+    fill: palette.accent,
+  })
+
+  // 5. The Story / Biography Block
+  backLayers.push({
+    id: 'back-story-label',
+    type: 'TEXT',
+    x: 44,
+    y: 180,
+    width: 512,
+    height: 18,
+    text: 'THE CHRONICLE & SIGNIFICANCE',
+    fontSize: 10,
+    fontRole: 'mono',
+    fill: palette.subtext,
+    allCaps: true,
+  })
+  backLayers.push({
+    id: 'back-story-box',
+    type: 'RECTANGLE',
+    x: 44,
+    y: 204,
+    width: 512,
+    height: 216,
+    fill: palette.surface,
+  })
+  const storyText =
+    inputs.input3 ||
+    person?.bio ||
+    'An authentic chronicle of milestones, historic achievements, and cultural significance permanently cataloged in the RARE collectible index.'
+  backLayers.push({
+    id: 'back-story-text',
+    type: 'TEXT',
+    x: 58,
+    y: 218,
+    width: 484,
+    height: 188,
+    text: storyText,
+    fontSize: 14,
+    fontRole: 'sans',
+    fill: palette.foreground,
+  })
+
+  // 6. Milestones / Career Highlights
+  backLayers.push({
+    id: 'back-milestones-label',
+    type: 'TEXT',
+    x: 44,
+    y: 438,
+    width: 512,
+    height: 18,
+    text: 'KEY MILESTONES & HONORS',
+    fontSize: 10,
+    fontRole: 'mono',
+    fill: palette.subtext,
+    allCaps: true,
+  })
+  const milestone1 = inputs.input4 || 'Registered benchmark achievement in official archives'
+  const milestone2 = inputs.input5 || 'Distinguished honorary recognition and master accreditation'
+
+  backLayers.push({
+    id: 'back-milestone-bullet-1',
+    type: 'RECTANGLE',
+    x: 48,
+    y: 468,
+    width: 8,
+    height: 8,
+    fill: palette.accent,
+  })
+  backLayers.push({
+    id: 'back-milestone-text-1',
+    type: 'TEXT',
+    x: 66,
+    y: 462,
+    width: 490,
+    height: 24,
+    text: milestone1,
+    fontSize: 13,
+    fontRole: 'sans',
+    fill: palette.foreground,
+  })
+
+  backLayers.push({
+    id: 'back-milestone-bullet-2',
+    type: 'RECTANGLE',
+    x: 48,
+    y: 498,
+    width: 8,
+    height: 8,
+    fill: palette.accent,
+  })
+  backLayers.push({
+    id: 'back-milestone-text-2',
+    type: 'TEXT',
+    x: 66,
+    y: 492,
+    width: 490,
+    height: 24,
+    text: milestone2,
+    fontSize: 13,
+    fontRole: 'sans',
+    fill: palette.foreground,
+  })
+
+  // 7. Recorded Metrics & Statistics
+  backLayers.push({
+    id: 'back-stats-label',
+    type: 'TEXT',
+    x: 44,
+    y: 536,
+    width: 512,
+    height: 18,
+    text: 'VERIFIED METRICS & RECORD',
+    fontSize: 10,
+    fontRole: 'mono',
+    fill: palette.subtext,
+    allCaps: true,
+  })
+
+  const metricValue = inputs.input6 || '99.4'
+  backLayers.push({
+    id: 'back-stat-card-1',
+    type: 'RECTANGLE',
+    x: 44,
+    y: 560,
+    width: 160,
+    height: 80,
+    fill: palette.surface,
+  })
+  backLayers.push({
+    id: 'back-stat-card-1-label',
+    type: 'TEXT',
+    x: 54,
+    y: 570,
+    width: 140,
+    height: 16,
+    text: 'RATING / RECORD',
+    fontSize: 10,
+    fontRole: 'mono',
+    fill: palette.subtext,
+    allCaps: true,
+  })
+  backLayers.push({
+    id: 'back-stat-card-1-val',
+    type: 'TEXT',
+    x: 54,
+    y: 592,
+    width: 140,
+    height: 36,
+    text: metricValue,
+    fontSize: 22,
+    fontRole: 'mono',
+    fill: palette.accent,
+  })
+
+  backLayers.push({
+    id: 'back-stat-card-2',
+    type: 'RECTANGLE',
+    x: 220,
+    y: 560,
+    width: 160,
+    height: 80,
+    fill: palette.surface,
+  })
+  backLayers.push({
+    id: 'back-stat-card-2-label',
+    type: 'TEXT',
+    x: 230,
+    y: 570,
+    width: 140,
+    height: 16,
+    text: 'ARCHIVE STATUS',
+    fontSize: 10,
+    fontRole: 'mono',
+    fill: palette.subtext,
+    allCaps: true,
+  })
+  backLayers.push({
+    id: 'back-stat-card-2-val',
+    type: 'TEXT',
+    x: 230,
+    y: 592,
+    width: 140,
+    height: 36,
+    text: 'VERIFIED',
+    fontSize: 18,
+    fontRole: 'mono',
+    fill: palette.foreground,
+  })
+
+  backLayers.push({
+    id: 'back-stat-card-3',
+    type: 'RECTANGLE',
+    x: 396,
+    y: 560,
+    width: 160,
+    height: 80,
+    fill: palette.surface,
+  })
+  backLayers.push({
+    id: 'back-stat-card-3-label',
+    type: 'TEXT',
+    x: 406,
+    y: 570,
+    width: 140,
+    height: 16,
+    text: 'RARITY TIER',
+    fontSize: 10,
+    fontRole: 'mono',
+    fill: palette.subtext,
+    allCaps: true,
+  })
+  backLayers.push({
+    id: 'back-stat-card-3-val',
+    type: 'TEXT',
+    x: 406,
+    y: 592,
+    width: 140,
+    height: 36,
+    text: 'LEGENDARY',
+    fontSize: 16,
+    fontRole: 'mono',
+    fill: palette.accent,
+  })
+
+  // 8. Footer Provenance & Edition Colophon
+  backLayers.push({
+    id: 'back-divider-2',
+    type: 'RECTANGLE',
+    x: 44,
+    y: 666,
+    width: 512,
+    height: 2,
+    fill: palette.border,
+  })
+  backLayers.push({
+    id: 'back-footer-edition',
+    type: 'TEXT',
+    x: 44,
+    y: 680,
+    width: 512,
+    height: 18,
+    text: 'SERIES 01 · 1 OF 25 LIMITED ISSUE · VERIFIED PROVENANCE',
+    fontSize: 10,
+    fontRole: 'mono',
+    fill: palette.subtext,
+    allCaps: true,
+  })
+  backLayers.push({
+    id: 'back-footer-barcode',
+    type: 'RECTANGLE',
+    x: 44,
+    y: 710,
+    width: 200,
+    height: 24,
+    fill: palette.surface,
+  })
+  backLayers.push({
+    id: 'back-footer-security-code',
+    type: 'TEXT',
+    x: 52,
+    y: 715,
+    width: 184,
+    height: 14,
+    text: 'RARE-SEC-7749-012X',
+    fontSize: 9,
+    fontRole: 'mono',
+    fill: palette.subtext,
+    allCaps: true,
+  })
+  backLayers.push({
+    id: 'back-footer-seal',
+    type: 'RECTANGLE',
+    x: 476,
+    y: 700,
+    width: 80,
+    height: 42,
+    fill: palette.accent,
+  })
+  backLayers.push({
+    id: 'back-footer-seal-text',
+    type: 'TEXT',
+    x: 484,
+    y: 712,
+    width: 64,
+    height: 20,
+    text: 'RARE',
+    fontSize: 15,
+    fontRole: 'display',
+    fill: palette.background,
+    allCaps: true,
+  })
+
+  return {
+    schemaVersion: 1,
+    canvas: { width: 600, height: 900 },
+    layers: backLayers,
+    metadata: {
+      rendererVersion: 'rdc-composition-v1',
+      flagship: {
+        id: `${design.id}-back`,
+        name: `${design.name} (Back)`,
+        cardTypeId: 'standard',
+        selectedImageId: null,
+        inputs,
+        contentStore: inputs,
+        fittedFontSizes: {},
+        isOverflow: {},
+        profile: person || null,
+        appearance: appearance || null,
+      },
+    },
   }
 }

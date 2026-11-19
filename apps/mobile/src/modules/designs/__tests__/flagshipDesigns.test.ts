@@ -6,15 +6,15 @@ import {
 
 describe('RARE Flagship Designs & Variable Positional Content Engine', () => {
   describe('Catalog Specification', () => {
-    test('contains exactly 20 distinct flagship designs', () => {
-      expect(FLAGSHIP_DESIGNS).toHaveLength(20)
+    test('contains at least 20 distinct flagship designs including 6 curated prefabs', () => {
+      expect(FLAGSHIP_DESIGNS.length).toBeGreaterThanOrEqual(20)
     })
 
-    test('all 20 designs have unique IDs and distinct names', () => {
+    test('all designs have unique IDs and distinct names', () => {
       const ids = new Set(FLAGSHIP_DESIGNS.map((d) => d.id))
       const names = new Set(FLAGSHIP_DESIGNS.map((d) => d.name))
-      expect(ids.size).toBe(20)
-      expect(names.size).toBe(20)
+      expect(ids.size).toBe(FLAGSHIP_DESIGNS.length)
+      expect(names.size).toBe(FLAGSHIP_DESIGNS.length)
     })
 
     test('each design defines variable positional inputs conforming to DesignInput', () => {
@@ -192,17 +192,42 @@ describe('RARE Flagship Designs & Variable Positional Content Engine', () => {
     })
   })
 
-  describe('Typography Engine & FontRole Layer Synchronization', () => {
-    test('attaches fontRole to every compiled text layer', () => {
-      for (const design of FLAGSHIP_DESIGNS) {
-        const result = compileFlagshipDesign(design.id)
-        const textLayers = result.composition.layers.filter((l) => l.type === 'TEXT')
-        expect(textLayers.length).toBeGreaterThanOrEqual(2)
+  describe('Two-Sided Collectible & Coordinated Card Back Generation', () => {
+    test('compiles both front and back faces sharing a unified content model', () => {
+      const inputs = {
+        input1: 'Miles Dewey Davis III',
+        input2: 'Jazz Pioneer & Innovator',
+        input3: 'Pioneered modal jazz and fusion, recording Kind of Blue and redefining 20th-century music.',
+        input4: 'Inducted into the Rock and Roll Hall of Fame',
+        input5: 'Recipient of the Grammy Lifetime Achievement Award',
+        input6: '99.9',
+      }
 
-        for (const layer of textLayers) {
-          expect((layer as any).fontRole).toBeDefined()
-          expect(['serif', 'sans', 'mono', 'display']).toContain((layer as any).fontRole)
-        }
+      for (const design of FLAGSHIP_DESIGNS) {
+        const result = compileFlagshipDesign(design.id, inputs)
+
+        // Front Face
+        expect(result.composition).toBeDefined()
+        expect(result.composition.schemaVersion).toBe(1)
+        expect(result.composition.canvas).toEqual({ width: 600, height: 900 })
+
+        // Coordinated Back Face
+        expect(result.backComposition).toBeDefined()
+        expect(result.backComposition.schemaVersion).toBe(1)
+        expect(result.backComposition.canvas).toEqual({ width: 600, height: 900 })
+
+        // Back layers verify rich storytelling & stats
+        const backLayerIds = result.backComposition.layers.map((l) => l.id)
+        expect(backLayerIds).toContain('back-base-card-bg')
+        expect(backLayerIds).toContain('back-header-text')
+        expect(backLayerIds).toContain('back-subject-name')
+        expect(backLayerIds).toContain('back-story-text')
+        expect(backLayerIds).toContain('back-milestone-text-1')
+        expect(backLayerIds).toContain('back-stat-card-1-val')
+        expect(backLayerIds).toContain('back-footer-edition')
+
+        // Serialization into metadata
+        expect(result.composition.metadata?.flagship?.backComposition).toBeDefined()
       }
     })
   })

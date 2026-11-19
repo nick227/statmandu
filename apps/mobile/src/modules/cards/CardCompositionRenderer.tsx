@@ -17,7 +17,15 @@ export type CardComposition = components['schemas']['CardComposition'] & {
     [key: string]: any
   }
 }
-export type CardCompositionLayer = components['schemas']['CardCompositionLayer']
+export type CardCompositionLayer = components['schemas']['CardCompositionLayer'] & {
+  fontRole?: FontRole
+  allCaps?: boolean
+  bold?: boolean
+  italic?: boolean
+  tracking?: number
+  lineHeight?: number
+  borderRadius?: number
+}
 
 export const RDC_COMPOSITION_RENDERER_VERSION = 'rdc-composition-v1'
 
@@ -236,33 +244,6 @@ export function CardCompositionRenderer({
         </View>
       )}
 
-      {/* Unissued preview indicator */}
-      {isPreview && !isAuthenticIssue && (
-        <View
-          testID="unissued-preview-indicator"
-          style={[
-            styles.previewBadge,
-            {
-              top: 10 * scale,
-              right: 10 * scale,
-              paddingHorizontal: 6 * scale,
-              paddingVertical: 2 * scale,
-              borderRadius: 4 * scale,
-            },
-          ]}
-        >
-          <RNText
-            style={{
-              color: '#F43F5E',
-              fontSize: 9 * scale,
-              fontWeight: '700',
-              letterSpacing: 0.5,
-            }}
-          >
-            PREVIEW · UNISSUED
-          </RNText>
-        </View>
-      )}
     </View>
   )
 }
