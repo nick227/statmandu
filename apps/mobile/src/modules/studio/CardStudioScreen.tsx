@@ -15,6 +15,7 @@ import { ContentFieldsEditor } from './components/ContentFieldsEditor'
 import { FlagshipDesignPicker } from './components/FlagshipDesignPicker'
 import { AppearanceControls } from './components/AppearanceControls'
 import { CardPreviewStage } from './components/CardPreviewStage'
+import { PrefabCardBrowserRail } from './components/PrefabCardBrowserRail'
 
 export type StudioSection = 'subject' | 'card' | 'content' | 'appearance'
 
@@ -347,6 +348,13 @@ export function CardStudioScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* 3. Bottom Rail: Prefabbed Card Browser with Finished Collectibles */}
+      <PrefabCardBrowserRail
+        activePrefabId={studio.activePrefabId}
+        activeFlagshipId={studio.activeFlagshipId}
+        onSelectPrefab={studio.handleSelectPrefabCard}
+      />
     </Screen>
   )
 }

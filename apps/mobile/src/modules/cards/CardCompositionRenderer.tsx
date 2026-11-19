@@ -156,6 +156,9 @@ export function CardCompositionRenderer({
                 layerStyle,
                 {
                   backgroundColor: layer.fill || '#18181b',
+                  borderRadius: (layer as any).borderRadius ? (layer as any).borderRadius * scale : undefined,
+                  borderWidth: (layer as any).borderWidth ? (layer as any).borderWidth * scale : undefined,
+                  borderColor: (layer as any).borderColor || undefined,
                 },
               ]}
             />
@@ -168,7 +171,15 @@ export function CardCompositionRenderer({
             <View
               key={layer.id || `img-${index}`}
               testID={`layer-img-${layer.id || index}`}
-              style={[layerStyle, { overflow: 'hidden' }]}
+              style={[
+                layerStyle,
+                {
+                  overflow: 'hidden',
+                  borderRadius: (layer as any).borderRadius ? (layer as any).borderRadius * scale : undefined,
+                  borderWidth: (layer as any).borderWidth ? (layer as any).borderWidth * scale : undefined,
+                  borderColor: (layer as any).borderColor || undefined,
+                },
+              ]}
             >
               {imgUrl ? (
                 <SmartImage
@@ -202,8 +213,12 @@ export function CardCompositionRenderer({
                 style={{
                   fontSize,
                   color,
-                  fontWeight: '600',
-                  lineHeight: fontSize * 1.2,
+                  fontWeight: (layer as any).bold ? '700' : '600',
+                  fontStyle: (layer as any).italic ? 'italic' : 'normal',
+                  lineHeight: fontSize * 1.25,
+                  textTransform: (layer as any).allCaps ? 'uppercase' : undefined,
+                  letterSpacing: (layer as any).tracking ? (layer as any).tracking * scale : (layer as any).allCaps ? 1.2 * scale : undefined,
+                  textAlign: (layer as any).align || undefined,
                   ...(fontFamily ? { fontFamily } : {}),
                 }}
               >

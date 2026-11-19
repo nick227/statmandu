@@ -107,20 +107,6 @@ export function CardPreviewStage({
           />
         </View>
       </View>
-
-      {/* Subtle Canva-style Stage Status Bar */}
-      <View className="w-full flex-row items-center justify-between px-md py-xs border-t border-border/40 bg-surface/60 backdrop-blur-sm mt-auto">
-        <View className="flex-row items-center gap-xs">
-          <Text variant="caption" className="text-[11px] font-medium text-muted-text">
-            Standard 2:3 Collectible · {isBack ? 'Card Back (Story & Stats)' : 'Card Front (Portrait)'}
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-sm">
-          <Text variant="caption" className="text-[11px] font-medium text-muted-text">
-            Live Preview · {Math.round((canvasWidth / 600) * 100)}%
-          </Text>
-        </View>
-      </View>
     </View>
   )
 }

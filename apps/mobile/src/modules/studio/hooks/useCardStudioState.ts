@@ -44,6 +44,7 @@ import {
   getFieldSemanticKey,
   type BoundCardField,
 } from '@/modules/profiles/profileAttributeResolver'
+import type { FinishedPrefabCard } from '../data/finishedPrefabCards'
 import {
   useUnifiedMediaLibrary,
   type MediaLibraryItem,
@@ -137,6 +138,7 @@ export function useCardStudioState() {
   const [activeFlagshipId, setActiveFlagshipId] = useState<string>(
     params.flagshipId || INITIAL_FLAGSHIP_ID,
   )
+  const [activePrefabId, setActivePrefabId] = useState<string | null>(null)
   const [selectedImageId, setSelectedImageId] = useState<string>(
     params.imageId || INITIAL_IMAGE_ID,
   )
@@ -564,6 +566,37 @@ export function useCardStudioState() {
       appearance,
       updateCompositionWithHistory,
     ],
+  )
+
+  const handleSelectPrefabCard = useCallback(
+    (prefab: FinishedPrefabCard) => {
+      setActivePrefabId(prefab.id)
+      setActiveFlagshipId(prefab.flagshipId)
+      setActiveCardTypeId(prefab.cardTypeId)
+      setSelectedImageId(prefab.imageAssetId)
+      setPublishSubjectName(prefab.subjectName)
+      setPublishSubjectBio(prefab.subjectBio || '')
+      setDesignTitle(prefab.title)
+
+      const nextOverrides = { ...prefab.contentStore }
+      setFieldOverrides(nextOverrides)
+      setAppearance(prefab.appearance)
+      appearanceRef.current = prefab.appearance
+      setActiveCardFace('front')
+
+      const result = compileFlagshipDesign(
+        prefab.flagshipId,
+        nextOverrides,
+        activeProfile,
+        assetsList,
+        prefab.cardTypeId,
+        prefab.imageAssetId,
+        prefab.appearance,
+      )
+      compositionRef.current = result.composition
+      updateCompositionWithHistory(result.composition)
+    },
+    [activeProfile, assetsList, updateCompositionWithHistory],
   )
 
   // ---------------------------------------------------------------------------
@@ -1061,6 +1094,8 @@ export function useCardStudioState() {
     toggleDesignDropdown,
     handleSelectFlagshipDesign,
     currentFlagshipResult,
+    activePrefabId,
+    handleSelectPrefabCard,
 
     // Media Library & Artwork
     selectedImageId,

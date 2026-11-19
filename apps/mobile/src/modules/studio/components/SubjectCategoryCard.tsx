@@ -39,56 +39,45 @@ export function SubjectCategoryCard({
   const mutedColor = useNativeColor('mutedText')
 
   return (
-    <View className="gap-5">
-      {/* 1. Profile Attribution */}
-      <View className="gap-2">
-        <Text className="text-sm font-semibold text-text">
-          Subject Profile
-        </Text>
-        {activeProfile ? (
-          <View className="flex-row items-center justify-between p-3 rounded-xl border border-border bg-surface">
-            <View className="flex-row items-center gap-3 flex-1 min-w-0">
-              <Avatar
-                uri={activeProfile.avatarUrl ?? null}
-                fallback={activeProfile.displayName || 'You'}
-                size="sm"
-              />
-              <View className="flex-1 min-w-0">
-                <Text className="font-semibold text-sm text-text" numberOfLines={1}>
-                  {activeProfile.displayName}
-                </Text>
-                <Text variant="caption" className="text-xs text-muted-text" numberOfLines={1}>
-                  {activeProfile.hometown || activeProfile.calling || 'Profile linked'}
-                </Text>
-              </View>
-            </View>
-            <Button
-              size="sm"
-              variant="ghost"
-              onPress={onClearSubject}
-              testID="unlink-subject-button"
-            >
-              Clear
-            </Button>
-          </View>
-        ) : (
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={User}
-            onPress={onUseMyProfile}
-            testID="use-my-profile-button"
-          >
-            {userProfile?.displayName ? `Use ${userProfile.displayName}` : 'Use My Profile'}
-          </Button>
-        )}
-      </View>
-
-      {/* 2. Direct Subject Name */}
+    <View className="gap-4">
+      {/* 1. Direct Subject Name */}
       <View className="gap-1.5">
-        <Text className="text-sm font-semibold text-text">
-          Subject Name
-        </Text>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-sm font-semibold text-text">
+            Subject Name
+          </Text>
+          {activeProfile ? (
+            <View className="flex-row items-center gap-1.5 bg-brand/10 px-2 py-0.5 rounded-full">
+              <Text className="text-[11px] font-medium text-brand">
+                {activeProfile.displayName}
+              </Text>
+              <Pressable
+                testID="unlink-subject-button"
+                onPress={onClearSubject}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel="Clear linked profile"
+              >
+                <X size={11} color={brandColor} />
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              testID="use-my-profile-button"
+              onPress={onUseMyProfile}
+              hitSlop={6}
+              className="flex-row items-center gap-1 opacity-75 active:opacity-100"
+              accessibilityRole="button"
+              accessibilityLabel="Autofill my profile"
+            >
+              <User size={12} color={mutedColor} />
+              <Text variant="caption" className="text-xs text-muted-text">
+                Autofill profile
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
         <TextInput
           value={subjectName}
           onChangeText={onSubjectNameChange}
@@ -97,12 +86,9 @@ export function SubjectCategoryCard({
           testID="subject-name-input"
           className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
         />
-        <Text variant="caption" className="text-xs text-muted-text">
-          Used on the collectible and for publishing attribution.
-        </Text>
       </View>
 
-      {/* 3. Subject Image & Background Removal */}
+      {/* 2. Subject Image & Background Removal */}
       <View className="gap-2.5 pt-2 border-t border-border/60">
         <Text className="text-sm font-semibold text-text">
           Subject Image
