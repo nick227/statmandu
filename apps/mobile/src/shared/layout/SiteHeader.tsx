@@ -19,22 +19,22 @@ export interface SiteHeaderProps {
   user?: SiteHeaderUser | null
 }
 
-// Primary/supporting/utility hierarchy: Athletes and Cards are the two
-// pillars the product is built around, Games and Teams are first-class but
-// secondary destinations, Explore is the single search/discovery utility
-// (replacing a separate search icon that pointed at this same route under
-// a different label — one entry point, not two for the same screen).
-// Articles/Videos/Community are editorial — reachable from the homepage,
-// not primary nav.
+// Primary navigation destinations for RARE Digital Collectibles:
+// 1. Discover - browse collectible drops, people, creators, categories
+// 2. Create - Card Studio design and release preparation
+// 3. Collection - claimed, saved, and owned cards
+// 4. Profile - account identity, creator presence, and storefront
 const NAV_ITEMS = [
-  { label: 'Athletes', href: '/players' },
-  { label: 'Cards', href: '/cards' },
-  { label: 'Games', href: '/games' },
-  { label: 'Teams', href: '/teams' },
-  { label: 'Explore', href: '/explore' },
+  { label: 'Discover', href: '/' },
+  { label: 'Create', href: '/cards/studio' },
+  { label: 'Collection', href: '/collection' },
+  { label: 'Profile', href: '/me' },
 ] as const
 
 function navItemActive(pathname: string, href: string) {
+  if (href === '/') return pathname === '/'
+  if (href === '/cards/studio') return pathname.startsWith('/cards/studio')
+  if (href === '/collection') return pathname === '/collection' || pathname === '/cards' || pathname.startsWith('/collection/')
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 

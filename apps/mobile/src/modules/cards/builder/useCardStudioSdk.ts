@@ -29,7 +29,7 @@ export function useCardStudioSdk() {
 
   async function saveDraft(state: CardBuilderState) {
     if (!state.athleteProfileId) {
-      Alert.alert('Select athlete', 'Choose an athlete before saving.')
+      Alert.alert('Select person', 'Choose a person before saving.')
       return null
     }
 

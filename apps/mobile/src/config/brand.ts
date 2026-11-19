@@ -1,5 +1,5 @@
 export const brand = {
-  displayName: process.env.EXPO_PUBLIC_APP_NAME ?? 'Statman',
-  wordmark: process.env.EXPO_PUBLIC_APP_WORDMARK ?? 'Statman',
-  tagline: 'Live sport, layered stats, always in motion.',
+  displayName: process.env.EXPO_PUBLIC_APP_NAME ?? 'RARE',
+  wordmark: process.env.EXPO_PUBLIC_APP_WORDMARK ?? 'RARE',
+  tagline: 'Create yourself. Collect anyone.',
 } as const

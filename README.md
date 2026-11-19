@@ -5,6 +5,8 @@ one league, two teams, twenty players — media-first profiles, event-sourced
 live game stat capture, follow/react social layer, and source/verification/
 dispute tracking.
 
+Production hosting: [Railway deployment strategy and runbook](docs/railway-deployment.md).
+
 ## Setup
 
 1. Copy env: `cp .env.example .env` and fill in `DATABASE_URL` (MySQL/MariaDB)

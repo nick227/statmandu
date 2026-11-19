@@ -94,7 +94,7 @@ export function CardBuilderScreen() {
       <Screen title="Card Studio" withBack>
         <CardBuilderStepShell
           title="Choose Subject"
-          description="Pick the athlete whose profile, team, and gallery will power the card."
+          description="Choose a person to celebrate, or add someone new."
           onNext={() => {
             if (builderData.hasSelectedPlayer) next()
           }}

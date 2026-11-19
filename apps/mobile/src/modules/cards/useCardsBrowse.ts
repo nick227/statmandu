@@ -28,8 +28,8 @@ export const CARDS_BROWSE_FILTERS: { key: CardsBrowseFilter; label: string }[] =
 // popular view filtered to limited editions (the drops actually getting
 // traction, not a fabricated curation flag); Collections is the signed-in
 // user's own claimed + saved cards, not part of the public catalog at all.
-export function useCardsBrowse(isAuthenticated: boolean) {
-  const [tab, setTab] = useState<CardsBrowseTab>('new')
+export function useCardsBrowse(isAuthenticated: boolean, initialTab: CardsBrowseTab = 'new') {
+  const [tab, setTab] = useState<CardsBrowseTab>(initialTab)
   const [filter, setFilter] = useState<CardsBrowseFilter>('all')
 
   const newQuery = useRecentCards()
@@ -50,7 +50,11 @@ export function useCardsBrowse(isAuthenticated: boolean) {
     return sourceCards.filter((card) => card.cardType === filter)
   }, [sourceCards, filter])
 
-  const claimedCards = (minePastQuery.data?.data.claimed ?? []).map((entry) => entry.card)
+  const claimedCards = (minePastQuery.data?.data.claimed ?? []).map((entry) => ({
+    ...entry.card,
+    currentUserHasClaimed: true,
+    currentUserIssue: entry.issue,
+  }))
   const savedCards = (savesQuery.data?.data ?? []).map((s) => s.card).filter((c): c is NonNullable<typeof c> => Boolean(c))
 
   const isLoading = tab === 'collections' ? minePastQuery.isLoading || savesQuery.isLoading : tab === 'new' ? newQuery.isLoading : popularQuery.isLoading

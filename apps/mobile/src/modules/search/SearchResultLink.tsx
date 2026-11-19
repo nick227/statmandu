@@ -10,6 +10,7 @@ import { useNativeColor } from '@/lib/theme'
 type SearchResultItem = components['schemas']['SearchResultItem']
 
 const ROUTE_BY_TYPE = {
+  PERSON_PROFILE: (id: string) => ({ pathname: '/people/[personId]' as const, params: { personId: id } }),
   PLAYER: (id: string) => ({ pathname: '/players/[playerId]' as const, params: { playerId: id } }),
   TEAM: (id: string) => ({ pathname: '/teams/[teamId]' as const, params: { teamId: id } }),
   GAME: (id: string) => ({ pathname: '/games/[gameId]' as const, params: { gameId: id } }),
@@ -17,6 +18,7 @@ const ROUTE_BY_TYPE = {
 }
 
 const TYPE_LABEL: Record<SearchResultItem['type'], string> = {
+  PERSON_PROFILE: 'Person',
   PLAYER: 'Player',
   TEAM: 'Team',
   GAME: 'Game',
@@ -24,6 +26,7 @@ const TYPE_LABEL: Record<SearchResultItem['type'], string> = {
 }
 
 const TYPE_ICON: Record<SearchResultItem['type'], React.ComponentType<{ size?: number; color?: string }>> = {
+  PERSON_PROFILE: User,
   PLAYER: User,
   TEAM: Users,
   GAME: CalendarDays,

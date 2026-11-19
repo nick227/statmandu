@@ -1,3 +1,4 @@
+import { Button } from '@/shared/ui/Button'
 import { Pressable, ScrollView, View } from 'react-native'
 import { Text } from '@/shared/ui/Text'
 import { Input } from '@/shared/ui/Input'
@@ -8,9 +9,10 @@ import type { useCardBuilderData } from './useCardBuilderData'
 // single-card builder and the batch photo-to-pose-set generator, which
 // otherwise duplicated this exact search+select UI verbatim.
 export function SubjectPicker({ builderData }: { builderData: ReturnType<typeof useCardBuilderData> }) {
+  const { createPerson, addPerson } = builderData
   return (
     <View className="gap-md">
-      <Input value={builderData.athleteQuery} onChangeText={builderData.setAthleteQuery} placeholder="Search athletes" />
+      <Input value={builderData.athleteQuery} onChangeText={builderData.setAthleteQuery} placeholder="Find a person by name" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
         {builderData.playerOptions.map((player) => (
           <Pressable
@@ -26,9 +28,11 @@ export function SubjectPicker({ builderData }: { builderData: ReturnType<typeof 
       </ScrollView>
       {builderData.playerOptions.length === 0 ? (
         <View className="rounded-md border border-dashed border-border bg-canvas p-md">
-          <Text variant="caption">No athletes found. Search by name or create an athlete profile first.</Text>
+          <Text variant="caption">No people found. Add a person to create their first card.</Text>
         </View>
       ) : null}
+      <Button variant="secondary" disabled={!builderData.athleteQuery.trim()} isLoading={createPerson.isPending} onPress={() => { void addPerson().catch(() => {}) }}>Add this person</Button>
+      {createPerson.error ? <Text>{createPerson.error.message}</Text> : null}
     </View>
   )
 }

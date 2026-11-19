@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Alert } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { useImages, usePlayers, useUploadImage } from '@statman/sdk'
+import { useImages, usePeople, useUploadImage, useCreatePerson } from '@statman/sdk'
 import type { components } from '@statman/sdk'
 import type { CardBuilderState } from './cardBuilderTypes'
 
-type Player = components['schemas']['Player']
+type Player = components['schemas']['PersonProfile']
 type ImageAsset = components['schemas']['ImageAsset']
 
 export interface CardBuilderPlayerOption {
@@ -21,24 +21,23 @@ function supportedContentType(value?: string): 'image/jpeg' | 'image/png' | 'ima
   return 'image/jpeg'
 }
 
-function athleteName(player?: Player | null) {
-  const profile = player?.athleteProfile
-  return profile ? `${profile.firstName} ${profile.lastName}` : null
-}
-
-function teamName(player?: Player | null) {
-  return player?.currentTeam?.name ?? player?.sport?.name ?? null
-}
+function athleteName(person?: Player | null) { return person?.displayName ?? null }
+function teamName(_person?: Player | null) { return 'Person' }
 
 export function useCardBuilderData(
   state: CardBuilderState,
   updateState: (updates: Partial<CardBuilderState>) => void,
 ) {
   const [athleteQuery, setAthleteQuery] = useState('')
-  const playersQuery = usePlayers({ q: athleteQuery || undefined, limit: 20 })
-  const players = useMemo(() => playersQuery.data?.pages.flatMap((p) => p.data) ?? [], [playersQuery.data])
+  const createPerson = useCreatePerson()
+  async function addPerson() {
+    const result = await createPerson.mutateAsync({ displayName: athleteQuery.trim() })
+    selectPlayer({ athleteProfileId: result.data.id, name: result.data.displayName, teamName: 'Person' })
+  }
+  const playersQuery = usePeople(athleteQuery)
+  const players = useMemo(() => playersQuery.data?.data ?? [], [playersQuery.data])
   const selectedPlayer = useMemo(
-    () => players.find((p) => p.athleteProfileId === state.athleteProfileId) ?? null,
+    () => players.find((p) => p.id === state.athleteProfileId) ?? null,
     [players, state.athleteProfileId]
   )
 
@@ -46,10 +45,10 @@ export function useCardBuilderData(
     () =>
       players.map((player) => ({
         id: player.id,
-        athleteProfileId: player.athleteProfileId,
-        name: athleteName(player) ?? 'Athlete',
-        teamName: teamName(player) ?? 'Athlete profile',
-        selected: Boolean(state.athleteProfileId && player.athleteProfileId === state.athleteProfileId),
+        athleteProfileId: player.id,
+        name: athleteName(player) ?? 'Person',
+        teamName: teamName(player) ?? 'Person profile',
+        selected: Boolean(state.athleteProfileId && player.id === state.athleteProfileId),
       })),
     [players, state.athleteProfileId]
   )
@@ -70,7 +69,7 @@ export function useCardBuilderData(
 
   async function pickAndUploadPhoto() {
     if (!state.athleteProfileId) {
-      Alert.alert('Select athlete', 'Choose an athlete before adding a gallery photo.')
+      Alert.alert('Select person', 'Choose a person before adding a gallery photo.')
       return
     }
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -104,6 +103,7 @@ export function useCardBuilderData(
   }
 
   return {
+    createPerson, addPerson,
     athleteQuery,
     setAthleteQuery,
     playerOptions,

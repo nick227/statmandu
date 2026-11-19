@@ -1,7 +1,8 @@
 import { View } from 'react-native'
+import { brand } from '@/config/brand'
 import { Text } from '@/shared/ui/Text'
 import { cn } from '@/lib/utils'
-import { parseStatValue, ratingFromStats, teamInitials, type CardFaceData } from './cardDisplay'
+import { parseStatValue, teamInitials, type CardFaceData } from './cardDisplay'
 
 export interface CardBackProps {
   data: CardFaceData
@@ -24,7 +25,7 @@ export function CardBack({ data, dense = false, productionLabel }: CardBackProps
             <View className="flex-row items-center justify-between border-b pb-2" style={{ borderBottomColor: style.secondary }}>
               <View>
                 <Text className={cn('font-bold uppercase tracking-[2px]', dense ? 'text-[9px]' : 'text-sm')} style={{ color: style.secondary }}>
-                  STATMAN
+                  {brand.wordmark}
                 </Text>
                 <Text className={cn('uppercase', dense ? 'text-[7px]' : 'text-[10px]')} style={{ color: style.text, opacity: 0.7 }}>
                   Card 1A · {setName}
@@ -52,8 +53,8 @@ export function CardBack({ data, dense = false, productionLabel }: CardBackProps
 
             <View className="border-y" style={{ borderColor: style.secondary }}>
               <View className="flex-row items-center justify-between py-2">
-                <Text className={cn('font-bold uppercase tracking-widest', dense ? 'text-[8px]' : 'text-xs')} style={{ color: style.text }}>Verified stats</Text>
-                <Text className={cn('font-bold', dense ? 'text-[9px]' : 'text-sm')} style={{ color: style.text }}>OVR {ratingFromStats(stats)}</Text>
+                <Text className={cn('font-bold uppercase tracking-widest', dense ? 'text-[8px]' : 'text-xs')} style={{ color: style.text }}>Card details</Text>
+                <Text className={cn('font-bold', dense ? 'text-[9px]' : 'text-sm')} style={{ color: style.text }}>{stats.length} details</Text>
               </View>
               {(dense ? stats.slice(0, 2) : stats).map((stat, index) => (
                 <View key={`${stat}-back-${index}`} className="flex-row justify-between border-t py-1" style={{ borderTopColor: style.secondary }}>
@@ -63,7 +64,7 @@ export function CardBack({ data, dense = false, productionLabel }: CardBackProps
               ))}
               {stats.length === 0 ? (
                 <Text className={cn('border-t py-2 uppercase', dense ? 'text-[8px]' : 'text-xs')} style={{ borderTopColor: style.secondary, color: style.text, opacity: 0.6 }}>
-                  Stats pending
+                  No details added
                 </Text>
               ) : null}
             </View>
@@ -71,10 +72,10 @@ export function CardBack({ data, dense = false, productionLabel }: CardBackProps
 
           <View className="flex-row items-end justify-between border-t pt-2" style={{ borderTopColor: style.secondary }}>
             <View>
-              <Text className={cn('font-bold', dense ? 'text-[8px]' : 'text-xs')} style={{ color: style.text }}>{cardNumber || 'SM-001'}</Text>
+              <Text className={cn('font-bold', dense ? 'text-[8px]' : 'text-xs')} style={{ color: style.text }}>{cardNumber || 'RDC-001'}</Text>
               <Text className={dense ? 'text-[7px]' : 'text-[10px]'} style={{ color: style.text, opacity: 0.65 }}>{productionLabel ?? rarityLabel}</Text>
             </View>
-            <Text className={dense ? 'text-[7px]' : 'text-[10px]'} style={{ color: style.text, opacity: 0.65 }}>© 2026 STATMAN</Text>
+            <Text className={dense ? 'text-[7px]' : 'text-[10px]'} style={{ color: style.text, opacity: 0.65 }}>© 2026 {brand.wordmark}</Text>
           </View>
         </View>
       </View>

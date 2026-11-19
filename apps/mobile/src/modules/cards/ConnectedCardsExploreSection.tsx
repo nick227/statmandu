@@ -38,7 +38,7 @@ export function ConnectedCardsExploreSection() {
   if (cardsQuery.isLoading || cardsQuery.isError || cards.length === 0) return null
 
   return (
-    <ContentSection title="Statman Cards" subtitle="Recently published, ready to claim.">
+    <ContentSection title="Digital Collectibles" subtitle="Recently published, ready to claim.">
       <View className="flex-row flex-wrap gap-xs pb-sm">
         {FILTERS.map((f) => {
           const active = filter === f.key

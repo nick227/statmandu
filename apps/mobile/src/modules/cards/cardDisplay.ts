@@ -1,4 +1,5 @@
 import type { components } from '@statman/sdk'
+import { brand } from '@/config/brand'
 
 type Card = components['schemas']['Card']
 type CardTemplateStatus = components['schemas']['CardTemplateStatus']
@@ -50,7 +51,7 @@ export function claimedStatusMessage(card: Pick<Card, 'editionMode' | 'editionSi
 }
 
 export function athleteFullName(card: Pick<Card, 'athlete'>): string {
-  return card.athlete?.displayName ?? 'Unknown Athlete'
+  return card.athlete?.displayName ?? 'Unknown Person'
 }
 
 function isLoadableUrl(url?: string | null): url is string {
@@ -168,8 +169,8 @@ export function cardFaceDataFromCard(card: Card): CardFaceData {
     stats: Array.isArray(studio.stats) ? studio.stats.filter(Boolean) : [],
     rarityLabel: editionLabel(card),
     isRare: isLimitedEdition(card),
-    setName: studio.setName ?? 'Statman Debut',
+    setName: studio.setName ?? `${brand.wordmark} Debut`,
     cardNumber: studio.cardNumber ?? '',
-    backCopy: studio.backCopy ?? `${athleteFullName(card)} competes with purpose. This card records a verified Statman profile and season moment.`,
+    backCopy: studio.backCopy ?? `${athleteFullName(card)} is featured in this community-created card.`,
   }
 }

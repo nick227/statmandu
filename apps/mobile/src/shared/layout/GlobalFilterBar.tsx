@@ -5,17 +5,38 @@ import { SidebarChip } from '@/shared/layout/SidebarRail'
 import { useNativeColor } from '@/lib/theme'
 
 export interface GlobalFilterBarProps {
+  categories?: string[]
+  activeCategory?: string
+  onSelectCategory?: (category: string) => void
   sports?: string[]
   activeSport?: string
   onSelectSport?: (sport: string) => void
 }
 
+const DEFAULT_CATEGORIES = [
+  'All',
+  'Music',
+  'Film',
+  'Art',
+  'Comedy',
+  'Gaming',
+  'Science',
+  'Business',
+  'Sports',
+]
+
 export function GlobalFilterBar({ 
-  sports = ['All Sports', 'Basketball', 'Football', 'Soccer', 'Volleyball', 'Baseball'], 
-  activeSport = 'All Sports', 
+  categories,
+  activeCategory,
+  onSelectCategory,
+  sports, 
+  activeSport, 
   onSelectSport 
 }: GlobalFilterBarProps) {
   const iconColor = useNativeColor('text')
+  const items = categories ?? sports ?? DEFAULT_CATEGORIES
+  const selected = activeCategory ?? activeSport ?? items[0]
+  const handleSelect = onSelectCategory ?? onSelectSport
   
   return (
     <View className="mb-md flex-row items-center gap-sm border-b border-border pb-sm">
@@ -24,12 +45,12 @@ export function GlobalFilterBar({
         <Text variant="statLabel">Filter</Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-xs pr-md">
-        {sports.map((sport) => (
+        {items.map((item) => (
           <SidebarChip 
-            key={sport} 
-            label={sport} 
-            active={activeSport === sport} 
-            onPress={() => onSelectSport?.(sport)} 
+            key={item} 
+            label={item} 
+            active={selected === item} 
+            onPress={() => handleSelect?.(item)} 
           />
         ))}
       </ScrollView>

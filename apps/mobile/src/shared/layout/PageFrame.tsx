@@ -1,3 +1,4 @@
+import type { ViewStyle } from 'react-native'
 import type { ReactNode } from 'react'
 import { Platform, View, useWindowDimensions } from 'react-native'
 import { cn } from '@/lib/utils'
@@ -50,7 +51,7 @@ export function PageFrame({
           flexBasis: '30%',
           maxWidth: '30%',
           ...(Platform.OS === 'web'
-            ? ({ position: 'sticky', top: LAYOUT.sidebarStickyTop } as const)
+            ? ({ position: 'sticky', top: LAYOUT.sidebarStickyTop } as unknown as ViewStyle)
             : null),
         }}
       >

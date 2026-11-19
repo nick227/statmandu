@@ -1,5 +1,6 @@
 import { useCallback, useMemo, type ReactNode } from 'react'
 import { FlatList, View, useWindowDimensions } from 'react-native'
+import { useLocalSearchParams } from 'expo-router'
 import { CreditCard } from 'lucide-react-native'
 import { PageFrame, Screen, GlobalFilterBar, ContentSection } from '@/shared/layout'
 import { LAYOUT } from '@/shared/layout/layoutConstants'
@@ -23,16 +24,18 @@ function browseColumns(width: number) {
 
 const TAB_DESCRIPTION: Record<CardsBrowseTab, string> = {
   featured: 'Limited-edition drops getting the most traction right now.',
-  new: 'Browse published Statman Cards — claim a drop, then create your own from the sidebar.',
+  new: 'Browse published collectible cards — claim a drop, then create your own in Card Studio.',
   popular: 'Ranked by total downloads across every published card.',
   collections: 'Cards you\'ve claimed and saved.',
 }
 
-export function CardManagerScreen() {
+export function CardManagerScreen({ initialTab }: { initialTab?: CardsBrowseTab } = {}) {
+  const { tab: paramTab } = useLocalSearchParams<{ tab?: CardsBrowseTab }>()
+  const effectiveTab = initialTab ?? paramTab ?? 'new'
   const { width } = useWindowDimensions()
   const columns = browseColumns(width)
   const { isAuthenticated, isAuthLoading } = useAuthGate()
-  const browse = useCardsBrowse(isAuthenticated)
+  const browse = useCardsBrowse(isAuthenticated, effectiveTab)
   const manager = useCardManager(isAuthenticated && !isAuthLoading)
   const { inProgress } = partitionOwnedCards(manager.createdCards)
 
@@ -56,7 +59,7 @@ export function CardManagerScreen() {
 
   if (browse.isError) {
     return (
-      <Screen title="Trading Cards" insetTop={false}>
+      <Screen title="Digital Collectibles" insetTop={false}>
         <PageFrame
           main={<ErrorState message="Trading cards couldn't be loaded." />}
           sidebar={sidebar}
@@ -68,7 +71,7 @@ export function CardManagerScreen() {
 
   if (browse.isLoading || isAuthLoading) {
     return (
-      <Screen title="Trading Cards" insetTop={false}>
+      <Screen title="Digital Collectibles" insetTop={false}>
         <GlobalFilterBar />
         <PageFrame
           main={
@@ -90,7 +93,7 @@ export function CardManagerScreen() {
 
   if (browse.tab === 'collections') {
     return (
-      <Screen title="Trading Cards" insetTop={false} scroll>
+      <Screen title="My Collection" insetTop={false} scroll>
         <PageFrame
           main={
             <View className="gap-lg">
@@ -100,18 +103,18 @@ export function CardManagerScreen() {
                 <SignInPrompt message="Sign in to see your collection" className="items-start py-lg" />
               ) : (
                 <>
-                  <ContentSection title="Claimed" subtitle="Copies you've claimed from published drops.">
+                  <ContentSection title="Owned Copies" subtitle="Individually numbered copies claimed and owned by your account.">
                     {browse.claimedCards.length > 0 ? (
                       <CardRail cards={browse.claimedCards} source="EXPLORE" className="gap-sm" />
                     ) : (
-                      <EmptyState icon={CreditCard} title="No claims yet" description="Claim a public card to see it here." />
+                      <EmptyState icon={CreditCard} title="No owned copies yet" description="Claim a public card release to receive a numbered copy." />
                     )}
                   </ContentSection>
-                  <ContentSection title="Saved" subtitle="Cards you've bookmarked to come back to.">
+                  <ContentSection title="Saved Releases" subtitle="Card releases and designs you've saved to your collection.">
                     {browse.savedCards.length > 0 ? (
                       <CardRail cards={browse.savedCards} source="EXPLORE" className="gap-sm" />
                     ) : (
-                      <EmptyState icon={CreditCard} title="Nothing saved yet" description="Tap Save on any card to add it here." />
+                      <EmptyState icon={CreditCard} title="Nothing saved yet" description="Tap Save on any card release to bookmark it here." />
                     )}
                   </ContentSection>
                 </>
@@ -128,7 +131,7 @@ export function CardManagerScreen() {
   const gridCards = browse.featured ? browse.rest : browse.cards
 
   return (
-    <Screen title="Trading Cards" insetTop={false}>
+    <Screen title="Digital Collectibles" insetTop={false}>
       <PageFrame
         main={
           <CardsGrid

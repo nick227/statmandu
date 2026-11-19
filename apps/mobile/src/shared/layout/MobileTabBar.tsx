@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Modal, Platform, Pressable, View, useWindowDimensions, type ViewStyle } from 'react-native'
 import { Link, usePathname, useRouter } from 'expo-router'
-import { ClipboardList, CreditCard, Home, Plus, Radio, Shield, Trophy, User, UserRound, X } from 'lucide-react-native'
+import { CreditCard, Layers, Plus, Sparkles, Trophy, User, UserRound, X } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@/shared/ui/Text'
@@ -10,20 +10,16 @@ import { cn } from '@/lib/utils'
 import { LAYOUT } from './layoutConstants'
 
 const ITEMS: ReadonlyArray<{ label: string; href: string; icon: LucideIcon; prominent?: boolean }> = [
-  { label: 'Home', href: '/', icon: Home },
-  { label: 'Cards', href: '/cards', icon: CreditCard },
+  { label: 'Discover', href: '/', icon: Sparkles },
   { label: 'Create', href: '#create', icon: Plus, prominent: true },
-  { label: 'Games', href: '/games', icon: Radio },
+  { label: 'Collection', href: '/collection', icon: Layers },
   { label: 'Profile', href: '/me', icon: User },
 ]
 
 const CREATE_ACTIONS: ReadonlyArray<{ label: string; description: string; href: string | { pathname: string; params: Record<string, string> }; icon: LucideIcon }> = [
-  { label: 'Card', description: 'Open Card Studio', href: '/cards/studio', icon: CreditCard },
-  { label: 'Game', description: 'Add a game', href: { pathname: '/games', params: { create: '1' } }, icon: Trophy },
-  { label: 'Team', description: 'Create a team', href: '/teams/create', icon: Shield },
-  { label: 'Athlete', description: 'Build a profile', href: '/players/create', icon: UserRound },
-  { label: 'Broadcast', description: 'Choose a live game', href: { pathname: '/games', params: { action: 'broadcast' } }, icon: Radio },
-  { label: 'Score', description: 'Choose any game', href: { pathname: '/games', params: { action: 'score' } }, icon: ClipboardList },
+  { label: 'Card Studio', description: 'Design and compose a collectible', href: '/cards/studio', icon: CreditCard },
+  { label: 'Add Person', description: 'Create an unclaimed profile to design for', href: '/players/create', icon: UserRound },
+  { label: 'Sports Archive', description: 'Browse games, rosters, and stats', href: '/games', icon: Trophy },
 ]
 
 // 52px touch target + 4px top inset + at least 4px bottom inset + border.
@@ -32,7 +28,10 @@ const CREATE_ACTIONS: ReadonlyArray<{ label: string; description: string; href: 
 const TAB_BAR_BASE_HEIGHT = 61
 
 function isActive(pathname: string, href: string) {
-  return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`)
+  if (href === '/') return pathname === '/'
+  if (href === '/cards/studio') return pathname.startsWith('/cards/studio')
+  if (href === '/collection') return pathname === '/collection' || pathname === '/cards' || pathname.startsWith('/collection/')
+  return pathname === href || pathname.startsWith(`${href}/`)
 }
 
 export function MobileTabBar() {

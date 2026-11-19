@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import { getCardPoses, getSportDefinition } from '@statman/sports'
+
 import { Screen } from '@/shared/layout/Screen'
 import { Text } from '@/shared/ui/Text'
 import { ErrorState } from '@/shared/ui/ErrorState'
@@ -39,8 +39,7 @@ export function CardBatchGenerateScreen() {
 
   const step = STEPS[stepIndex]
   const progressLabel = `Step ${stepIndex + 1} of ${STEPS.length}`
-  const sportSlug = builderData.selectedPlayer?.sport?.slug ?? 'basketball'
-  const poses = getCardPoses(getSportDefinition(sportSlug))
+  const poses = [{ id: 'portrait', label: 'Portrait', category: 'portrait', promptTemplate: 'Expressive studio portrait' }]
   const activePoseIds = selectedPoseIds ?? poses.map((pose) => pose.id)
 
   function next() {
@@ -74,7 +73,7 @@ export function CardBatchGenerateScreen() {
       <Screen title="Generate Card Set" withBack>
         <CardBuilderStepShell
           title="Choose Subject"
-          description="Pick the athlete this card set is for."
+          description="Pick the person this card set is for."
           onNext={() => {
             if (builderData.hasSelectedPlayer) next()
           }}
@@ -108,7 +107,7 @@ export function CardBatchGenerateScreen() {
     <Screen title="Generate Card Set" withBack>
       <CardBuilderStepShell
         title="Choose Poses"
-        description={`Standard ${getSportDefinition(sportSlug).name} trading-card poses. Every generation is kept privately — publish only the ones you like from Trading Cards afterward.`}
+        description="Portrait cards are private until you publish them."
         onNext={generate}
         onBack={back}
         nextLabel={`Generate ${activePoseIds.length} Card${activePoseIds.length === 1 ? '' : 's'}`}

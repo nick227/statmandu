@@ -27,7 +27,7 @@ export function ConnectedCardDropSection({ seeAllHref }: ConnectedCardDropSectio
   return (
     <ContentSection
       title="New Drops"
-      subtitle="Fresh Statman Cards, ready to claim."
+      subtitle="Fresh collectible releases, ready to claim."
       href={seeAllHref}
       linkLabel="See all cards"
     >

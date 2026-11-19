@@ -1,11 +1,12 @@
 import { StyleSheet, View } from 'react-native'
 import { ImagePlus } from 'lucide-react-native'
 import { LinearGradient } from 'expo-linear-gradient'
+import { brand } from '@/config/brand'
 import { Text } from '@/shared/ui/Text'
 import { SmartImage } from '@/shared/media/SmartImage'
 import { cn } from '@/lib/utils'
 import { CARD_GEOMETRY } from './cardGeometry'
-import { ratingFromStats, teamInitials, type BadgeTone, type CardFaceData } from './cardDisplay'
+import { teamInitials, type BadgeTone, type CardFaceData } from './cardDisplay'
 
 export interface CardFaceProps {
   data: CardFaceData
@@ -23,7 +24,6 @@ export interface CardFaceProps {
 // this component existed.
 export function CardFace({ data, dense = false, statusBadge }: CardFaceProps) {
   const { athleteName, framePreset, imageUri, isRare, rarityLabel, setName, stats, style, teamName, title } = data
-  const overallRating = ratingFromStats(stats)
   const editionText = statusBadge?.label ?? rarityLabel
 
   return (
@@ -56,8 +56,8 @@ export function CardFace({ data, dense = false, statusBadge }: CardFaceProps) {
 
           {framePreset === 'stat-battle' && !dense ? (
             <View className="absolute bottom-2 right-2 border-2 bg-black/80 px-2 py-1" style={{ borderColor: style.secondary }}>
-              <Text className="text-center text-[10px] font-bold text-white/70">OVR</Text>
-              <Text className="text-center text-3xl font-bold text-white">{overallRating}</Text>
+              <Text className="text-center text-[10px] font-bold text-white/70">DETAILS</Text>
+              <Text className="text-center text-3xl font-bold text-white">{stats.length}</Text>
             </View>
           ) : null}
         </View>
@@ -75,7 +75,7 @@ export function CardFace({ data, dense = false, statusBadge }: CardFaceProps) {
           </View>
           <View className="flex-row items-end justify-between gap-2">
             <Text className={cn('font-bold uppercase tracking-[2px]', dense ? 'text-[8px]' : 'text-xs')} style={{ color: style.secondary }}>
-              STATMAN
+              {brand.wordmark}
             </Text>
             <Text className={cn(dense ? 'text-[7px]' : 'text-[10px]')} style={{ color: style.text, opacity: 0.7 }} numberOfLines={1}>
               {framePreset === 'heritage-back' ? setName : editionText}

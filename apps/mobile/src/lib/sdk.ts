@@ -4,6 +4,17 @@ import { createApiClient } from '@statman/sdk'
 import { consumeNextAdminNote, getActAsUserId } from '@/lib/adminHeaders'
 
 const TOKEN_KEY = 'statman.token'
+let apiBaseUrl = ''
+
+export function imageAuthHeaders(uri: string): Record<string, string> | undefined {
+  if (!isNative || !apiBaseUrl) return undefined
+  try {
+    const url = new URL(uri)
+    if (url.origin !== new URL(apiBaseUrl).origin || !url.pathname.startsWith('/uploads/images/')) return undefined
+    const token = getStoredToken()
+    return token ? { Authorization: `Bearer ${token}` } : undefined
+  } catch { return undefined }
+}
 
 // expo-secure-store is native-only (iOS Keychain / Android Keystore) — it
 // has no real web implementation, and calling it on web throws at runtime
@@ -28,6 +39,7 @@ export async function clearStoredToken() {
 }
 
 export function initApiClient(baseUrl: string) {
+  apiBaseUrl = baseUrl
   const client = createApiClient({
     baseUrl,
     // Only native platforms need the SecureStore/Bearer override — see

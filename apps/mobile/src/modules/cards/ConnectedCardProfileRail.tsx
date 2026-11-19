@@ -38,11 +38,11 @@ export function ConnectedCardProfileRail({ athleteProfileId, athleteName, canEdi
       <View className={className ?? 'gap-lg px-lg'}>
         <EmptyState
           icon={Sparkles}
-          title={canEdit ? 'Create your first Statman Card' : 'No cards released yet'}
+          title={canEdit ? 'Create your first card' : 'No cards released yet'}
           description={
             canEdit
-              ? 'Upload a photo and get a full set of trading-card poses for your sport — pick your favorites to publish.'
-              : 'Check back after this athlete publishes a card.'
+              ? 'Upload a photo and build a collectible card in Studio — pick your favorites to publish.'
+              : 'Check back after this person publishes a card.'
           }
         />
         {canEdit ? (
@@ -66,7 +66,7 @@ export function ConnectedCardProfileRail({ athleteProfileId, athleteName, canEdi
     <View className={className ?? 'gap-lg'}>
       <ContentSection
         title={`${athleteName}'s Cards`}
-        subtitle="Own a piece of the season — collect a Statman Card."
+        subtitle="Collect limited-edition releases from this profile."
         className="gap-sm px-lg"
       >
         <ConnectedStatmanCard card={featured} size="featured" source="PROFILE" />

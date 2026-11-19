@@ -92,12 +92,23 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
           <View className="gap-xs">
             <Text className="text-2xl font-bold">{card.title}</Text>
             <Text variant="caption">{athleteFullName(card)}</Text>
+            <View className="flex-row flex-wrap items-center gap-xs">
+              <Badge tone={card.publicationType === 'OFFICIAL' ? 'verified' : 'muted-text'}>
+                {card.publicationType === 'OFFICIAL' ? 'Official Release' : 'Community Edition'}
+              </Badge>
+              <Text variant="caption">
+                {card.createdByUserId ? `Created by @${card.createdByUserId}` : 'Community release'}
+                {card.publishedByUserId && card.publishedByUserId !== card.createdByUserId
+                  ? ` · Published by @${card.publishedByUserId}`
+                  : ''}
+              </Text>
+            </View>
           </View>
 
           <View className="flex-row flex-wrap gap-sm">
-            {card.athlete?.playerId ? (
-              <Link href={{ pathname: '/players/[playerId]', params: { playerId: card.athlete.playerId } }} asChild>
-                <Button variant="secondary" size="sm">View athlete profile</Button>
+            {card.personProfileId ? (
+              <Link href={{ pathname: '/people/[personId]', params: { personId: card.personProfileId } }} asChild>
+                <Button variant="secondary" size="sm">View person profile</Button>
               </Link>
             ) : null}
             {card.team ? (

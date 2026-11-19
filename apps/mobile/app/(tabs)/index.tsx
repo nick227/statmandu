@@ -1,5 +1,5 @@
-import { HomeFeedScreen } from '@/modules/feed/HomeFeedScreen'
+import { DiscoverScreen } from '@/modules/discover/DiscoverScreen'
 
 export default function HomeRoute() {
-  return <HomeFeedScreen />
+  return <DiscoverScreen />
 }

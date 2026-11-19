@@ -10,7 +10,10 @@
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "lint": "node scripts/check-boundaries.mjs",
-    "test": "jest"
+    "test": "jest",
+    "build:web": "tsc --noEmit && expo export --platform web --clear",
+    "start:web": "node scripts/serve-web.mjs",
+    "test:web": "node --test scripts/serve-web.test.mjs"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.14",
@@ -44,6 +47,7 @@
     "react-native-web": "^0.21.0",
     "react-native-webview": "13.16.1",
     "react-native-worklets": "^0.10.0",
+    "serve-handler": "6.1.6",
     "tailwind-merge": "^2.0.0"
   },
   "devDependencies": {

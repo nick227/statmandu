@@ -16,6 +16,7 @@ export default function AppShellLayout() {
       <ConnectedSiteHeader />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="collection" />
         <Stack.Screen name="explore" />
         <Stack.Screen name="videos" />
         <Stack.Screen name="articles" />

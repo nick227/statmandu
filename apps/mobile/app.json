@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Statman",
-    "slug": "statman",
-    "scheme": "statman",
+    "name": "RARE",
+    "slug": "rare",
+    "scheme": "rare",
     "version": "0.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -22,6 +22,10 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
     }
   }
 }

@@ -1,3 +1,4 @@
+import { imageAuthHeaders } from '@/lib/sdk'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { Image, type ImageProps } from 'expo-image'
@@ -24,10 +25,10 @@ export function SmartImage({ uri, fallback, className, resizeMode = 'cover', onE
 
   return (
     <Image
-      source={{ uri }}
+      source={{ uri, headers: imageAuthHeaders(uri) }}
       className={className}
       contentFit={resizeMode}
-      cachePolicy="memory-disk"
+      cachePolicy={uri.includes('/uploads/images/') ? 'none' : 'memory-disk'}
       transition={180}
       recyclingKey={uri}
       onError={(event) => {
