@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Platform, Pressable, TextInput, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
-import { useUpdateProfile, useUploadImage } from '@statman/sdk'
+import { useAccountProfileMutations } from '@/modules/account/useAccountProfileMutations'
 import {
   Plus,
   Trash2,
@@ -63,8 +63,7 @@ export function AccountScreen() {
   const mutedColor = useNativeColor('mutedText')
 
   const { isError, isLoading, logout, user, capabilities } = useAccountSession()
-  const updateProfile = useUpdateProfile()
-  const uploadImage = useUploadImage()
+  const { updateProfile, uploadImage } = useAccountProfileMutations()
 
   // Active Chip (Creator is our Primary tab)
   const [pursuit, setPursuit] = useState<PursuitFocus>('CREATOR')
