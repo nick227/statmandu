@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Image, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
@@ -42,6 +42,21 @@ import {
   getArtworkById,
   type ArtworkPreset,
 } from '@/modules/designs/curatedArtwork'
+import {
+  UniversalProfile,
+  BENCHMARK_PROFILES,
+  toUniversalProfile,
+  getSpecializationMeta,
+  type SpecializationType,
+} from '@/modules/profiles/profileTaxonomy'
+import {
+  buildBoundCardFields,
+  type BoundCardField,
+} from '@/modules/profiles/profileAttributeResolver'
+import {
+  useUnifiedMediaLibrary,
+  type MediaLibraryItem,
+} from '@/modules/media/useUnifiedMediaLibrary'
 import { areFontsReady, waitForFontsLoaded } from '@/modules/typography/textFit'
 import {
   Save,
@@ -58,6 +73,13 @@ import {
   X,
   Sparkles,
   Layers,
+  Link2,
+  RotateCcw,
+  User,
+  Film,
+  Music,
+  Trophy,
+  BookOpen,
 } from 'lucide-react-native'
 
 const INITIAL_FLAGSHIP_ID = 'classic-collector'
@@ -96,6 +118,10 @@ export function CardStudioScreen() {
   const publishReleaseMutation = usePublishRelease()
   const { people, createPerson } = usePersonSelector()
 
+  // Active Subject Person Profile (Universal Profile & Specializations)
+  const [activeProfile, setActiveProfile] = useState<UniversalProfile>(BENCHMARK_PROFILES[0])
+  const [personDropdownOpen, setPersonDropdownOpen] = useState(false)
+
   // Active Design state
   const [activeDesign, setActiveDesign] = useState<CardDesign | null>(null)
   const [designTitle, setDesignTitle] = useState('Untitled Collectible')
@@ -106,35 +132,19 @@ export function CardStudioScreen() {
     params.flagshipId || INITIAL_FLAGSHIP_ID,
   )
   const [selectedImageId, setSelectedImageId] = useState<string>(INITIAL_IMAGE_ID)
-  const [positionalInputs, setPositionalInputs] = useState<ContentStore>(INITIAL_CONTENT_STORE)
 
-  // Re-fit typography when fonts finish loading
-  useEffect(() => {
-    if (fontsLoaded) return
-    let active = true
-    waitForFontsLoaded().then((ready) => {
-      if (active && ready) {
-        setFontsLoaded(true)
-        const result = compileFlagshipDesign(
-          activeFlagshipId,
-          positionalInputs,
-          undefined,
-          undefined,
-          activeCardTypeId,
-          selectedImageId,
-        )
-        setComposition(result.composition)
-      }
-    })
-    return () => {
-      active = false
-    }
-  }, [fontsLoaded, activeFlagshipId, positionalInputs, activeCardTypeId, selectedImageId])
+  // Linked content overrides & unlinked slots
+  const [fieldOverrides, setFieldOverrides] = useState<Record<string, string>>({})
+  const [unlinkedSlotIds, setUnlinkedSlotIds] = useState<Set<string>>(new Set())
 
   // Dropdown open states
   const [savedDesignsDropdownOpen, setSavedDesignsDropdownOpen] = useState(false)
   const [cardTypeDropdownOpen, setCardTypeDropdownOpen] = useState(false)
   const [designDropdownOpen, setDesignDropdownOpen] = useState(false)
+
+  // Unified Media Library
+  const mediaLibrary = useUnifiedMediaLibrary({ personProfileId: activeProfile?.id })
+  const [mediaCategoryFilter, setMediaCategoryFilter] = useState<'ALL' | 'USER' | 'PROFILE' | 'CURATED'>('ALL')
 
   // Composition & Local History (Undo/Redo)
   const [composition, setComposition] = useState<CardComposition>(INITIAL_COMPILATION.composition)
@@ -143,8 +153,8 @@ export function CardStudioScreen() {
 
   // Inline Publishing Drawer State
   const [isPublishDrawerOpen, setIsPublishDrawerOpen] = useState(false)
-  const [publishSubjectName, setPublishSubjectName] = useState(INITIAL_CONTENT_STORE.input1 || 'MAYA ANGELOU')
-  const [publishSubjectBio, setPublishSubjectBio] = useState('')
+  const [publishSubjectName, setPublishSubjectName] = useState(activeProfile?.displayName || 'MAYA ANGELOU')
+  const [publishSubjectBio, setPublishSubjectBio] = useState(activeProfile?.bio || '')
   const [publishEditionMode, setPublishEditionMode] = useState<CardEditionMode>('LIMITED')
   const [publishEditionSize, setPublishEditionSize] = useState('25')
 
@@ -157,31 +167,63 @@ export function CardStudioScreen() {
   // Active Entities
   const activeCardType = getCardTypeById(activeCardTypeId)
   const activeFlagship = getFlagshipDesignById(activeFlagshipId) || FLAGSHIP_DESIGNS[0]
+
+  // Compute Bound Fields from Universal Profile & Overrides
+  const boundFields = useMemo<BoundCardField[]>(() => {
+    return buildBoundCardFields(
+      activeCardType,
+      activeProfile,
+      activeFlagship.inputs.map((i) => i.id),
+      fieldOverrides,
+      unlinkedSlotIds,
+    )
+  }, [activeCardType, activeProfile, activeFlagship, fieldOverrides, unlinkedSlotIds])
+
+  // Derive full content store for compilation
+  const currentContentStore = useMemo<ContentStore>(() => {
+    const store: ContentStore = { ...INITIAL_CONTENT_STORE }
+    for (const bf of boundFields) {
+      store[bf.slotId] = bf.effectiveValue
+    }
+    // Retain any additional overrides
+    for (const [k, v] of Object.entries(fieldOverrides)) {
+      store[k] = v
+    }
+    return store
+  }, [boundFields, fieldOverrides])
+
+  // Compile current flagship composition
   const currentFlagshipResult = compileFlagshipDesign(
     activeFlagshipId,
-    positionalInputs,
+    currentContentStore,
     undefined,
     undefined,
     activeCardTypeId,
     selectedImageId,
   )
 
-  // Handle route param updates if navigated with flagshipId
+  // Re-fit typography when fonts finish loading
   useEffect(() => {
-    if (params.flagshipId && params.flagshipId !== activeFlagshipId) {
-      setActiveFlagshipId(params.flagshipId)
-      const result = compileFlagshipDesign(
-        params.flagshipId,
-        positionalInputs,
-        undefined,
-        undefined,
-        activeCardTypeId,
-        selectedImageId,
-      )
-      setComposition(result.composition)
+    if (fontsLoaded) return
+    let active = true
+    waitForFontsLoaded().then((ready) => {
+      if (active && ready) {
+        setFontsLoaded(true)
+        const result = compileFlagshipDesign(
+          activeFlagshipId,
+          currentContentStore,
+          undefined,
+          undefined,
+          activeCardTypeId,
+          selectedImageId,
+        )
+        setComposition(result.composition)
+      }
+    })
+    return () => {
+      active = false
     }
-  }, [params.flagshipId])
-
+  }, [fontsLoaded, activeFlagshipId, currentContentStore, activeCardTypeId, selectedImageId])
 
   // Push to history when composition changes
   const updateCompositionWithHistory = useCallback(
@@ -213,7 +255,7 @@ export function CardStudioScreen() {
         if (meta.selectedImageId) setSelectedImageId(meta.selectedImageId)
         const loadedStore = meta.contentStore || meta.inputs
         if (loadedStore) {
-          setPositionalInputs((prev) => ({ ...prev, ...loadedStore }))
+          setFieldOverrides((prev) => ({ ...prev, ...loadedStore }))
         }
       }
     }
@@ -233,10 +275,42 @@ export function CardStudioScreen() {
         if (meta.selectedImageId) setSelectedImageId(meta.selectedImageId)
         const loadedStore = meta.contentStore || meta.inputs
         if (loadedStore) {
-          setPositionalInputs((prev) => ({ ...prev, ...loadedStore }))
+          setFieldOverrides((prev) => ({ ...prev, ...loadedStore }))
         }
       }
     }
+  }
+
+  // --- Subject Profile Selection ---
+  function handleSelectPersonProfile(person: any) {
+    const universal = toUniversalProfile(person)
+    setActiveProfile(universal)
+    setPersonDropdownOpen(false)
+    setPublishSubjectName(universal.displayName)
+    setPublishSubjectBio(universal.bio || '')
+
+    // Resolve new bound fields and update composition
+    const newBound = buildBoundCardFields(
+      activeCardType,
+      universal,
+      activeFlagship.inputs.map((i) => i.id),
+      fieldOverrides,
+      unlinkedSlotIds,
+    )
+    const newStore: ContentStore = { ...currentContentStore }
+    for (const bf of newBound) {
+      newStore[bf.slotId] = bf.effectiveValue
+    }
+
+    const result = compileFlagshipDesign(
+      activeFlagshipId,
+      newStore,
+      undefined,
+      undefined,
+      activeCardTypeId,
+      selectedImageId,
+    )
+    updateCompositionWithHistory(result.composition)
   }
 
   // --- Saved Designs Loading ---
@@ -254,7 +328,7 @@ export function CardStudioScreen() {
     setActiveFlagshipId(loadedFlagshipId)
     setActiveCardTypeId(loadedCardTypeId)
     setSelectedImageId(loadedImageId)
-    setPositionalInputs(loadedContent)
+    setFieldOverrides(loadedContent)
 
     const result = compileFlagshipDesign(
       loadedFlagshipId,
@@ -277,7 +351,9 @@ export function CardStudioScreen() {
     setActiveFlagshipId(INITIAL_FLAGSHIP_ID)
     setActiveCardTypeId(INITIAL_CARD_TYPE_ID)
     setSelectedImageId(INITIAL_IMAGE_ID)
-    setPositionalInputs(INITIAL_CONTENT_STORE)
+    setFieldOverrides({})
+    setUnlinkedSlotIds(new Set())
+    setActiveProfile(BENCHMARK_PROFILES[0])
 
     const result = compileFlagshipDesign(
       INITIAL_FLAGSHIP_ID,
@@ -297,10 +373,23 @@ export function CardStudioScreen() {
   function handleSelectCardType(typeId: string) {
     setActiveCardTypeId(typeId)
     setCardTypeDropdownOpen(false)
-    // Preserves all existing content in positionalInputs!
+
+    const nextCardType = getCardTypeById(typeId)
+    const newBound = buildBoundCardFields(
+      nextCardType,
+      activeProfile,
+      activeFlagship.inputs.map((i) => i.id),
+      fieldOverrides,
+      unlinkedSlotIds,
+    )
+    const newStore: ContentStore = { ...currentContentStore }
+    for (const bf of newBound) {
+      newStore[bf.slotId] = bf.effectiveValue
+    }
+
     const result = compileFlagshipDesign(
       activeFlagshipId,
-      positionalInputs,
+      newStore,
       undefined,
       undefined,
       typeId,
@@ -313,10 +402,10 @@ export function CardStudioScreen() {
   function handleSelectFlagshipDesign(designId: string) {
     setActiveFlagshipId(designId)
     setDesignDropdownOpen(false)
-    // Preserves all existing content in positionalInputs!
+
     const result = compileFlagshipDesign(
       designId,
-      positionalInputs,
+      currentContentStore,
       undefined,
       undefined,
       activeCardTypeId,
@@ -325,29 +414,69 @@ export function CardStudioScreen() {
     updateCompositionWithHistory(result.composition)
   }
 
-  // --- Content Input Updating ---
-  function handleUpdatePositionalInput(field: string, value: string) {
-    setPositionalInputs((prev) => {
-      const nextInputs: ContentStore = { ...prev, [field]: value }
+  // --- Content Input Updating & Override Management ---
+  function handleUpdatePositionalInput(slotId: string, value: string) {
+    setFieldOverrides((prev) => {
+      const nextOverrides = { ...prev, [slotId]: value }
+      const nextStore = { ...currentContentStore, [slotId]: value }
       const result = compileFlagshipDesign(
         activeFlagshipId,
-        nextInputs,
+        nextStore,
         undefined,
         undefined,
         activeCardTypeId,
         selectedImageId,
       )
       updateCompositionWithHistory(result.composition)
-      return nextInputs
+      return nextOverrides
     })
   }
 
-  // --- Artwork Selection & Upload ---
+  // --- Re-link Field to Profile Attribute ---
+  function handleRelinkField(slotId: string) {
+    setFieldOverrides((prev) => {
+      const next = { ...prev }
+      delete next[slotId]
+      return next
+    })
+    setUnlinkedSlotIds((prev) => {
+      const next = new Set(prev)
+      next.delete(slotId)
+      return next
+    })
+
+    // Recompute with cleared override
+    const clearedOverrides = { ...fieldOverrides }
+    delete clearedOverrides[slotId]
+    const nextBound = buildBoundCardFields(
+      activeCardType,
+      activeProfile,
+      activeFlagship.inputs.map((i) => i.id),
+      clearedOverrides,
+      unlinkedSlotIds,
+    )
+    const nextStore: ContentStore = { ...currentContentStore }
+    for (const bf of nextBound) {
+      nextStore[bf.slotId] = bf.effectiveValue
+    }
+
+    const result = compileFlagshipDesign(
+      activeFlagshipId,
+      nextStore,
+      undefined,
+      undefined,
+      activeCardTypeId,
+      selectedImageId,
+    )
+    updateCompositionWithHistory(result.composition)
+  }
+
+  // --- Artwork Selection & Upload (Unified Media Library) ---
   function handleSelectArtwork(artworkId: string) {
     setSelectedImageId(artworkId)
     const result = compileFlagshipDesign(
       activeFlagshipId,
-      positionalInputs,
+      currentContentStore,
       undefined,
       undefined,
       activeCardTypeId,
@@ -366,12 +495,33 @@ export function CardStudioScreen() {
       })
       if (!result.canceled && result.assets && result.assets[0]?.uri) {
         const imageUri = result.assets[0].uri
-        handleSelectArtwork(imageUri)
+        // Register into reusable user library
+        const registered = mediaLibrary.registerUploadedMedia({
+          id: imageUri,
+          url: imageUri,
+          label: `${activeProfile?.displayName || 'Custom'} Artwork`,
+          category: 'Upload',
+        })
+        handleSelectArtwork(registered.id)
       }
     } catch (err) {
       console.warn('Failed to pick image:', err)
     }
   }
+
+  // Filtered media items based on active tab
+  const displayedMediaItems = useMemo<MediaLibraryItem[]>(() => {
+    if (mediaCategoryFilter === 'USER') {
+      return mediaLibrary.userLibrary
+    }
+    if (mediaCategoryFilter === 'PROFILE') {
+      return mediaLibrary.profileGallery
+    }
+    if (mediaCategoryFilter === 'CURATED') {
+      return mediaLibrary.curatedPresets
+    }
+    return mediaLibrary.allMedia
+  }, [mediaCategoryFilter, mediaLibrary])
 
   // --- Design Save ---
   async function handleSaveDesign() {
@@ -431,7 +581,7 @@ export function CardStudioScreen() {
       }
 
       // 2. Explicit Subject Attribution
-      const subjectName = (publishSubjectName || positionalInputs.input1 || designTitle || 'Creator').trim()
+      const subjectName = (publishSubjectName || activeProfile?.displayName || currentContentStore.input1 || designTitle || 'Creator').trim()
       let personId: string
       const matched = people.find(
         (p) => p.displayName?.toLowerCase() === subjectName.toLowerCase(),
@@ -441,7 +591,7 @@ export function CardStudioScreen() {
       } else {
         const created = await createPerson({
           displayName: subjectName,
-          bio: publishSubjectBio.trim() || positionalInputs.input3?.slice(0, 500) || undefined,
+          bio: publishSubjectBio.trim() || currentContentStore.input3?.slice(0, 500) || undefined,
         })
         personId = created.data.id
       }
@@ -639,7 +789,7 @@ export function CardStudioScreen() {
         </View>
       )}
 
-      {/* Main Studio Work Area: Controls on Left (~40%), Card on Right (~60%) */}
+      {/* Main Studio Work Area: Controls on Left (~42%), Card on Right (~58%) */}
       <View className={`gap-xl ${isDesktop ? 'flex-row items-start' : 'flex-col-reverse items-center'}`}>
         {/* LEFT COLUMN: Controls Panel */}
         <View style={{ width: isDesktop ? '42%' : '100%' }} className="gap-md">
@@ -783,7 +933,100 @@ export function CardStudioScreen() {
 
           {/* MAIN EDITOR CARD */}
           <View className="rounded-2xl border border-border bg-surface p-md gap-lg shadow-sm">
-            {/* 1. CARD TYPE DROPDOWN (ABOVE CONTENT) */}
+            {/* 1. SUBJECT PROFILE SELECTOR (LINKED IDENTITY) */}
+            <View className="gap-1">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
+                  Subject Profile
+                </Text>
+                <View className="flex-row gap-1">
+                  {activeProfile?.specializations.map((spec) => {
+                    const meta = getSpecializationMeta(spec.type)
+                    return (
+                      <View key={spec.type} className="rounded bg-brand/10 px-1.5 py-0.5">
+                        <Text className="text-[10px] font-bold text-brand">{meta.label}</Text>
+                      </View>
+                    )
+                  })}
+                </View>
+              </View>
+
+              <Pressable
+                testID="person-selector-dropdown"
+                onPress={() => setPersonDropdownOpen(!personDropdownOpen)}
+                className="flex-row items-center justify-between rounded-xl border border-border bg-card-surface px-md py-sm"
+              >
+                <View className="flex-row items-center gap-sm flex-1">
+                  <View className="h-8 w-8 rounded-full bg-brand/10 items-center justify-center">
+                    <User size={16} className="text-brand" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="font-semibold text-sm text-text">{activeProfile?.displayName}</Text>
+                    <Text variant="caption" numberOfLines={1}>
+                      {activeProfile?.originEra || activeProfile?.hometown || 'Universal Profile'}
+                    </Text>
+                  </View>
+                </View>
+                <ChevronDown size={18} className="text-muted-text ml-sm" />
+              </Pressable>
+
+              {personDropdownOpen && (
+                <View className="mt-xs max-h-64 rounded-xl border border-border bg-card-surface shadow-xl overflow-hidden z-20">
+                  <ScrollView nestedScrollEnabled style={{ maxHeight: 240 }}>
+                    <Text variant="caption" className="px-md py-1 font-bold text-muted-text bg-canvas">
+                      Benchmark Cultural Profiles
+                    </Text>
+                    {BENCHMARK_PROFILES.map((p) => {
+                      const isSelected = p.id === activeProfile?.id
+                      return (
+                        <Pressable
+                          key={p.id}
+                          testID={`benchmark-person-${p.slug}`}
+                          onPress={() => handleSelectPersonProfile(p)}
+                          className={`flex-row items-center justify-between px-md py-sm border-b border-border/50 ${
+                            isSelected ? 'bg-brand/10' : 'hover:bg-canvas'
+                          }`}
+                        >
+                          <View className="flex-1">
+                            <Text
+                              className={`text-sm ${
+                                isSelected ? 'font-bold text-brand' : 'font-medium text-text'
+                              }`}
+                            >
+                              {p.displayName}
+                            </Text>
+                            <Text variant="caption" numberOfLines={1}>
+                              {p.specializations.map((s) => s.type).join(' · ')}
+                            </Text>
+                          </View>
+                          {isSelected && <Check size={16} className="text-brand flex-shrink-0" />}
+                        </Pressable>
+                      )
+                    })}
+
+                    {people && people.length > 0 && (
+                      <>
+                        <Text variant="caption" className="px-md py-1 font-bold text-muted-text bg-canvas">
+                          Your Custom Profiles
+                        </Text>
+                        {people.map((p) => (
+                          <Pressable
+                            key={p.id}
+                            testID={`custom-person-${p.id}`}
+                            onPress={() => handleSelectPersonProfile(p)}
+                            className="flex-row items-center justify-between px-md py-sm border-b border-border/50 hover:bg-canvas"
+                          >
+                            <Text className="text-sm font-medium text-text">{p.displayName}</Text>
+                          </Pressable>
+                        ))}
+                      </>
+                    )}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+
+            {/* 2. CARD TYPE DROPDOWN (ABOVE CONTENT) */}
             <View className="gap-1">
               <View className="flex-row items-center justify-between">
                 <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
@@ -807,7 +1050,7 @@ export function CardStudioScreen() {
               </Pressable>
 
               {cardTypeDropdownOpen && (
-                <View className="mt-xs max-h-64 rounded-xl border border-border bg-card-surface shadow-xl overflow-hidden">
+                <View className="mt-xs max-h-64 rounded-xl border border-border bg-card-surface shadow-xl overflow-hidden z-10">
                   <ScrollView nestedScrollEnabled style={{ maxHeight: 240 }}>
                     {CARD_TYPES.map((t) => {
                       const isSelected = t.id === activeCardTypeId
@@ -844,7 +1087,7 @@ export function CardStudioScreen() {
               )}
             </View>
 
-            {/* 2. CONTENT INPUTS (IN MIDDLE) */}
+            {/* 3. CONTENT FIELDS (IN MIDDLE) WITH LINKED DATA BADGES */}
             <View className="gap-sm">
               <View className="flex-row items-center justify-between">
                 <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
@@ -857,20 +1100,43 @@ export function CardStudioScreen() {
 
               {/* Dynamic inputs for active card type */}
               <View className="gap-sm">
-                {activeCardType.fields.map((field, fIdx) => {
-                  const slotId = `input${fIdx + 1}`
-                  const mappedSlotDef = activeFlagship.inputs.find((i) => i.id === slotId)
-                  const isMapped = Boolean(mappedSlotDef)
-                  const val = positionalInputs[slotId] ?? field.defaultVal
-                  const isOverflow = isMapped ? currentFlagshipResult.isOverflow[slotId] : false
+                {boundFields.map((field) => {
+                  const isOverflow = field.isMappedInDesign ? currentFlagshipResult.isOverflow[field.slotId] : false
 
                   return (
-                    <View key={field.id} className="gap-1">
+                    <View key={field.slotId} className="gap-1">
                       <View className="flex-row items-center justify-between">
-                        <Text className="text-xs font-semibold text-text">
-                          {field.label}
-                        </Text>
-                        {!isMapped ? (
+                        <View className="flex-row items-center gap-xs">
+                          <Text className="text-xs font-semibold text-text">
+                            {field.label}
+                          </Text>
+                          {/* Linked Attribute Badge */}
+                          {field.isLinked ? (
+                            <View className="flex-row items-center gap-0.5 rounded-full bg-brand/10 px-1.5 py-0.2">
+                              <Link2 size={10} className="text-brand" />
+                              <Text className="text-[9px] font-bold text-brand">
+                                {field.linkedSourceLabel || 'Profile'}
+                              </Text>
+                            </View>
+                          ) : field.overrideValue !== undefined ? (
+                            <View className="flex-row items-center gap-1">
+                              <View className="rounded bg-warning/10 px-1.5 py-0.2">
+                                <Text className="text-[9px] font-bold text-warning">Override</Text>
+                              </View>
+                              <Pressable
+                                testID={`relink-${field.slotId}`}
+                                onPress={() => handleRelinkField(field.slotId)}
+                                hitSlop={6}
+                                className="flex-row items-center gap-0.5 rounded bg-muted-text/10 px-1 py-0.2"
+                              >
+                                <RotateCcw size={9} className="text-muted-text" />
+                                <Text className="text-[9px] font-semibold text-muted-text">Re-link</Text>
+                              </Pressable>
+                            </View>
+                          ) : null}
+                        </View>
+
+                        {!field.isMappedInDesign ? (
                           <View className="rounded bg-neutral-200/50 dark:bg-neutral-800 px-1.5 py-0.5">
                             <Text className="text-[10px] font-medium text-muted-text">
                               Preserved (not in this design)
@@ -880,10 +1146,11 @@ export function CardStudioScreen() {
                           <Text className="text-[10px] font-bold text-warning">Text Overflow</Text>
                         ) : null}
                       </View>
+
                       <Input
-                        testID={`slot-${slotId}`}
-                        value={val}
-                        onChangeText={(t) => handleUpdatePositionalInput(slotId, t)}
+                        testID={`slot-${field.slotId}`}
+                        value={field.effectiveValue}
+                        onChangeText={(t) => handleUpdatePositionalInput(field.slotId, t)}
                         placeholder={field.placeholder || `Enter ${field.label}...`}
                         multiline={field.multiline}
                         numberOfLines={field.maxLines || 1}
@@ -894,7 +1161,7 @@ export function CardStudioScreen() {
               </View>
             </View>
 
-            {/* 3. DESIGN PICKER DROPDOWN (BELOW CONTENT) */}
+            {/* 4. DESIGN PICKER DROPDOWN (BELOW CONTENT) */}
             <View className="pt-sm border-t border-border gap-1">
               <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
                 Flagship Design
@@ -954,11 +1221,11 @@ export function CardStudioScreen() {
               )}
             </View>
 
-            {/* 4. ARTWORK / HERO IMAGE SELECTOR */}
+            {/* 5. UNIFIED MEDIA LIBRARY (ARTWORK / HERO SELECTOR) */}
             <View className="pt-sm border-t border-border gap-sm">
               <View className="flex-row items-center justify-between">
                 <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
-                  Card Artwork
+                  Card Artwork · Media Library
                 </Text>
                 <Button
                   testID="upload-artwork-button"
@@ -967,17 +1234,48 @@ export function CardStudioScreen() {
                   icon={Upload}
                   onPress={handlePickCustomImage}
                 >
-                  Custom Photo
+                  Upload Photo
                 </Button>
               </View>
 
-              {/* Artwork presets selector */}
+              {/* Media Filter Tabs */}
+              <View className="flex-row gap-xs pb-xs">
+                {(['ALL', 'USER', 'PROFILE', 'CURATED'] as const).map((tabKey) => {
+                  const labels = {
+                    ALL: 'All Media',
+                    USER: 'User Library',
+                    PROFILE: 'Profile Gallery',
+                    CURATED: 'Curated RARE',
+                  }
+                  const isTabActive = mediaCategoryFilter === tabKey
+                  return (
+                    <Pressable
+                      key={tabKey}
+                      testID={`media-tab-${tabKey.toLowerCase()}`}
+                      onPress={() => setMediaCategoryFilter(tabKey)}
+                      className={`rounded-full px-2.5 py-1 ${
+                        isTabActive ? 'bg-brand text-white' : 'bg-surface border border-border'
+                      }`}
+                    >
+                      <Text
+                        className={`text-[10px] font-bold ${
+                          isTabActive ? 'text-white' : 'text-muted-text'
+                        }`}
+                      >
+                        {labels[tabKey]}
+                      </Text>
+                    </Pressable>
+                  )
+                })}
+              </View>
+
+              {/* Artwork presets & uploads selector */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 className="flex-row gap-xs py-xs"
               >
-                {CURATED_ARTWORKS.map((art) => {
+                {displayedMediaItems.map((art) => {
                   const isSelected = selectedImageId === art.id
                   return (
                     <Pressable
@@ -1009,7 +1307,7 @@ export function CardStudioScreen() {
           </View>
         </View>
 
-        {/* RIGHT COLUMN: The Card Preview Stage (~60% width on Desktop) */}
+        {/* RIGHT COLUMN: The Card Preview Stage (~58% width on Desktop) */}
         <View
           style={{ flex: isDesktop ? 1 : undefined, width: isDesktop ? undefined : '100%' }}
           className="items-center justify-center p-md"

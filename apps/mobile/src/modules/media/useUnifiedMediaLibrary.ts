@@ -38,8 +38,6 @@ export function useUnifiedMediaLibrary({
   personProfileId,
   creatorUserId,
 }: UseUnifiedMediaLibraryOptions = {}) {
-  const queryClient = useQueryClient()
-
   // Local state for assets uploaded in the current session / client cache
   const [localUserLibrary, setLocalUserLibrary] = useState<MediaLibraryItem[]>([])
 

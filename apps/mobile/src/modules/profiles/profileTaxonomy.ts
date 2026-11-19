@@ -201,3 +201,127 @@ export function getSpecializationMeta(type: SpecializationType): SpecializationM
 export function getAllSpecializationMetas(): SpecializationMeta[] {
   return Object.values(SPECIALIZATION_METAS)
 }
+
+// ----------------------------------------------------------------------------
+// Curated Benchmark Profiles for Instant Linking & Preview
+// ----------------------------------------------------------------------------
+
+export const BENCHMARK_PROFILES: UniversalProfile[] = [
+  {
+    id: 'person-maya-angelou',
+    slug: 'maya-angelou',
+    displayName: 'Maya Angelou',
+    bio: 'Celebrated poet, memoirist, and civil rights champion whose literary voice moved generations.',
+    hometown: 'St. Louis, Missouri',
+    originEra: 'St. Louis, Missouri · Civil Rights Era',
+    specializations: [
+      {
+        type: 'WRITER',
+        attributes: {
+          literaryGenres: ['Poetry', 'Autobiography'],
+          flagshipWorks: ['I Know Why the Caged Bird Sings', 'And Still I Rise'],
+          literaryHonors: ['Presidential Medal of Freedom', 'National Medal of Arts'],
+        },
+      },
+      {
+        type: 'HISTORICAL',
+        attributes: {
+          epochOrEra: '1928 - 2014 · Civil Rights Era',
+          historicContribution: 'Inaugural Presidential Poet and Champion of Human Dignity',
+          archiveProvenance: 'Schomburg Center Archives',
+        },
+      },
+    ],
+  },
+  {
+    id: 'person-miles-davis',
+    slug: 'miles-davis',
+    displayName: 'Miles Davis',
+    bio: 'Pioneered modal jazz, hard bop, and jazz-rock fusion with groundbreaking albums Kind of Blue and Bitches Brew.',
+    hometown: 'Alton, Illinois',
+    originEra: 'Alton, Illinois · Mid-Century Jazz Era',
+    specializations: [
+      {
+        type: 'MUSICIAN',
+        attributes: {
+          primaryGenre: 'Jazz',
+          instruments: ['Trumpet', 'Synthesizer'],
+          keyReleases: ['Kind of Blue', 'Bitches Brew', 'Birth of the Cool'],
+          honors: ['Grammy Lifetime Achievement Award'],
+        },
+      },
+    ],
+  },
+  {
+    id: 'person-wilma-rudolph',
+    slug: 'wilma-rudolph',
+    displayName: 'Wilma Rudolph',
+    bio: 'Overcame childhood polio to become the fastest woman in the world, capturing three gold medals at the 1960 Rome Games.',
+    hometown: 'Clarksville, Tennessee',
+    originEra: 'Clarksville, Tennessee · 1960 Olympic Games',
+    specializations: [
+      {
+        type: 'ATHLETE',
+        attributes: {
+          sport: 'Track & Field',
+          primaryRole: 'Olympic Sprinter',
+          primaryStatistic: '3x Olympic Gold Medalist · 100m World Record',
+          careerAccolades: ['1960 Rome Olympic Triple Champion'],
+          yearsActive: '1956 - 1962',
+        },
+      },
+    ],
+  },
+]
+
+export function toUniversalProfile(person: any): UniversalProfile {
+  if (!person) return BENCHMARK_PROFILES[0]
+  if (person.specializations && Array.isArray(person.specializations) && person.specializations.length > 0) {
+    return person as UniversalProfile
+  }
+  // Check if it matches a benchmark profile by displayName or ID
+  const benchmark = BENCHMARK_PROFILES.find(
+    (b) => b.id === person.id || b.displayName.toLowerCase() === (person.displayName || '').toLowerCase(),
+  )
+  if (benchmark) return benchmark
+
+  // Otherwise infer or create standard universal profile
+  const bio = (person.bio || '').toLowerCase()
+  let inferredType: SpecializationType = 'CREATOR'
+  if (bio.includes('jazz') || bio.includes('music') || bio.includes('album') || bio.includes('song')) {
+    inferredType = 'MUSICIAN'
+  } else if (bio.includes('olympic') || bio.includes('track') || bio.includes('sport') || bio.includes('game') || bio.includes('championship')) {
+    inferredType = 'ATHLETE'
+  } else if (bio.includes('poet') || bio.includes('book') || bio.includes('writer') || bio.includes('author') || bio.includes('novel')) {
+    inferredType = 'WRITER'
+  } else if (bio.includes('film') || bio.includes('actor') || bio.includes('stage') || bio.includes('theater')) {
+    inferredType = 'ACTOR'
+  } else if (bio.includes('science') || bio.includes('physics') || bio.includes('research')) {
+    inferredType = 'SCIENTIST'
+  }
+
+  return {
+    id: person.id || 'custom-person',
+    slug: person.slug || 'custom-person',
+    displayName: person.displayName || 'Subject',
+    bio: person.bio || '',
+    hometown: person.hometown || '',
+    originEra: person.hometown ? `${person.hometown} · Era Archive` : undefined,
+    avatarUrl: person.avatarUrl || null,
+    specializations: [
+      {
+        type: inferredType,
+        attributes: {
+          sport: 'Athletics',
+          primaryGenre: 'Contemporary',
+          primaryMedium: 'Visual & Stage',
+          literaryGenres: ['Literature'],
+          creativeDomains: ['Creative Direction'],
+          fieldOfStudy: 'Research',
+          category: 'Fashion',
+          epochOrEra: 'Contemporary Era',
+        } as any,
+      },
+    ],
+  }
+}

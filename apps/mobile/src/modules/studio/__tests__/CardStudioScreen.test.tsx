@@ -47,6 +47,23 @@ jest.mock('../hooks/usePersonSelector', () => ({
   }),
 }))
 
+jest.mock('@/modules/media/useUnifiedMediaLibrary', () => ({
+  useUnifiedMediaLibrary: () => {
+    const curated = [
+      { id: 'art-angelou', url: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&q=80', label: 'Maya Angelou', source: 'CURATED' },
+      { id: 'art-miles', url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80', label: 'Miles Davis', source: 'CURATED' },
+    ]
+    return {
+      allMedia: curated,
+      userLibrary: [],
+      curatedPresets: curated,
+      profileGallery: [],
+      isLoading: false,
+      registerUploadedMedia: jest.fn((item: any) => ({ ...item, source: 'USER_LIBRARY' })),
+    }
+  },
+}))
+
 jest.mock('@/shared/media/SmartImage', () => ({
   SmartImage: () => {
     const { View } = require('react-native')
@@ -172,17 +189,18 @@ describe('CardStudioScreen', () => {
     })
   })
 
-  it('renders simplified studio layout with Card Type above, Content in middle, Design below, and Artwork selector', async () => {
+  it('renders simplified studio layout with Subject selector, Card Type above, Content in middle, Design below, and Unified Media Library', async () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
       expect(screen.getByTestId('card-composition-renderer')).toBeTruthy()
       expect(screen.getByPlaceholderText('Design title...')).toBeTruthy()
+      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
       expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
       expect(screen.getByText('Content Fields')).toBeTruthy()
       expect(screen.getByTestId('slot-input1')).toBeTruthy()
       expect(screen.getByTestId('design-picker-dropdown')).toBeTruthy()
-      expect(screen.getByText('Card Artwork')).toBeTruthy()
+      expect(screen.getByText(/Card Artwork/)).toBeTruthy()
       expect(screen.getByTestId('artwork-option-art-angelou')).toBeTruthy()
       expect(screen.getByTestId('saved-designs-dropdown')).toBeTruthy()
     })
@@ -192,6 +210,57 @@ describe('CardStudioScreen', () => {
     expect(screen.queryByText('Designs')).toBeNull()
     expect(screen.queryByText(/Canvas 600/)).toBeNull()
     expect(screen.queryByTestId('mode-flagship-button')).toBeNull()
+  })
+
+  it('links content fields to selected subject profile attributes', async () => {
+    const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
+    })
+
+    // Open subject selector
+    fireEvent.press(screen.getByTestId('person-selector-dropdown'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('benchmark-person-miles-davis')).toBeTruthy()
+    })
+
+    // Select Miles Davis
+    fireEvent.press(screen.getByTestId('benchmark-person-miles-davis'))
+
+    await waitFor(() => {
+      // Content slot 1 automatically linked to Miles Davis
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
+      // Content slot 2 automatically linked to JAZZ · MUSICIAN
+      expect(screen.getByTestId('slot-input2').props.value).toBe('JAZZ · MUSICIAN')
+    })
+  })
+
+  it('allows overriding a linked field and re-linking back to profile value', async () => {
+    const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input1')).toBeTruthy()
+    })
+
+    // Edit input1 with custom override text
+    fireEvent.changeText(screen.getByTestId('slot-input1'), 'Custom Override Name')
+
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Custom Override Name')
+      // Override indicator and re-link button appear
+      expect(screen.getByTestId('relink-input1')).toBeTruthy()
+    })
+
+    // Click Re-link button
+    fireEvent.press(screen.getByTestId('relink-input1'))
+
+    await waitFor(() => {
+      // Re-linked back to active profile's displayName!
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Maya Angelou')
+      expect(screen.queryByTestId('relink-input1')).toBeNull()
+    })
   })
 
   it('preserves content when switching designs using the dropdown', async () => {
@@ -255,7 +324,7 @@ describe('CardStudioScreen', () => {
     })
   })
 
-  it('supports selecting curated artwork presets', async () => {
+  it('supports selecting curated artwork presets from unified media library', async () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
@@ -284,6 +353,28 @@ describe('CardStudioScreen', () => {
           }),
         }),
       )
+    })
+  })
+
+  it('filters unified media library by category tabs', async () => {
+    const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('media-tab-curated')).toBeTruthy()
+    })
+
+    // Click Curated tab
+    fireEvent.press(screen.getByTestId('media-tab-curated'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artwork-option-art-angelou')).toBeTruthy()
+    })
+
+    // Click User Library tab
+    fireEvent.press(screen.getByTestId('media-tab-user'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('media-tab-user')).toBeTruthy()
     })
   })
 
