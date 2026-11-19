@@ -1,8 +1,9 @@
 # RARE data roadmap: people and digital collectibles
 
 Status: accepted direction. MR1/MR2 are implemented locally; see the
-[implementation checkpoint](implementation/mr2-checkpoint.md). Later RDC objects
-and official publishing remain planned.
+[implementation checkpoint](implementation/mr2-checkpoint.md). The design/release boundary and official self-publishing foundation are also
+implemented; see [official publishing and authenticity](implementation/official-publishing-authenticity.md).
+Future pursuits and professional profile depth remain separately scoped.
 
 ## RDC direction update
 

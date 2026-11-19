@@ -99,5 +99,7 @@ try {
   assert.equal(mysqlOutput("SELECT cardTemplateId FROM CardGenerationJob WHERE id='j1'"), 'c1')
   assert.equal(mysqlOutput("SELECT cardTemplateId FROM CardSave WHERE id='save1'"), 'c1')
   assert.equal(mysqlOutput("SELECT CONCAT(cardTemplateId, ':', cardIssueId) FROM CardDownloadEvent WHERE id='download1'"), 'c1:ci1')
+  assert.equal(mysqlOutput("SELECT COUNT(*) FROM CardTemplate WHERE id='c1' AND attestationVersion IS NULL AND manifestJson IS NULL AND manifestHash IS NULL AND manifestSignature IS NULL AND signingKeyId IS NULL AND authorizationClaimId IS NULL"), '1')
+  assert.equal(mysqlOutput("SELECT COUNT(*) FROM Claim WHERE id='claim1' AND status='APPROVED' AND publishingApprovedAt IS NULL AND publishingApprovedByUserId IS NULL AND revokedAt IS NULL"), '1')
   console.log('Populated baseline migration verification passed, including person/card preservation assertions')
 } finally {}

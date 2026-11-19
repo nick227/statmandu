@@ -94,9 +94,11 @@ public access grant. Authenticated image requests must carry the existing sessio
 credentials. Asset object keys are retained; origin/issue hashes are provenance
 hashes, not cryptographic signatures or independent verification of facts.
 
-Official publishing remains disabled. A claim does not automatically grant it;
-reviewed/revocable publishing authority and verified signing remain separate
-future work. Existing single-owner claim semantics are preserved.
+Official self-publishing and platform-signed manifests are now implemented.
+A claim alone does not grant authority; see the
+[official publishing contract](official-publishing-authenticity.md) for reviewed
+grants, revocation, key configuration and public verification. Existing
+single-owner claim semantics are preserved.
 
 ## Compatibility and checkpoint
 
