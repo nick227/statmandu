@@ -14,6 +14,11 @@ import {
   usePublishRelease,
 } from '../hooks/useReleases'
 
+jest.mock('@/modules/typography/textFit', () => {
+  const actual = jest.requireActual('@/modules/typography/textFit')
+  return { ...actual, areFontsReady: () => true, waitForFontsLoaded: async () => true }
+})
+
 jest.mock('../hooks/useStudioUser', () => ({
   useStudioUser: jest.fn(),
 }))
@@ -192,8 +197,8 @@ describe('CardStudioScreen', () => {
     })
   })
 
-  afterEach(() => {
-    cleanup()
+  afterEach(async () => {
+    await cleanup()
   })
 
   it('renders 4 inline expandable sections (Subject, Card, Content, Appearance) and live preview', async () => {
@@ -279,7 +284,7 @@ describe('CardStudioScreen', () => {
 
     // Content is preserved!
     fireEvent.press(screen.getByTestId('category-content'))
-    expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
+    await waitFor(() => expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis'))
   })
 
   it('supports selecting Card Types and preserves content across types', async () => {
@@ -327,7 +332,7 @@ describe('CardStudioScreen', () => {
 
     // Content is preserved and not wiped!
     fireEvent.press(screen.getByTestId('category-content'))
-    expect(screen.getByTestId('slot-input1').props.value).toBe('Nobel Peace Laureate')
+    await waitFor(() => expect(screen.getByTestId('slot-input1').props.value).toBe('Nobel Peace Laureate'))
   })
 
   it('supports selecting visual appearance treatments (Layout, Style, Finish)', async () => {
@@ -346,10 +351,11 @@ describe('CardStudioScreen', () => {
     })
 
     // Select Cinematic artwork style
-    fireEvent.press(screen.getByTestId('artwork-style-cinematic'))
+    await React.act(async () => { fireEvent.press(screen.getByTestId('artwork-style-cinematic')) })
+    await waitFor(() => expect(screen.getByTestId('artwork-style-cinematic').props.className).toContain('border-brand'))
 
     // Select Holographic finish
-    fireEvent.press(screen.getByTestId('finish-effect-holographic'))
+    await React.act(async () => { fireEvent.press(screen.getByTestId('finish-effect-holographic')) })
 
     // Save design and verify selected appearance is preserved in metadata
     fireEvent.press(screen.getByTestId('save-design-button'))

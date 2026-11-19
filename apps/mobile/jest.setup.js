@@ -1,3 +1,6 @@
+// React 19 requires this flag for test renderer act() updates across async assertions.
+globalThis.IS_REACT_ACT_ENVIRONMENT = true
+
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(async () => {}),
   notificationAsync: jest.fn(async () => {}),
