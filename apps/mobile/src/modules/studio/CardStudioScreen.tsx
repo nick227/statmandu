@@ -121,14 +121,9 @@ export function CardStudioScreen() {
               subjectName={studio.publishSubjectName}
               userProfile={studio.currentUserProfile}
               subjectImageUri={studio.subjectImageUri}
-              subjectCutoutUri={studio.subjectCutoutUri}
-              activeSubjectImageType={studio.activeSubjectImageType}
-              isRemovingBackground={studio.isRemovingBackground}
               onUseMyProfile={studio.handleUseMyProfile}
               onClearSubject={studio.handleUnlinkSubject}
               onSubjectNameChange={studio.handleUpdateSubjectName}
-              onRemoveBackground={studio.handleRemoveBackground}
-              onToggleSubjectImageType={studio.handleToggleSubjectImageType}
               onPickSubjectImage={studio.handlePickCustomImage}
             />
           </View>

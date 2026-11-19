@@ -1,6 +1,6 @@
 import React from 'react'
-import { Image, Pressable, TextInput, View } from 'react-native'
-import { Scissors, Sparkles, Upload, User, X } from 'lucide-react-native'
+import { Image, TextInput, View } from 'react-native'
+import { Scissors, Upload, User } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
 import { Button } from '@/shared/ui/Button'
 import { Avatar } from '@/shared/ui/Avatar'
@@ -12,14 +12,9 @@ export interface SubjectCategoryCardProps {
   subjectName: string
   userProfile?: { displayName?: string | null; username?: string | null; avatarUrl?: string | null } | null
   subjectImageUri?: string | null
-  subjectCutoutUri?: string | null
-  activeSubjectImageType?: 'original' | 'cutout'
-  isRemovingBackground?: boolean
   onUseMyProfile: () => void
   onClearSubject: () => void
   onSubjectNameChange: (name: string) => void
-  onRemoveBackground?: () => void
-  onToggleSubjectImageType?: (type: 'original' | 'cutout') => void
   onPickSubjectImage?: () => void
 }
 
@@ -27,7 +22,7 @@ export interface SubjectCategoryCardProps {
  * Subject Category Editor:
  * - Creator profile shortcut (1-click auto-fill)
  * - Direct subject name entry (no seeded mock athletes)
- * - Subject Image & Priority Background Removal (Cutout vs Original toggle)
+ * - Subject image selection; background removal is unavailable until real segmentation is configured
  * - Natural single-word headings, zero eyebrow labels
  */
 export function SubjectCategoryCard({
@@ -35,14 +30,9 @@ export function SubjectCategoryCard({
   subjectName,
   userProfile,
   subjectImageUri,
-  subjectCutoutUri,
-  activeSubjectImageType = 'original',
-  isRemovingBackground = false,
   onUseMyProfile,
   onClearSubject,
   onSubjectNameChange,
-  onRemoveBackground,
-  onToggleSubjectImageType,
   onPickSubjectImage,
 }: SubjectCategoryCardProps) {
   const brandColor = useNativeColor('brand')
@@ -130,66 +120,26 @@ export function SubjectCategoryCard({
               </View>
               <View className="flex-1 min-w-0 gap-1">
                 <Text className="text-xs font-semibold text-text" numberOfLines={1}>
-                  {activeSubjectImageType === 'cutout' ? 'Transparent Cutout' : 'Original Portrait'}
+                  Original Portrait
                 </Text>
                 <Text variant="caption" className="text-[11px] text-muted-text">
-                  {activeSubjectImageType === 'cutout'
-                    ? 'Background removed cleanly'
-                    : 'Standard subject portrait'}
+                  Standard subject portrait
                 </Text>
               </View>
             </View>
 
-            {/* Cutout vs Original Toggle Buttons */}
-            {subjectCutoutUri ? (
-              <View className="flex-row items-center gap-2">
-                <Pressable
-                  testID="subject-image-type-cutout"
-                  onPress={() => onToggleSubjectImageType?.('cutout')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg border items-center justify-center ${
-                    activeSubjectImageType === 'cutout'
-                      ? 'bg-brand/10 border-brand'
-                      : 'bg-surface border-border'
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-semibold ${
-                      activeSubjectImageType === 'cutout' ? 'text-brand' : 'text-muted-text'
-                    }`}
-                  >
-                    Cutout
-                  </Text>
-                </Pressable>
-                <Pressable
-                  testID="subject-image-type-original"
-                  onPress={() => onToggleSubjectImageType?.('original')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg border items-center justify-center ${
-                    activeSubjectImageType === 'original'
-                      ? 'bg-brand/10 border-brand'
-                      : 'bg-surface border-border'
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-semibold ${
-                      activeSubjectImageType === 'original' ? 'text-brand' : 'text-muted-text'
-                    }`}
-                  >
-                    Original
-                  </Text>
-                </Pressable>
-              </View>
-            ) : (
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={Scissors}
-                onPress={onRemoveBackground}
-                isLoading={isRemovingBackground}
-                testID="remove-background-button"
-              >
-                Remove Background
-              </Button>
-            )}
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Scissors}
+              disabled
+              testID="remove-background-button"
+            >
+              Remove Background (Unavailable)
+            </Button>
+            <Text variant="caption" className="text-xs text-muted-text">
+              Background removal requires a supported subject-segmentation service.
+            </Text>
 
             {onPickSubjectImage && (
               <Button
