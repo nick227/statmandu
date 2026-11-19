@@ -19,6 +19,7 @@ import {
   type Rect,
   type DesignInput,
 } from '@/modules/typography/textFit'
+import { getCardTypeById } from './cardTypes'
 
 export type { Rect, DesignInput }
 
@@ -284,7 +285,7 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       },
     ],
     decorations: (p) => [
-      { id: 'dec-masthead', type: 'TEXT', x: 40, y: 28, width: 520, height: 30, text: 'THE CHRONICLE ARCHIVE', fontSize: 13, fill: p.subtext },
+      { id: 'dec-masthead', type: 'TEXT', x: 40, y: 28, width: 520, height: 30, text: 'THE CHRONICLE ARCHIVE', fontSize: 13, fill: p.subtext, fontRole: 'serif' as any },
       { id: 'dec-masthead-rule', type: 'RECTANGLE', x: 40, y: 56, width: 520, height: 1, fill: p.border },
     ],
   },
@@ -665,7 +666,7 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
     ],
     decorations: (p) => [
       { id: 'dec-action-badge', type: 'RECTANGLE', x: 440, y: 20, width: 120, height: 30, fill: p.accent },
-      { id: 'dec-action-text', type: 'TEXT', x: 445, y: 26, width: 110, height: 20, text: 'AUTHENTIC #1', fontSize: 11, fill: '#FFFFFF' },
+      { id: 'dec-action-text', type: 'TEXT', x: 445, y: 26, width: 110, height: 20, text: 'AUTHENTIC #1', fontSize: 11, fill: '#FFFFFF', fontRole: 'sans' as any },
     ],
   },
 
@@ -899,7 +900,7 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
     ],
     decorations: (p) => [
       { id: 'dec-parental-box', type: 'RECTANGLE', x: 44, y: 490, width: 110, height: 40, fill: '#000000' },
-      { id: 'dec-parental-text', type: 'TEXT', x: 48, y: 502, width: 100, height: 18, text: 'RARE EXCLUSIVE', fontSize: 10, fill: '#FFFFFF' },
+      { id: 'dec-parental-text', type: 'TEXT', x: 48, y: 502, width: 100, height: 18, text: 'RARE EXCLUSIVE', fontSize: 10, fill: '#FFFFFF', fontRole: 'sans' as any },
     ],
   },
 
@@ -1191,7 +1192,7 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       },
     ],
     decorations: (p) => [
-      { id: 'dec-pulp-price', type: 'TEXT', x: 480, y: 16, width: 80, height: 24, text: '10¢ RARE', fontSize: 13, fill: p.accent },
+      { id: 'dec-pulp-price', type: 'TEXT', x: 480, y: 16, width: 80, height: 24, text: '10¢ RARE', fontSize: 13, fill: p.accent, fontRole: 'display' as any },
     ],
   },
 
@@ -1336,8 +1337,11 @@ export function compileFlagshipDesign(
   inputs: PositionalInputs = {},
   person?: { displayName?: string | null; bio?: string | null; hometown?: string | null } | null,
   assets?: Array<{ id: string; url: string; objectKey?: string }>,
+  cardTypeId: string = 'profile',
+  selectedImageId?: string,
 ): FlagshipCompilationResult {
   const design = getFlagshipDesignById(designId) || FLAGSHIP_DESIGNS[0]
+  const cardType = getCardTypeById(cardTypeId)
   const { palette, artwork, inputs: designInputs } = design
 
   const fittedFontSizes: Record<string, number> = {}
@@ -1375,6 +1379,7 @@ export function compileFlagshipDesign(
 
   // 4. Artwork subject image
   const borderWidth = artwork.borderWidth || 0
+  const effectiveImageAssetId = selectedImageId || assets?.[0]?.id || 'art-angelou'
   layers.push({
     id: 'artwork-subject-image',
     type: 'IMAGE',
@@ -1382,7 +1387,7 @@ export function compileFlagshipDesign(
     y: artwork.y + borderWidth,
     width: artwork.width - borderWidth * 2,
     height: artwork.height - borderWidth * 2,
-    imageAssetId: assets?.[0]?.id,
+    imageAssetId: effectiveImageAssetId,
   })
 
   // 5. Non-polaroid decorations
@@ -1391,10 +1396,15 @@ export function compileFlagshipDesign(
   }
 
   // 6. Variable Positional Content Slots
-  for (const inputDef of designInputs) {
+  for (let i = 0; i < designInputs.length; i++) {
+    const inputDef = designInputs[i]
     let rawText = inputs[inputDef.id]
     if (rawText === undefined) {
-      if (inputDef.id === 'input1') {
+      // Check if mapped cardType field has default
+      const mappedField = cardType.fields[i]
+      if (mappedField?.defaultVal) {
+        rawText = mappedField.defaultVal
+      } else if (inputDef.id === 'input1') {
         rawText = person?.displayName || 'MAYA ANGELOU'
       } else if (inputDef.id === 'input2') {
         rawText = person?.hometown || 'POET & CIVIL RIGHTS ICON'
@@ -1436,7 +1446,8 @@ export function compileFlagshipDesign(
       text: inputDef.allCaps ? cleanText.toUpperCase() : cleanText,
       fontSize: fit.fontSize,
       fill: inputDef.fill || palette.foreground,
-    })
+      fontRole: inputDef.fontRole,
+    } as any)
   }
 
   // Preserve entire design-independent content store
@@ -1454,6 +1465,8 @@ export function compileFlagshipDesign(
       flagship: {
         id: design.id,
         name: design.name,
+        cardTypeId,
+        selectedImageId: effectiveImageAssetId,
         inputs: allContent,
         contentStore: allContent,
         fittedFontSizes,

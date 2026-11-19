@@ -3,6 +3,8 @@ import { View, StyleSheet, Text as RNText } from 'react-native'
 import type { components } from '@statman/sdk'
 import { SmartImage } from '@/shared/media/SmartImage'
 import { cn } from '@/lib/utils'
+import { FONT_ROLE_CSS_FAMILIES, type FontRole } from '@/modules/typography/textFit'
+import { getArtworkById, DEFAULT_ARTWORK } from '@/modules/designs/curatedArtwork'
 
 export type CardComposition = components['schemas']['CardComposition'] & {
   metadata?: {
@@ -61,14 +63,26 @@ export function resolveLayerText(
 export function resolveAssetUrl(
   imageAssetId?: string,
   assets?: Array<{ id: string; url: string; objectKey?: string }>,
+  isPreview: boolean = false,
 ): string | null {
-  if (!imageAssetId) return null
+  if (!imageAssetId) {
+    return isPreview ? DEFAULT_ARTWORK.url : null
+  }
+  // Check curated artworks first
+  const curated = getArtworkById(imageAssetId)
+  if (curated) return curated.url
+
   if (assets && assets.length > 0) {
     const match = assets.find((a) => a.id === imageAssetId)
     if (match?.url) return match.url
   }
   // If the asset ID is already a full URL or relative path
-  if (imageAssetId.startsWith('http://') || imageAssetId.startsWith('https://') || imageAssetId.startsWith('/')) {
+  if (
+    imageAssetId.startsWith('http://') ||
+    imageAssetId.startsWith('https://') ||
+    imageAssetId.startsWith('/') ||
+    imageAssetId.startsWith('data:')
+  ) {
     return imageAssetId
   }
   return `/uploads/images/${imageAssetId}`
@@ -137,7 +151,7 @@ export function CardCompositionRenderer({
         }
 
         if (layer.type === 'IMAGE') {
-          const imgUrl = resolveAssetUrl(layer.imageAssetId, assets)
+          const imgUrl = resolveAssetUrl(layer.imageAssetId, assets, isPreview)
           return (
             <View
               key={layer.id || `img-${index}`}
@@ -163,6 +177,7 @@ export function CardCompositionRenderer({
           const textContent = resolveLayerText(layer, person)
           const fontSize = (layer.fontSize ?? 18) * scale
           const color = layer.fill || '#FFFFFF'
+          const fontFamily = (layer as any).fontRole ? FONT_ROLE_CSS_FAMILIES[(layer as any).fontRole as FontRole] : undefined
 
           return (
             <View
@@ -177,6 +192,7 @@ export function CardCompositionRenderer({
                   color,
                   fontWeight: '600',
                   lineHeight: fontSize * 1.2,
+                  ...(fontFamily ? { fontFamily } : {}),
                 }}
               >
                 {textContent}

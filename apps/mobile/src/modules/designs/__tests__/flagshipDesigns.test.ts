@@ -148,4 +148,59 @@ describe('RARE Flagship Designs & Variable Positional Content Engine', () => {
       expect(slot6?.text).toBe('HALL OF FAME #1')
     })
   })
+
+  describe('Card Types (10 Distinct Types)', () => {
+    test('contains exactly 10 distinct card types with fields', () => {
+      const { CARD_TYPES } = require('../cardTypes')
+      expect(CARD_TYPES).toHaveLength(10)
+      const ids = new Set(CARD_TYPES.map((t: any) => t.id))
+      expect(ids.size).toBe(10)
+      for (const t of CARD_TYPES) {
+        expect(Array.isArray(t.fields)).toBe(true)
+        expect(t.fields.length).toBeGreaterThanOrEqual(3)
+      }
+    })
+
+    test('compiles with custom cardTypeId and persists in metadata', () => {
+      const result = compileFlagshipDesign('classic-collector', {}, undefined, undefined, 'achievement')
+      expect(result.composition.metadata?.flagship?.cardTypeId).toBe('achievement')
+    })
+  })
+
+  describe('Artwork Selection & Persistence', () => {
+    test('contains curated artwork presets including default', () => {
+      const { CURATED_ARTWORKS, DEFAULT_ARTWORK } = require('../curatedArtwork')
+      expect(CURATED_ARTWORKS.length).toBeGreaterThanOrEqual(6)
+      expect(DEFAULT_ARTWORK.id).toBe('art-angelou')
+    })
+
+    test('compiling with selectedImageId sets image layer asset and metadata', () => {
+      const result = compileFlagshipDesign(
+        'classic-collector',
+        {},
+        undefined,
+        undefined,
+        'profile',
+        'art-miles',
+      )
+      const imgLayer = result.composition.layers.find((l) => l.type === 'IMAGE')
+      expect(imgLayer?.imageAssetId).toBe('art-miles')
+      expect(result.composition.metadata?.flagship?.selectedImageId).toBe('art-miles')
+    })
+  })
+
+  describe('Typography Engine & FontRole Layer Synchronization', () => {
+    test('attaches fontRole to every compiled text layer', () => {
+      for (const design of FLAGSHIP_DESIGNS) {
+        const result = compileFlagshipDesign(design.id)
+        const textLayers = result.composition.layers.filter((l) => l.type === 'TEXT')
+        expect(textLayers.length).toBeGreaterThanOrEqual(2)
+
+        for (const layer of textLayers) {
+          expect((layer as any).fontRole).toBeDefined()
+          expect(['serif', 'sans', 'mono', 'display']).toContain((layer as any).fontRole)
+        }
+      }
+    })
+  })
 })

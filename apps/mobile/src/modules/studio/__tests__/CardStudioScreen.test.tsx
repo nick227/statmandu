@@ -112,7 +112,29 @@ describe('CardStudioScreen', () => {
       isLoading: false,
     })
     ;(useCardDesigns as jest.Mock).mockReturnValue({
-      data: [],
+      data: [
+        {
+          id: 'design-saved-1',
+          title: 'Saved Jazz Master',
+          revision: 3,
+          composition: {
+            schemaVersion: 1,
+            canvas: { width: 600, height: 900 },
+            layers: [],
+            metadata: {
+              flagship: {
+                id: 'prestige-gold',
+                cardTypeId: 'achievement',
+                selectedImageId: 'art-miles',
+                contentStore: {
+                  input1: 'Miles Dewey Davis III',
+                  input2: 'Grammy Lifetime Achievement',
+                },
+              },
+            },
+          },
+        },
+      ],
       isLoading: false,
     })
     ;(useCreateCardDesign as jest.Mock).mockReturnValue({
@@ -150,24 +172,20 @@ describe('CardStudioScreen', () => {
     })
   })
 
-  it('renders simplified studio layout with content inputs on left, card on right, and design dropdown', async () => {
+  it('renders simplified studio layout with Card Type above, Content in middle, Design below, and Artwork selector', async () => {
     const screen = await render(<CardStudioScreen />)
 
-    expect(screen.getByTestId('card-composition-renderer')).toBeTruthy()
-    expect(screen.getByPlaceholderText('Design title...')).toBeTruthy()
-    expect(screen.getByText('Content')).toBeTruthy()
-
-    // Dynamic inputs
-    expect(screen.getByTestId('slot-input1')).toBeTruthy()
-    expect(screen.getByTestId('slot-input2')).toBeTruthy()
-    expect(screen.getByTestId('slot-input3')).toBeTruthy()
-
-    // Design picker dropdown under content fields
-    expect(screen.getByTestId('design-picker-dropdown')).toBeTruthy()
-
-    // Action buttons
-    expect(screen.getByText('Save')).toBeTruthy()
-    expect(screen.getByText('Publish Release')).toBeTruthy()
+    await waitFor(() => {
+      expect(screen.getByTestId('card-composition-renderer')).toBeTruthy()
+      expect(screen.getByPlaceholderText('Design title...')).toBeTruthy()
+      expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
+      expect(screen.getByText('Content Fields')).toBeTruthy()
+      expect(screen.getByTestId('slot-input1')).toBeTruthy()
+      expect(screen.getByTestId('design-picker-dropdown')).toBeTruthy()
+      expect(screen.getByText('Card Artwork')).toBeTruthy()
+      expect(screen.getByTestId('artwork-option-art-angelou')).toBeTruthy()
+      expect(screen.getByTestId('saved-designs-dropdown')).toBeTruthy()
+    })
 
     // Legacy modals / elements cut
     expect(screen.queryByText('Select Subject')).toBeNull()
@@ -178,6 +196,10 @@ describe('CardStudioScreen', () => {
 
   it('preserves content when switching designs using the dropdown', async () => {
     const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input1')).toBeTruthy()
+    })
 
     // Edit slot 1
     const slotInput1 = screen.getByTestId('slot-input1')
@@ -202,8 +224,98 @@ describe('CardStudioScreen', () => {
     })
   })
 
+  it('supports selecting Card Types and preserves content across types', async () => {
+    const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input1')).toBeTruthy()
+    })
+
+    // Edit input1 with custom text
+    fireEvent.changeText(screen.getByTestId('slot-input1'), 'Nobel Peace Laureate')
+
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Nobel Peace Laureate')
+    })
+
+    // Open Card Type dropdown
+    fireEvent.press(screen.getByTestId('card-type-dropdown'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('card-type-option-achievement')).toBeTruthy()
+    })
+
+    // Select Achievement Card Type
+    fireEvent.press(screen.getByTestId('card-type-option-achievement'))
+
+    await waitFor(() => {
+      // Content is preserved and not wiped!
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Nobel Peace Laureate')
+      expect(screen.queryByTestId('card-type-option-achievement')).toBeNull()
+    })
+  })
+
+  it('supports selecting curated artwork presets', async () => {
+    const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artwork-option-art-miles')).toBeTruthy()
+    })
+
+    const milesPreset = screen.getByTestId('artwork-option-art-miles')
+    fireEvent.press(milesPreset)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artwork-selected-art-miles')).toBeTruthy()
+    })
+
+    // Save design and verify selected artwork is preserved in flagship metadata
+    fireEvent.press(screen.getByTestId('save-design-button'))
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          composition: expect.objectContaining({
+            metadata: expect.objectContaining({
+              flagship: expect.objectContaining({
+                selectedImageId: 'art-miles',
+              }),
+            }),
+          }),
+        }),
+      )
+    })
+  })
+
+  it('restores loading and editing existing saved designs from library', async () => {
+    const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('saved-designs-dropdown')).toBeTruthy()
+    })
+
+    // Open saved designs dropdown
+    fireEvent.press(screen.getByTestId('saved-designs-dropdown'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('saved-design-design-saved-1')).toBeTruthy()
+    })
+
+    // Click saved design
+    fireEvent.press(screen.getByTestId('saved-design-design-saved-1'))
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Design title...').props.value).toBe('Saved Jazz Master')
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Dewey Davis III')
+    })
+  })
+
   it('saves design with compiled flagship metadata', async () => {
     const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('save-design-button')).toBeTruthy()
+    })
 
     const saveBtn = screen.getByTestId('save-design-button')
     fireEvent.press(saveBtn)
@@ -219,6 +331,7 @@ describe('CardStudioScreen', () => {
               rendererVersion: 'rdc-composition-v1',
               flagship: expect.objectContaining({
                 id: expect.any(String),
+                cardTypeId: expect.any(String),
                 inputs: expect.any(Object),
                 fittedFontSizes: expect.any(Object),
               }),
@@ -232,6 +345,10 @@ describe('CardStudioScreen', () => {
 
   it('handles 409 conflict during save and preserves local edits', async () => {
     const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('save-design-button')).toBeTruthy()
+    })
     fireEvent.press(screen.getByTestId('save-design-button'))
 
     await waitFor(() => {
@@ -262,14 +379,42 @@ describe('CardStudioScreen', () => {
     })
   })
 
-  it('publishes release directly without modals and redirects to storefront', async () => {
+  it('configures explicit subject and edition in lightweight inline publishing drawer', async () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
       expect(screen.getByTestId('publish-release-button')).toBeTruthy()
     })
+
+    // 1. Click Publish Release in top bar to toggle inline drawer
     const publishBtn = screen.getByTestId('publish-release-button')
     fireEvent.press(publishBtn)
+
+    // Inline publishing drawer opens without heavy popup modals
+    await waitFor(() => {
+      expect(screen.getByTestId('inline-publish-drawer')).toBeTruthy()
+      expect(screen.getByTestId('publish-subject-name-input')).toBeTruthy()
+      expect(screen.getByTestId('edition-mode-limited')).toBeTruthy()
+      expect(screen.getByTestId('publish-edition-size-input')).toBeTruthy()
+    })
+
+    // Edit explicit subject name
+    fireEvent.changeText(screen.getByTestId('publish-subject-name-input'), 'Wilma Rudolph')
+
+    await waitFor(() => {
+      expect(screen.getByTestId('publish-subject-name-input').props.value).toBe('Wilma Rudolph')
+    })
+
+    // Edit edition size
+    fireEvent.changeText(screen.getByTestId('publish-edition-size-input'), '50')
+
+    await waitFor(() => {
+      expect(screen.getByTestId('publish-edition-size-input').props.value).toBe('50')
+    })
+
+    // Confirm & publish
+    const confirmBtn = screen.getByTestId('confirm-publish-button')
+    fireEvent.press(confirmBtn)
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalled()
@@ -277,11 +422,12 @@ describe('CardStudioScreen', () => {
         expect.objectContaining({
           templateId: 'design-new',
           editionMode: 'LIMITED',
-          editionSize: 25,
+          editionSize: 50,
+          sourceImageAssetId: expect.any(String),
         }),
       )
       expect(mockGenerateRelease).toHaveBeenCalledWith('release-123')
-      expect(mockPublishRelease).toHaveBeenCalledWith('release-123')
+      expect(mockPublishRelease).toHaveBeenCalledWith({ releaseId: 'release-123', visibility: 'PUBLIC' })
       expect(mockPush).toHaveBeenCalledWith('/storefronts/testcreator')
     })
   })
