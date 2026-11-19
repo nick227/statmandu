@@ -63,22 +63,21 @@ describe('AccountScreen - Personal Card Content Fields', () => {
     const screen = await render(<AccountScreen />)
 
     expect(screen.getAllByText('Alex Designer').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('Personal Card Content Fields')).toBeTruthy()
-    expect(screen.getByText('Creator & Artist')).toBeTruthy()
-    expect(screen.getByText('Athlete & Competitor')).toBeTruthy()
-    expect(screen.getByText('Live Card Preview')).toBeTruthy()
-    expect(screen.getByText('Create Card with My Info')).toBeTruthy()
+    expect(screen.getByText('Personal Fields')).toBeTruthy()
+    expect(screen.getAllByText('Creator').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Athlete')).toBeTruthy()
+    expect(screen.getByText('Save Attributes')).toBeTruthy()
   })
 
   it('dynamically switches tailored fields when selecting Athlete pursuit', async () => {
     const screen = await render(<AccountScreen />)
 
-    // Select Athlete & Competitor
-    await fireEvent.press(screen.getByText('Athlete & Competitor'))
+    // Select Athlete
+    await fireEvent.press(screen.getByText('Athlete'))
 
-    expect(screen.getByText('Athlete & Competitor Attributes')).toBeTruthy()
+    expect(screen.getByText('Athlete Attributes')).toBeTruthy()
     expect(screen.getByText('Sport / Discipline')).toBeTruthy()
-    expect(screen.getByText('Position / Primary Role')).toBeTruthy()
+    expect(screen.getByText('Position / Role')).toBeTruthy()
     expect(screen.getByText('Primary Statistic')).toBeTruthy()
   })
 

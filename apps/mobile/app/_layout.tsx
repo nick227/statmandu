@@ -1,6 +1,7 @@
 import '../global.css'
 
-import { Slot, Stack } from 'expo-router'
+import { useEffect } from 'react'
+import { Slot, Stack, usePathname } from 'expo-router'
 import { Platform, View, type ViewStyle } from 'react-native'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -8,12 +9,26 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { queryClient } from '@/lib/queryClient'
 import { initApiClient } from '@/lib/sdk'
 import { API_URL } from '@/config/environment'
+import { resolveRouteTitle, setDocumentTitle } from '@/lib/pageTitle'
 import { ConnectedMobileTabBar, ConnectedSiteHeader } from '@/modules/account/ConnectedSiteHeader'
 
 // Initialized once, before render, so every screen can call SDK hooks
 // immediately — mirrors apps/web/src/main.tsx's createApiClient() call in
 // the factory default, adapted for a native entry point instead of an HTML one.
 initApiClient(API_URL)
+
+function WebRouteTitleManager() {
+  const pathname = usePathname()
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const routeTitle = resolveRouteTitle(pathname)
+      setDocumentTitle(routeTitle)
+    }
+  }, [pathname])
+
+  return null
+}
 
 export default function RootLayout() {
   const navigator = Platform.OS === 'web' ? (
@@ -23,6 +38,7 @@ export default function RootLayout() {
     // nested ScrollView. Site chrome lives here so routes outside `(tabs)`
     // share the same shell instead of becoming disconnected mini-apps.
     <View style={webDocumentStyle}>
+      <WebRouteTitleManager />
       <ConnectedSiteHeader />
       <View style={{ flexGrow: 1 }}>
         <Slot />

@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { Text } from '@/shared/ui/Text'
 import { BackButton } from '@/shared/ui/BackButton'
 import { LAYOUT } from './layoutConstants'
+import { usePageTitle } from '@/lib/pageTitle'
 
 export interface ScreenProps extends ViewProps {
   /** Big screen title, e.g. hubs ("Home", "Explore"). Omit for hero/detail screens that have their own identity. */
@@ -42,6 +43,7 @@ export function Screen({
   style,
   ...props
 }: ScreenProps) {
+  usePageTitle(title)
   const insets = useSafeAreaInsets()
   const showHeader = Boolean(title || withBack || headerActions)
   const usesDocumentScroll = Platform.OS === 'web'

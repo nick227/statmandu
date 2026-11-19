@@ -3,6 +3,7 @@ import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import { Screen } from '@/shared/layout/Screen'
 import { Text } from '@/shared/ui/Text'
 import { cn } from '@/lib/utils'
+import { usePageTitle } from '@/lib/pageTitle'
 import { useCardStudioState } from './hooks/useCardStudioState'
 import { StudioTopBar } from './components/StudioTopBar'
 import { StudioAlerts } from './components/StudioAlerts'
@@ -46,6 +47,9 @@ export function CardStudioScreen() {
 
   // Encapsulated state, business logic, and mutations
   const studio = useCardStudioState()
+
+  // Centralized dynamic document title reacting to the active design title
+  usePageTitle(studio.designTitle ? `${studio.designTitle} · Card Studio` : 'Card Studio')
 
   // Contextual editor section navigation (preserves single-panel experience without multi-panel icon rails)
   const [editorSection, setEditorSection] = useState<'all' | 'identity' | 'design' | 'artwork' | 'content'>('all')

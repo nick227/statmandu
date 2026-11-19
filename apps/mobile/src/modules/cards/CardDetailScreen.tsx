@@ -8,6 +8,7 @@ import { BackButton } from '@/shared/ui/BackButton'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { Screen } from '@/shared/layout'
+import { usePageTitle } from '@/lib/pageTitle'
 import { Card1AStage } from './Card1A'
 import { CardCompositionRenderer } from './CardCompositionRenderer'
 import { ConnectedCardClaimButton } from './ConnectedCardClaimButton'
@@ -32,6 +33,7 @@ export function CardDetailScreen({ cardId }: { cardId: string }) {
   const cardWidth = isDesktop ? 440 : Math.min(340, width - 32)
 
   const { card, isLoading, isError, markDownloaded, relatedCards } = useCardDetail(cardId)
+  usePageTitle(card?.title, { subtitle: card ? athleteFullName(card) : undefined })
   const [authenticityVisible, setAuthenticityVisible] = useState(false)
   const { source } = useLocalSearchParams<{ source?: 'PROFILE' | 'HOME' | 'EXPLORE' | 'CARD_STUDIO' | 'SHARED_LINK' }>()
 
