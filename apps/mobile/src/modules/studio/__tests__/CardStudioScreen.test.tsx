@@ -278,6 +278,7 @@ describe('CardStudioScreen', () => {
     })
 
     // Content is preserved!
+    fireEvent.press(screen.getByTestId('category-content'))
     expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
   })
 
@@ -325,6 +326,7 @@ describe('CardStudioScreen', () => {
     })
 
     // Content is preserved and not wiped!
+    fireEvent.press(screen.getByTestId('category-content'))
     expect(screen.getByTestId('slot-input1').props.value).toBe('Nobel Peace Laureate')
   })
 
