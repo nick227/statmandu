@@ -103,6 +103,7 @@ export function useCardStudioState() {
     imageId?: string
     prefabId?: string
     face?: 'front' | 'back'
+    displayMode?: 'card' | 'slab'
   }>()
 
   const initialPrefab = useMemo(() => {
@@ -269,13 +270,20 @@ export function useCardStudioState() {
   const historyIndex = historyState.index
 
   // ---------------------------------------------------------------------------
-  // Two-Sided Collectible Face Toggle ('front' | 'back')
+  // Two-Sided Collectible Face Toggle ('front' | 'back') & Display Mode
   // ---------------------------------------------------------------------------
   const [activeCardFace, setActiveCardFace] = useState<'front' | 'back'>(
     params.face === 'back' ? 'back' : 'front',
   )
   const handleToggleCardFace = useCallback((face: 'front' | 'back') => {
     setActiveCardFace(face)
+  }, [])
+
+  const [displayMode, setDisplayMode] = useState<'card' | 'slab'>(
+    params.displayMode === 'slab' ? 'slab' : 'card',
+  )
+  const handleToggleDisplayMode = useCallback((mode: 'card' | 'slab') => {
+    setDisplayMode(mode)
   }, [])
 
   // ---------------------------------------------------------------------------
@@ -1173,9 +1181,11 @@ export function useCardStudioState() {
     handleUpdateAppearance,
     handleUnlinkSubject,
 
-    // Two-Sided Collectible Face
+    // Two-Sided Collectible Face & Display Mode
     activeCardFace,
     handleToggleCardFace,
+    displayMode,
+    handleToggleDisplayMode,
     backComposition: currentFlagshipResult.backComposition,
 
     // Core Canvas Composition

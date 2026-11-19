@@ -328,6 +328,8 @@ export function CardStudioScreen() {
             assets={studio.assetsList}
             activeFace={studio.activeCardFace}
             onToggleFace={studio.handleToggleCardFace}
+            displayMode={studio.displayMode}
+            onToggleDisplayMode={studio.handleToggleDisplayMode}
             className="flex-1 p-lg"
           />
         </View>
@@ -343,6 +345,8 @@ export function CardStudioScreen() {
               assets={studio.assetsList}
               activeFace={studio.activeCardFace}
               onToggleFace={studio.handleToggleCardFace}
+              displayMode={studio.displayMode}
+              onToggleDisplayMode={studio.handleToggleDisplayMode}
               className="bg-transparent"
             />
           </View>

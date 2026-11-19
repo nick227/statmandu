@@ -125,6 +125,22 @@ export function CardCompositionRenderer({
 
   const layers = composition.layers || []
 
+  // Interactive holographic / refractor sheen tracking
+  const finishEffect = (composition.metadata as any)?.flagship?.appearance?.finishEffect
+  const isHolo = finishEffect === 'holographic'
+  const isMetallic = finishEffect === 'metallic'
+  const hasRefractor = isHolo || isMetallic || isPreview
+  const [lightOffset, setLightOffset] = React.useState({ x: 50, y: 50 })
+  const [isHovered, setIsHovered] = React.useState(false)
+
+  const handlePointerMove = React.useCallback((e: any) => {
+    const rect = e.currentTarget?.getBoundingClientRect?.()
+    if (!rect) return
+    const x = Math.max(0, Math.min(100, Math.round(((e.clientX - rect.left) / rect.width) * 100)))
+    const y = Math.max(0, Math.min(100, Math.round(((e.clientY - rect.top) / rect.height) * 100)))
+    setLightOffset({ x, y })
+  }, [])
+
   // Authentic issue number display (never fabricated in preview)
   const isAuthenticIssue = Boolean(issue && typeof issue.issueNumber === 'number')
   const formattedIssueNumber = isAuthenticIssue
@@ -144,6 +160,14 @@ export function CardCompositionRenderer({
         width,
         height,
       }}
+      {...({
+        onPointerMove: handlePointerMove,
+        onPointerEnter: () => setIsHovered(true),
+        onPointerLeave: () => {
+          setIsHovered(false)
+          setLightOffset({ x: 50, y: 50 })
+        },
+      } as any)}
     >
       {/* Ordered layers back-to-front */}
       {layers.map((layer, index) => {
@@ -226,7 +250,7 @@ export function CardCompositionRenderer({
                   lineHeight: fontSize * 1.25,
                   textTransform: (layer as any).allCaps ? 'uppercase' : undefined,
                   letterSpacing: (layer as any).tracking ? (layer as any).tracking * scale : (layer as any).allCaps ? 1.2 * scale : undefined,
-                  textAlign: (layer as any).align || undefined,
+                  textAlign: (layer as any).textAlign || (layer as any).align || undefined,
                   ...(fontFamily ? { fontFamily } : {}),
                 }}
               >
@@ -238,6 +262,54 @@ export function CardCompositionRenderer({
 
         return null
       })}
+
+      {/* Dynamic Holographic & Prismatic Refractor Sheen Layer */}
+      {isHolo && (
+        <View
+          pointerEvents="none"
+          testID="holographic-sheen-overlay"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              borderRadius: 16 * scale,
+              opacity: isHovered ? 0.55 : 0.28,
+              background: `linear-gradient(${115 + (lightOffset.x - 50) * 0.75}deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.15) ${Math.max(0, lightOffset.x - 24)}%, rgba(6,182,212,0.45) ${lightOffset.x - 12}%, rgba(236,72,153,0.48) ${lightOffset.x - 4}%, rgba(244,63,94,0.48) ${lightOffset.x + 4}%, rgba(250,204,21,0.45) ${lightOffset.x + 12}%, rgba(16,185,129,0.38) ${lightOffset.x + 18}%, rgba(255,255,255,0.18) ${Math.min(100, lightOffset.x + 24)}%, rgba(255,255,255,0) 100%), radial-gradient(circle at ${lightOffset.x}% ${lightOffset.y}%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 45%)`,
+              mixBlendMode: 'color-dodge',
+              transition: 'opacity 0.25s ease',
+            } as any,
+          ]}
+        />
+      )}
+
+      {/* Dynamic Metallic Specular Lustre Sheen */}
+      {isMetallic && (
+        <View
+          pointerEvents="none"
+          testID="metallic-sheen-overlay"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              borderRadius: 16 * scale,
+              opacity: isHovered ? 0.48 : 0.25,
+              background: `linear-gradient(${125 + (lightOffset.x - 50) * 0.6}deg, transparent 0%, rgba(254,240,138,0.2) ${Math.max(0, lightOffset.x - 18)}%, rgba(255,255,255,0.55) ${lightOffset.x}%, rgba(245,158,11,0.25) ${Math.min(100, lightOffset.x + 18)}%, transparent 100%), radial-gradient(circle at ${lightOffset.x}% ${lightOffset.y}%, rgba(255,255,255,0.4) 0%, transparent 50%)`,
+              mixBlendMode: 'color-dodge',
+              transition: 'opacity 0.25s ease',
+            } as any,
+          ]}
+        />
+      )}
+
+      {/* Specular Diagonal Reflection Glass Sheen */}
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            borderRadius: 16 * scale,
+            background: `linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 40%, transparent 60%), radial-gradient(circle at ${lightOffset.x}% ${lightOffset.y}%, rgba(255,255,255,0.08) 0%, transparent 40%)`,
+          } as any,
+        ]}
+      />
 
       {/* Number overlay for authentic issued copies */}
       {isAuthenticIssue && formattedIssueNumber && (
