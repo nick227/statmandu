@@ -29,7 +29,6 @@ import {
   type StudioAppearanceState,
   type ArtworkStyle,
 } from '@/modules/designs/flagshipDesigns'
-import { removeImageBackground } from '@/modules/media/backgroundRemoval'
 import {
   CARD_TYPES,
   getCardTypeById,
@@ -125,14 +124,6 @@ export function useCardStudioState() {
   const [activeProfile, setActiveProfile] = useState<UniversalProfile | null>(INITIAL_PROFILE)
   const [personDropdownOpen, setPersonDropdownOpen] = useState(false)
 
-  // Subject Image Cutout & Background Removal State
-  const [subjectCutoutUri, setSubjectCutoutUri] = useState<string | null>(null)
-  const [originalSubjectAssetId, setOriginalSubjectAssetId] = useState<string>(
-    params.imageId || INITIAL_IMAGE_ID,
-  )
-  const [activeSubjectImageType, setActiveSubjectImageType] = useState<'original' | 'cutout'>('original')
-  const [isRemovingBackground, setIsRemovingBackground] = useState(false)
-
   // ---------------------------------------------------------------------------
   // Active Design Document State
   // ---------------------------------------------------------------------------
@@ -211,27 +202,16 @@ export function useCardStudioState() {
   const [mediaCategoryFilter, setMediaCategoryFilter] = useState<MediaCategoryFilter>('ALL')
 
   // Available image assets list for composition renderer & compiler
-  const assetsList = useMemo(() => {
-    const list = mediaLibrary.allMedia.map((m) => ({ id: m.id, url: m.url }))
-    if (subjectCutoutUri) {
-      const cutoutId = `${originalSubjectAssetId}-cutout`
-      if (!list.some((item) => item.id === cutoutId)) {
-        list.unshift({ id: cutoutId, url: subjectCutoutUri })
-      }
-    }
-    return list
-  }, [mediaLibrary.allMedia, subjectCutoutUri, originalSubjectAssetId])
+  const assetsList = useMemo(
+    () => mediaLibrary.allMedia.map((m) => ({ id: m.id, url: m.url })),
+    [mediaLibrary.allMedia],
+  )
 
   const subjectImageUri = useMemo(() => {
-    if (activeSubjectImageType === 'cutout' && subjectCutoutUri) {
-      return subjectCutoutUri
-    }
-    if (activeProfile?.avatarUrl) {
-      return activeProfile.avatarUrl
-    }
-    const matched = assetsList.find((a) => a.id === selectedImageId)
+    if (activeProfile?.avatarUrl) return activeProfile.avatarUrl
+    const matched = assetsList.find((item) => item.id === selectedImageId)
     return matched?.url || assetsList[0]?.url || null
-  }, [activeSubjectImageType, subjectCutoutUri, activeProfile?.avatarUrl, assetsList, selectedImageId])
+  }, [activeProfile?.avatarUrl, assetsList, selectedImageId])
 
   // ---------------------------------------------------------------------------
   // Composition & Local Undo/Redo History
@@ -784,95 +764,6 @@ export function useCardStudioState() {
     [handleUpdatePositionalInput],
   )
 
-  const handleRemoveBackground = useCallback(async () => {
-    const sourceUri =
-      activeProfile?.avatarUrl ||
-      assetsList.find((a) => a.id === selectedImageId)?.url ||
-      assetsList[0]?.url
-
-    if (!sourceUri) return
-
-    setIsRemovingBackground(true)
-    try {
-      const baseAssetId = selectedImageId || 'subject-image'
-      setOriginalSubjectAssetId(baseAssetId)
-      const result = await removeImageBackground(sourceUri, baseAssetId)
-
-      setSubjectCutoutUri(result.cutoutUri)
-      setActiveSubjectImageType('cutout')
-      setSelectedImageId(result.cutoutAssetId)
-
-      mediaLibrary.registerUploadedMedia({
-        id: result.cutoutAssetId,
-        url: result.cutoutUri,
-        label: 'Subject Cutout',
-        category: 'Cutout',
-      })
-
-      const updatedAssets = [
-        { id: result.cutoutAssetId, url: result.cutoutUri },
-        ...assetsList.filter((a) => a.id !== result.cutoutAssetId),
-      ]
-      const compResult = compileFlagshipDesign(
-        activeFlagshipId,
-        currentContentStore,
-        activeProfile,
-        updatedAssets,
-        activeCardTypeId,
-        result.cutoutAssetId,
-        appearance,
-      )
-      updateCompositionWithHistory(compResult.composition)
-    } catch (err) {
-      console.warn('Failed to remove background:', err)
-    } finally {
-      setIsRemovingBackground(false)
-    }
-  }, [
-    activeProfile,
-    assetsList,
-    selectedImageId,
-    activeFlagshipId,
-    currentContentStore,
-    activeCardTypeId,
-    appearance,
-    mediaLibrary,
-    updateCompositionWithHistory,
-  ])
-
-  const handleToggleSubjectImageType = useCallback(
-    (type: 'original' | 'cutout') => {
-      setActiveSubjectImageType(type)
-      const targetAssetId =
-        type === 'cutout' && subjectCutoutUri
-          ? `${originalSubjectAssetId}-cutout`
-          : originalSubjectAssetId
-
-      setSelectedImageId(targetAssetId)
-      const result = compileFlagshipDesign(
-        activeFlagshipId,
-        currentContentStore,
-        activeProfile,
-        assetsList,
-        activeCardTypeId,
-        targetAssetId,
-        appearance,
-      )
-      updateCompositionWithHistory(result.composition)
-    },
-    [
-      subjectCutoutUri,
-      originalSubjectAssetId,
-      activeFlagshipId,
-      currentContentStore,
-      activeProfile,
-      assetsList,
-      activeCardTypeId,
-      appearance,
-      updateCompositionWithHistory,
-    ],
-  )
-
   const handleSelectArtworkStyle = useCallback(
     (style: ArtworkStyle) => {
       handleUpdateAppearance({ artworkStyle: style })
@@ -1130,11 +1021,6 @@ export function useCardStudioState() {
     handleUseMyProfile,
     handleUpdateSubjectName,
     subjectImageUri,
-    subjectCutoutUri,
-    activeSubjectImageType,
-    isRemovingBackground,
-    handleRemoveBackground,
-    handleToggleSubjectImageType,
     handleSelectArtworkStyle,
 
     // Card Type Selection

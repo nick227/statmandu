@@ -201,7 +201,7 @@ describe('RARE Card Studio — 4 Inline Expandable Sections & Live Preview', () 
     expect(utils.getByTestId('card-preview-stage')).toBeTruthy()
   })
 
-  it('expands Subject inline: supports 1-click creator profile and background removal cutout toggle', async () => {
+  it('expands Subject inline: supports creator profile and safely unavailable cutout processing', async () => {
     const utils = await render(<CardStudioScreen />)
 
     await waitFor(() => {
@@ -229,24 +229,9 @@ describe('RARE Card Studio — 4 Inline Expandable Sections & Live Preview', () 
       expect(utils.getByTestId('unlink-subject-button')).toBeTruthy()
     })
 
-    // Priority Background Removal
-    fireEvent.press(utils.getByTestId('remove-background-button'))
-
-    await waitFor(() => {
-      expect(utils.getByTestId('subject-image-type-cutout')).toBeTruthy()
-      expect(utils.getByTestId('subject-image-type-original')).toBeTruthy()
-    })
-
-    // 1-click toggle between Cutout and Original
-    fireEvent.press(utils.getByTestId('subject-image-type-original'))
-    await waitFor(() => {
-      expect(utils.getByTestId('subject-image-type-original')).toBeTruthy()
-    })
-
-    fireEvent.press(utils.getByTestId('subject-image-type-cutout'))
-    await waitFor(() => {
-      expect(utils.getByTestId('subject-image-type-cutout')).toBeTruthy()
-    })
+    // Unavailable segmentation must not manufacture a fake cutout.
+    expect(utils.getByText('Remove Background (Unavailable)')).toBeTruthy()
+    expect(utils.queryByTestId('subject-image-type-cutout')).toBeNull()
 
     // Card canvas remains continuously mounted
     expect(utils.getByTestId('card-preview-stage')).toBeTruthy()
