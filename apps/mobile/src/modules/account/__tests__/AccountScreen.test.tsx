@@ -1,11 +1,17 @@
 import React from 'react'
 import { render, fireEvent, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import * as ImagePicker from 'expo-image-picker'
 import { AccountScreen } from '../AccountScreen'
 import { useAccountSession } from '../useAccountSession'
 
 jest.mock('../useAccountSession', () => ({
   useAccountSession: jest.fn(),
+}))
+
+jest.mock('expo-image-picker', () => ({
+  requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  launchImageLibraryAsync: jest.fn(),
 }))
 
 jest.mock('expo-router', () => ({
@@ -48,7 +54,7 @@ function renderWithClient(ui: React.ReactElement) {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
 }
 
-describe('AccountScreen - General Profile Fields & Media Grid', () => {
+describe('AccountScreen - Profile Screen with Single Word Headings & Media', () => {
   const mockUser = {
     id: 'user-1',
     email: 'creator@rare.com',
@@ -72,45 +78,71 @@ describe('AccountScreen - General Profile Fields & Media Grid', () => {
     })
   })
 
-  it('renders general profile fields in prime field space and eliminates weird creator attributes', async () => {
+  it('renders single word headings, clickable avatar upload, and primary Creator fields', async () => {
     const screen = await renderWithClient(<AccountScreen />)
 
-    // User identity
+    // Identity header
     expect(screen.getAllByText('Alex Designer').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('Profile Details')).toBeTruthy()
-    expect(screen.getByText('General Information')).toBeTruthy()
 
-    // Prime fields: Name, Location, Age, Calling, Bio
+    // Avatar is clickable for file upload
+    const avatarButton = screen.getByTestId('avatar-upload-button')
+    expect(avatarButton).toBeTruthy()
+
+    // Test clicking avatar opens image picker
+    ;(ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ uri: 'file://new-avatar.jpg' }],
+    })
+    await fireEvent.press(avatarButton)
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled()
+
+    // Single-word headings: Details, Identity, Bio
+    expect(screen.getByText('Details')).toBeTruthy()
+    expect(screen.getByText('Identity')).toBeTruthy()
+    expect(screen.getAllByText('Bio').length).toBeGreaterThanOrEqual(1)
+
+    // Prime fields under Creator
     expect(screen.getByText('Name')).toBeTruthy()
     expect(screen.getByText('Location')).toBeTruthy()
     expect(screen.getByText('Age')).toBeTruthy()
-    expect(screen.getByText('Calling / Profession')).toBeTruthy()
-    expect(screen.getByText('Bio / About')).toBeTruthy()
-
-    // Prime field values initialized from real profile data without mock text
+    expect(screen.getByText('Calling')).toBeTruthy()
     expect(screen.getByDisplayValue('Alex Designer')).toBeTruthy()
     expect(screen.getByDisplayValue('New York, NY')).toBeTruthy()
     expect(screen.getByDisplayValue('Digital product architect and vintage card collector.')).toBeTruthy()
 
-    // Weird creator attributes and pursuit gimmicks MUST NOT exist
-    expect(screen.queryByText('Creator Attributes')).toBeNull()
-    expect(screen.queryByText('Creative Domain')).toBeNull()
-    expect(screen.queryByText('Studio / Channel')).toBeNull()
-    expect(screen.queryByText('Flagship Project')).toBeNull()
-    expect(screen.queryByText('Signature Style')).toBeNull()
-    expect(screen.queryByText('Visual Design & Collectibles')).toBeNull()
-    expect(screen.queryByText('Studio RARE')).toBeNull()
+    // Single-word save button
+    expect(screen.getByText('Save')).toBeTruthy()
 
-    // Save Profile button
-    expect(screen.getByText('Save Profile')).toBeTruthy()
-
-    // Media Library grid
-    expect(screen.getByText('Media Library')).toBeTruthy()
-    expect(screen.getByText('Upload Media')).toBeTruthy()
-    expect(screen.getByText('Add Image')).toBeTruthy()
+    // Media section: Single word heading "Media", and "All"/"Presets" tabs are cut
+    expect(screen.getByText('Media')).toBeTruthy()
+    expect(screen.queryByText('All')).toBeNull()
+    expect(screen.queryByText('Presets')).toBeNull()
+    expect(screen.getAllByText('Upload').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('allows editing general fields (Name, Location, Age) and saving profile', async () => {
+  it('keeps Bio on Creator tab only, switching to other chips hides Bio', async () => {
+    const screen = await renderWithClient(<AccountScreen />)
+
+    // On Creator tab: Bio and Identity are visible
+    expect(screen.getByText('Identity')).toBeTruthy()
+    expect(screen.getByTestId('field-bio')).toBeTruthy()
+
+    // Switch to Athlete chip
+    await fireEvent.press(screen.getByTestId('chip-athlete'))
+
+    // Athlete fields appear under single-word heading
+    expect(screen.getAllByText('Athlete').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText('Sport')).toBeTruthy()
+    expect(screen.getByText('Role')).toBeTruthy()
+    expect(screen.getByText('Statistic')).toBeTruthy()
+    expect(screen.getByText('Accolades')).toBeTruthy()
+
+    // Bio and Identity are NOT persistent across other chips
+    expect(screen.queryByTestId('field-bio')).toBeNull()
+    expect(screen.queryByText('Identity')).toBeNull()
+  })
+
+  it('allows editing general fields and saving profile', async () => {
     const screen = await renderWithClient(<AccountScreen />)
 
     const nameInput = screen.getByTestId('field-name')
@@ -132,9 +164,9 @@ describe('AccountScreen - General Profile Fields & Media Grid', () => {
     })
 
     // Save action
-    await fireEvent.press(screen.getByText('Save Profile'))
+    await fireEvent.press(screen.getByText('Save'))
     await waitFor(() => {
-      expect(screen.getByText('✓ Profile saved')).toBeTruthy()
+      expect(screen.getByText('✓ Saved')).toBeTruthy()
     })
   })
 
@@ -147,16 +179,5 @@ describe('AccountScreen - General Profile Fields & Media Grid', () => {
 
     await fireEvent.press(screen.getByText('Add Field'))
     expect(screen.getByDisplayValue('New Field')).toBeTruthy()
-  })
-
-  it('renders filter tabs and allows switching in media library', async () => {
-    const screen = await renderWithClient(<AccountScreen />)
-
-    expect(screen.getByText('All')).toBeTruthy()
-    expect(screen.getByText('My Uploads')).toBeTruthy()
-    expect(screen.getByText('Presets')).toBeTruthy()
-
-    await fireEvent.press(screen.getByText('Presets'))
-    expect(screen.getByText('Presets')).toBeTruthy()
   })
 })
