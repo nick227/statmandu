@@ -1333,6 +1333,20 @@ export function getFlagshipDesignById(id: string): FlagshipDesign | undefined {
   return FLAGSHIP_DESIGNS.find((d) => d.id === id) || FLAGSHIP_DESIGNS[0]
 }
 
+export type LayoutVariant = 'portrait' | 'balanced' | 'editorial'
+
+export type ArtworkStyle =
+  | 'photographic'
+  | 'illustrated'
+  | 'vintage'
+  | 'cinematic'
+  | 'abstract'
+  | 'painterly'
+  | 'psychedelic'
+  | 'retro'
+
+export type FinishEffect = 'matte' | 'metallic' | 'holographic' | 'textured'
+
 export interface StudioAppearanceState {
   backgroundColor?: string
   accentColor?: string
@@ -1342,6 +1356,10 @@ export interface StudioAppearanceState {
   borderWidth?: number
   textureEffect?: 'none' | 'grain' | 'foil' | 'holo'
   vignetteEffect?: boolean
+  artworkStyle?: ArtworkStyle
+  framingStyle?: 'borderless' | 'minimal' | 'classic' | 'ornate'
+  layoutVariant?: LayoutVariant
+  finishEffect?: FinishEffect
 }
 
 /**
@@ -1430,6 +1448,10 @@ export function compileFlagshipDesign(
     artY = Math.min(artwork.y, 80)
     artW = artwork.width
     artH = Math.min(artwork.height, 420)
+  } else if (appearance?.layoutVariant === 'portrait') {
+    artH = Math.min(artwork.height + 40, 580)
+  } else if (appearance?.layoutVariant === 'editorial') {
+    artH = Math.max(artwork.height - 40, 440)
   }
 
   // 3. Artwork backdrop tint
@@ -1546,7 +1568,7 @@ export function compileFlagshipDesign(
   }
 
   // 7. Optional custom appearance effect overlays
-  if (appearance?.vignetteEffect) {
+  if (appearance?.vignetteEffect || appearance?.artworkStyle === 'cinematic') {
     layers.push({
       id: 'effect-vignette-frame',
       type: 'RECTANGLE',
@@ -1554,10 +1576,46 @@ export function compileFlagshipDesign(
       y: 0,
       width: 600,
       height: 900,
-      fill: 'rgba(0, 0, 0, 0.18)',
+      fill: 'rgba(0, 0, 0, 0.22)',
     })
   }
-  if (appearance?.textureEffect === 'holo') {
+  if (appearance?.artworkStyle === 'vintage') {
+    layers.push({
+      id: 'effect-vintage-tone',
+      type: 'RECTANGLE',
+      x: 0,
+      y: 0,
+      width: 600,
+      height: 900,
+      fill: 'rgba(180, 140, 80, 0.12)',
+    })
+  } else if (appearance?.artworkStyle === 'psychedelic') {
+    layers.push({
+      id: 'effect-psychedelic-accent',
+      type: 'RECTANGLE',
+      x: 20,
+      y: 20,
+      width: 560,
+      height: 3,
+      fill: '#EC4899',
+    })
+  } else if (appearance?.artworkStyle === 'retro') {
+    layers.push({
+      id: 'effect-retro-accent',
+      type: 'RECTANGLE',
+      x: 16,
+      y: 16,
+      width: 568,
+      height: 4,
+      fill: '#F59E0B',
+    })
+  }
+
+  const isHolo = appearance?.finishEffect === 'holographic' || appearance?.textureEffect === 'holo'
+  const isMetallic = appearance?.finishEffect === 'metallic' || appearance?.textureEffect === 'foil'
+  const isTextured = appearance?.finishEffect === 'textured' || appearance?.textureEffect === 'grain'
+
+  if (isHolo) {
     layers.push({
       id: 'effect-holo-sheen',
       type: 'RECTANGLE',
@@ -1567,7 +1625,7 @@ export function compileFlagshipDesign(
       height: 6,
       fill: 'rgba(255, 255, 255, 0.5)',
     })
-  } else if (appearance?.textureEffect === 'foil') {
+  } else if (isMetallic) {
     layers.push({
       id: 'effect-foil-sheen',
       type: 'RECTANGLE',
@@ -1575,7 +1633,17 @@ export function compileFlagshipDesign(
       y: 16,
       width: 568,
       height: 4,
-      fill: '#F59E0B',
+      fill: palette.accent || '#F59E0B',
+    })
+  } else if (isTextured) {
+    layers.push({
+      id: 'effect-textured-grain',
+      type: 'RECTANGLE',
+      x: 0,
+      y: 0,
+      width: 600,
+      height: 900,
+      fill: 'rgba(255, 255, 255, 0.04)',
     })
   }
 

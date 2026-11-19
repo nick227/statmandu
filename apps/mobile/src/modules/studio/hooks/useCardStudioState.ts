@@ -27,7 +27,9 @@ import {
   type ContentStore,
   type FlagshipDesign,
   type StudioAppearanceState,
+  type ArtworkStyle,
 } from '@/modules/designs/flagshipDesigns'
+import { removeImageBackground } from '@/modules/media/backgroundRemoval'
 import type {
   StudioPanelLocation,
   StudioBreadcrumb,
@@ -103,7 +105,7 @@ export function useCardStudioState() {
   // ---------------------------------------------------------------------------
   // User & Server Queries / Mutations
   // ---------------------------------------------------------------------------
-  const { username: currentUsername } = useStudioUser()
+  const { username: currentUsername, profile: currentUserProfile, user: currentUser } = useStudioUser()
 
   const { data: savedDesigns = [] } = useCardDesigns()
   const createDesignMutation = useCreateCardDesign()
@@ -119,6 +121,14 @@ export function useCardStudioState() {
   // ---------------------------------------------------------------------------
   const [activeProfile, setActiveProfile] = useState<UniversalProfile | null>(INITIAL_PROFILE)
   const [personDropdownOpen, setPersonDropdownOpen] = useState(false)
+
+  // Subject Image Cutout & Background Removal State
+  const [subjectCutoutUri, setSubjectCutoutUri] = useState<string | null>(null)
+  const [originalSubjectAssetId, setOriginalSubjectAssetId] = useState<string>(
+    params.imageId || INITIAL_IMAGE_ID,
+  )
+  const [activeSubjectImageType, setActiveSubjectImageType] = useState<'original' | 'cutout'>('original')
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false)
 
   // ---------------------------------------------------------------------------
   // Active Design Document State
@@ -165,10 +175,13 @@ export function useCardStudioState() {
         if (prev.category === 'appearance') {
           return { level: 2, category: 'appearance' }
         }
-        return { level: 1, category: prev.category }
+        if (prev.category === 'artwork') {
+          return { level: 2, category: 'artwork' }
+        }
+        return { level: 2, category: prev.category }
       }
       if (prev.level === 2) {
-        return { level: 1, category: prev.category }
+        return { level: 1 }
       }
       return prev
     })
@@ -176,34 +189,31 @@ export function useCardStudioState() {
 
   const breadcrumbs = useMemo<StudioBreadcrumb[]>(() => {
     const crumbs: StudioBreadcrumb[] = [
-      { label: 'Studio', location: { level: 1, category: 'card' } },
+      { label: 'Studio', location: { level: 1 } },
     ]
-    if (panelLocation.level >= 2 && panelLocation.category === 'appearance') {
-      crumbs.push({
-        label: 'Appearance',
-        location: { level: 2, category: 'appearance' },
-      })
-    } else if (panelLocation.level >= 2 && panelLocation.category) {
+    if (panelLocation.level >= 2 && panelLocation.category) {
       const catLabel =
         panelLocation.category.charAt(0).toUpperCase() + panelLocation.category.slice(1)
       crumbs.push({
         label: catLabel,
-        location: { level: 1, category: panelLocation.category },
+        location: { level: 2, category: panelLocation.category },
       })
     }
 
-    if (panelLocation.level === 3 && panelLocation.category === 'appearance' && panelLocation.group) {
-      const grpLabel =
-        panelLocation.group.charAt(0).toUpperCase() + panelLocation.group.slice(1)
-      crumbs.push({
-        label: grpLabel,
-        location: panelLocation,
-      })
-    } else if (panelLocation.level === 3 && panelLocation.category === 'artwork') {
-      crumbs.push({
-        label: 'Adjust',
-        location: panelLocation,
-      })
+    if (panelLocation.level === 3) {
+      if (panelLocation.category === 'appearance' && panelLocation.group) {
+        const grpLabel =
+          panelLocation.group.charAt(0).toUpperCase() + panelLocation.group.slice(1)
+        crumbs.push({
+          label: grpLabel,
+          location: panelLocation,
+        })
+      } else if (panelLocation.category === 'artwork') {
+        crumbs.push({
+          label: panelLocation.group === 'adjust' ? 'Framing' : 'Style',
+          location: panelLocation,
+        })
+      }
     }
     return crumbs
   }, [panelLocation])
@@ -260,8 +270,26 @@ export function useCardStudioState() {
 
   // Available image assets list for composition renderer & compiler
   const assetsList = useMemo(() => {
-    return mediaLibrary.allMedia.map((m) => ({ id: m.id, url: m.url }))
-  }, [mediaLibrary.allMedia])
+    const list = mediaLibrary.allMedia.map((m) => ({ id: m.id, url: m.url }))
+    if (subjectCutoutUri) {
+      const cutoutId = `${originalSubjectAssetId}-cutout`
+      if (!list.some((item) => item.id === cutoutId)) {
+        list.unshift({ id: cutoutId, url: subjectCutoutUri })
+      }
+    }
+    return list
+  }, [mediaLibrary.allMedia, subjectCutoutUri, originalSubjectAssetId])
+
+  const subjectImageUri = useMemo(() => {
+    if (activeSubjectImageType === 'cutout' && subjectCutoutUri) {
+      return subjectCutoutUri
+    }
+    if (activeProfile?.avatarUrl) {
+      return activeProfile.avatarUrl
+    }
+    const matched = assetsList.find((a) => a.id === selectedImageId)
+    return matched?.url || assetsList[0]?.url || null
+  }, [activeSubjectImageType, subjectCutoutUri, activeProfile?.avatarUrl, assetsList, selectedImageId])
 
   // ---------------------------------------------------------------------------
   // Composition & Local Undo/Redo History
@@ -812,6 +840,121 @@ export function useCardStudioState() {
     updateCompositionWithHistory,
   ])
 
+  const handleUseMyProfile = useCallback(() => {
+    const myProfile: UniversalProfile = {
+      id: currentUser?.id || 'me',
+      displayName: currentUserProfile?.displayName || currentUsername || 'Creator',
+      hometown: (currentUserProfile as any)?.hometown || undefined,
+      bio: currentUserProfile?.bio || undefined,
+      avatarUrl: currentUserProfile?.avatarUrl || undefined,
+    }
+    handleSelectPersonProfile(myProfile)
+  }, [currentUser, currentUserProfile, currentUsername, handleSelectPersonProfile])
+
+  const handleUpdateSubjectName = useCallback(
+    (name: string) => {
+      setPublishSubjectName(name)
+      handleUpdatePositionalInput('input1', name)
+    },
+    [handleUpdatePositionalInput],
+  )
+
+  const handleRemoveBackground = useCallback(async () => {
+    const sourceUri =
+      activeProfile?.avatarUrl ||
+      assetsList.find((a) => a.id === selectedImageId)?.url ||
+      assetsList[0]?.url
+
+    if (!sourceUri) return
+
+    setIsRemovingBackground(true)
+    try {
+      const baseAssetId = selectedImageId || 'subject-image'
+      setOriginalSubjectAssetId(baseAssetId)
+      const result = await removeImageBackground(sourceUri, baseAssetId)
+
+      setSubjectCutoutUri(result.cutoutUri)
+      setActiveSubjectImageType('cutout')
+      setSelectedImageId(result.cutoutAssetId)
+
+      mediaLibrary.registerUploadedMedia({
+        id: result.cutoutAssetId,
+        url: result.cutoutUri,
+        label: 'Subject Cutout',
+        category: 'Cutout',
+      })
+
+      const updatedAssets = [
+        { id: result.cutoutAssetId, url: result.cutoutUri },
+        ...assetsList.filter((a) => a.id !== result.cutoutAssetId),
+      ]
+      const compResult = compileFlagshipDesign(
+        activeFlagshipId,
+        currentContentStore,
+        activeProfile,
+        updatedAssets,
+        activeCardTypeId,
+        result.cutoutAssetId,
+        appearance,
+      )
+      updateCompositionWithHistory(compResult.composition)
+    } catch (err) {
+      console.warn('Failed to remove background:', err)
+    } finally {
+      setIsRemovingBackground(false)
+    }
+  }, [
+    activeProfile,
+    assetsList,
+    selectedImageId,
+    activeFlagshipId,
+    currentContentStore,
+    activeCardTypeId,
+    appearance,
+    mediaLibrary,
+    updateCompositionWithHistory,
+  ])
+
+  const handleToggleSubjectImageType = useCallback(
+    (type: 'original' | 'cutout') => {
+      setActiveSubjectImageType(type)
+      const targetAssetId =
+        type === 'cutout' && subjectCutoutUri
+          ? `${originalSubjectAssetId}-cutout`
+          : originalSubjectAssetId
+
+      setSelectedImageId(targetAssetId)
+      const result = compileFlagshipDesign(
+        activeFlagshipId,
+        currentContentStore,
+        activeProfile,
+        assetsList,
+        activeCardTypeId,
+        targetAssetId,
+        appearance,
+      )
+      updateCompositionWithHistory(result.composition)
+    },
+    [
+      subjectCutoutUri,
+      originalSubjectAssetId,
+      activeFlagshipId,
+      currentContentStore,
+      activeProfile,
+      assetsList,
+      activeCardTypeId,
+      appearance,
+      updateCompositionWithHistory,
+    ],
+  )
+
+  const handleSelectArtworkStyle = useCallback(
+    (style: ArtworkStyle) => {
+      handleUpdateAppearance({ artworkStyle: style })
+    },
+    [handleUpdateAppearance],
+  )
+
   const handlePickCustomImage = useCallback(async () => {
     try {
       const result = await mediaLibrary.pickAndUploadMedia({
@@ -1057,6 +1200,17 @@ export function useCardStudioState() {
     togglePersonDropdown,
     handleSelectPersonProfile,
     customPeople: people,
+    currentUser,
+    currentUserProfile,
+    handleUseMyProfile,
+    handleUpdateSubjectName,
+    subjectImageUri,
+    subjectCutoutUri,
+    activeSubjectImageType,
+    isRemovingBackground,
+    handleRemoveBackground,
+    handleToggleSubjectImageType,
+    handleSelectArtworkStyle,
 
     // Card Type Selection
     activeCardTypeId,

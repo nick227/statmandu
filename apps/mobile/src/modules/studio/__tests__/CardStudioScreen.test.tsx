@@ -48,20 +48,22 @@ jest.mock('../hooks/usePersonSelector', () => ({
 }))
 
 jest.mock('@/modules/media/useUnifiedMediaLibrary', () => ({
-  useUnifiedMediaLibrary: () => {
-    const curated = [
-      { id: 'art-angelou', url: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&q=80', label: 'Maya Angelou', source: 'CURATED' },
-      { id: 'art-miles', url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80', label: 'Miles Davis', source: 'CURATED' },
-    ]
-    return {
-      allMedia: curated,
-      userLibrary: [],
-      curatedPresets: curated,
-      profileGallery: [],
-      isLoading: false,
-      registerUploadedMedia: jest.fn((item: any) => ({ ...item, source: 'USER_LIBRARY' })),
-    }
-  },
+  useUnifiedMediaLibrary: () => ({
+    allMedia: [
+      { id: 'art-angelou', url: 'https://example.com/angelou.jpg', label: 'Angelou Portrait', source: 'CURATED' },
+      { id: 'art-miles', url: 'https://example.com/miles.jpg', label: 'Miles Davis', source: 'CURATED' },
+    ],
+    userLibrary: [
+      { id: 'user-art-1', url: 'https://example.com/user1.jpg', label: 'My Upload', source: 'USER_LIBRARY' },
+    ],
+    curatedPresets: [
+      { id: 'art-angelou', url: 'https://example.com/angelou.jpg', label: 'Angelou Portrait', source: 'CURATED' },
+      { id: 'art-miles', url: 'https://example.com/miles.jpg', label: 'Miles Davis', source: 'CURATED' },
+    ],
+    profileGallery: [],
+    isLoading: false,
+    registerUploadedMedia: jest.fn(),
+  }),
 }))
 
 jest.mock('@/shared/media/SmartImage', () => ({
@@ -100,8 +102,8 @@ jest.mock('@/shared/ui/Button', () => ({
 }))
 
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
   SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }))
 
 const mockPush = jest.fn()
@@ -121,15 +123,12 @@ describe('CardStudioScreen', () => {
   const mockGenerateRelease = jest.fn()
   const mockPublishRelease = jest.fn()
 
-  afterEach(() => {
-    cleanup()
-  })
-
   beforeEach(() => {
     jest.clearAllMocks()
     ;(useStudioUser as jest.Mock).mockReturnValue({
-      user: { id: 'u1' },
+      user: { id: 'usr-1', username: 'testcreator' },
       username: 'testcreator',
+      profile: { displayName: 'Test Creator', hometown: 'Chicago' },
       isLoading: false,
     })
     ;(useCardDesigns as jest.Mock).mockReturnValue({
@@ -137,7 +136,7 @@ describe('CardStudioScreen', () => {
         {
           id: 'design-saved-1',
           title: 'Saved Jazz Master',
-          revision: 3,
+          revision: 2,
           composition: {
             schemaVersion: 1,
             canvas: { width: 600, height: 900 },
@@ -145,8 +144,7 @@ describe('CardStudioScreen', () => {
             metadata: {
               flagship: {
                 id: 'prestige-gold',
-                cardTypeId: 'achievement',
-                selectedImageId: 'art-miles',
+                cardTypeId: 'standard',
                 contentStore: {
                   input1: 'Miles Dewey Davis III',
                   input2: 'Grammy Lifetime Achievement',
@@ -179,6 +177,7 @@ describe('CardStudioScreen', () => {
     ;(useCreateRelease as jest.Mock).mockReturnValue({
       mutateAsync: mockCreateRelease.mockResolvedValue({
         id: 'release-123',
+        templateId: 'design-new',
         title: 'Untitled Collectible',
       }),
       isPending: false,
@@ -193,31 +192,38 @@ describe('CardStudioScreen', () => {
     })
   })
 
-  it('renders simplified studio layout with 2 dropdowns (Template and Style), Content in middle, and Unified Media Library', async () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('renders 4 inline expandable sections (Subject, Card, Content, Appearance) and live preview', async () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
       expect(screen.getByTestId('card-composition-renderer')).toBeTruthy()
       expect(screen.getByPlaceholderText('Design title...')).toBeTruthy()
-      expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
-      expect(screen.getByText('Content Fields')).toBeTruthy()
-      expect(screen.getByTestId('slot-input1')).toBeTruthy()
-      expect(screen.getByTestId('design-picker-dropdown')).toBeTruthy()
-      expect(screen.getByText(/Card Artwork/)).toBeTruthy()
-      expect(screen.getByTestId('artwork-option-art-angelou')).toBeTruthy()
+      expect(screen.getByTestId('category-subject')).toBeTruthy()
+      expect(screen.getByTestId('category-card')).toBeTruthy()
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+      expect(screen.getByTestId('category-appearance')).toBeTruthy()
       expect(screen.getByTestId('saved-designs-dropdown')).toBeTruthy()
     })
 
-    // Legacy modals & benchmark profile selector cut, leaving only the 2 dropdowns
+    // Legacy modals & benchmark profile selector cut
     expect(screen.queryByTestId('person-selector-dropdown')).toBeNull()
     expect(screen.queryByText('Select Subject')).toBeNull()
-    expect(screen.queryByText('Designs')).toBeNull()
     expect(screen.queryByText(/Canvas 600/)).toBeNull()
-    expect(screen.queryByTestId('mode-flagship-button')).toBeNull()
   })
 
   it('allows overriding a field and retaining custom edits', async () => {
     const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+    })
+
+    // Expand Content section inline
+    fireEvent.press(screen.getByTestId('category-content'))
 
     await waitFor(() => {
       expect(screen.getByTestId('slot-input1')).toBeTruthy()
@@ -235,15 +241,27 @@ describe('CardStudioScreen', () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('slot-input1')).toBeTruthy()
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+      expect(screen.getByTestId('category-card')).toBeTruthy()
     })
 
-    // Edit slot 1
-    const slotInput1 = screen.getByTestId('slot-input1')
-    fireEvent.changeText(slotInput1, 'Miles Davis')
+    // Expand Content and edit slot 1
+    fireEvent.press(screen.getByTestId('category-content'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input1')).toBeTruthy()
+    })
+    fireEvent.changeText(screen.getByTestId('slot-input1'), 'Miles Davis')
 
     await waitFor(() => {
       expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
+    })
+
+    // Expand Card section inline
+    fireEvent.press(screen.getByTestId('category-card'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('design-picker-dropdown')).toBeTruthy()
     })
 
     // Open design dropdown
@@ -256,13 +274,23 @@ describe('CardStudioScreen', () => {
     fireEvent.press(screen.getByTestId('design-option-prestige-gold'))
 
     await waitFor(() => {
-      // Content preserved!
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
+      expect(screen.queryByTestId('design-option-prestige-gold')).toBeNull()
     })
+
+    // Content is preserved!
+    expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
   })
 
   it('supports selecting Card Types and preserves content across types', async () => {
     const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+      expect(screen.getByTestId('category-card')).toBeTruthy()
+    })
+
+    // Expand Content
+    fireEvent.press(screen.getByTestId('category-content'))
 
     await waitFor(() => {
       expect(screen.getByTestId('slot-input1')).toBeTruthy()
@@ -273,6 +301,13 @@ describe('CardStudioScreen', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('slot-input1').props.value).toBe('Nobel Peace Laureate')
+    })
+
+    // Expand Card section
+    fireEvent.press(screen.getByTestId('category-card'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
     })
 
     // Open Card Type dropdown
@@ -286,27 +321,35 @@ describe('CardStudioScreen', () => {
     fireEvent.press(screen.getByTestId('card-type-option-stats'))
 
     await waitFor(() => {
-      // Content is preserved and not wiped!
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Nobel Peace Laureate')
       expect(screen.queryByTestId('card-type-option-stats')).toBeNull()
     })
+
+    // Content is preserved and not wiped!
+    expect(screen.getByTestId('slot-input1').props.value).toBe('Nobel Peace Laureate')
   })
 
-  it('supports selecting curated artwork presets from unified media library', async () => {
+  it('supports selecting visual appearance treatments (Layout, Style, Finish)', async () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('artwork-option-art-miles')).toBeTruthy()
+      expect(screen.getByTestId('category-appearance')).toBeTruthy()
     })
 
-    const milesPreset = screen.getByTestId('artwork-option-art-miles')
-    fireEvent.press(milesPreset)
+    // Expand Appearance inline
+    fireEvent.press(screen.getByTestId('category-appearance'))
 
     await waitFor(() => {
-      expect(screen.getByTestId('artwork-selected-art-miles')).toBeTruthy()
+      expect(screen.getByTestId('artwork-style-cinematic')).toBeTruthy()
+      expect(screen.getByTestId('finish-effect-holographic')).toBeTruthy()
     })
 
-    // Save design and verify selected artwork is preserved in flagship metadata
+    // Select Cinematic artwork style
+    fireEvent.press(screen.getByTestId('artwork-style-cinematic'))
+
+    // Select Holographic finish
+    fireEvent.press(screen.getByTestId('finish-effect-holographic'))
+
+    // Save design and verify selected appearance is preserved in metadata
     fireEvent.press(screen.getByTestId('save-design-button'))
 
     await waitFor(() => {
@@ -315,34 +358,15 @@ describe('CardStudioScreen', () => {
           composition: expect.objectContaining({
             metadata: expect.objectContaining({
               flagship: expect.objectContaining({
-                selectedImageId: 'art-miles',
+                appearance: expect.objectContaining({
+                  artworkStyle: 'cinematic',
+                  finishEffect: 'holographic',
+                }),
               }),
             }),
           }),
         }),
       )
-    })
-  })
-
-  it('filters unified media library by category tabs', async () => {
-    const screen = await render(<CardStudioScreen />)
-
-    await waitFor(() => {
-      expect(screen.getByTestId('media-tab-curated')).toBeTruthy()
-    })
-
-    // Click Curated tab
-    fireEvent.press(screen.getByTestId('media-tab-curated'))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('artwork-option-art-angelou')).toBeTruthy()
-    })
-
-    // Click User Library tab
-    fireEvent.press(screen.getByTestId('media-tab-user'))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('media-tab-user')).toBeTruthy()
     })
   })
 
@@ -365,6 +389,12 @@ describe('CardStudioScreen', () => {
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText('Design title...').props.value).toBe('Saved Jazz Master')
+    })
+
+    // Expand Content panel to check loaded content
+    fireEvent.press(screen.getByTestId('category-content'))
+
+    await waitFor(() => {
       expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Dewey Davis III')
     })
   })
@@ -491,8 +521,15 @@ describe('CardStudioScreen', () => {
     })
   })
 
-  it('supports selecting flagship designs via the dropdown', async () => {
+  it('supports selecting flagship designs via the dropdown in Card section', async () => {
     const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card')).toBeTruthy()
+    })
+
+    // Expand Card section
+    fireEvent.press(screen.getByTestId('category-card'))
 
     await waitFor(() => {
       expect(screen.getByTestId('design-picker-dropdown')).toBeTruthy()
@@ -514,6 +551,13 @@ describe('CardStudioScreen', () => {
 
   it('does not display unmapped fields or confusing Preserved badge in content editor', async () => {
     const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+    })
+
+    // Expand Content section
+    fireEvent.press(screen.getByTestId('category-content'))
 
     await waitFor(() => {
       expect(screen.getByTestId('slot-input1')).toBeTruthy()

@@ -45,9 +45,6 @@ export function FlagshipDesignPicker({
             className="h-4 w-4 rounded-full border border-border flex-shrink-0"
           />
           <View className="flex-1">
-            <Text variant="caption" className="text-muted-text uppercase text-[10px] tracking-wider font-bold">
-              Style
-            </Text>
             <Text className="font-semibold text-sm text-text">
               {activeFlagship.name}
             </Text>

@@ -205,13 +205,20 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
-      expect(screen.getByTestId('design-picker-dropdown')).toBeTruthy()
-      expect(screen.getByTestId('slot-input1')).toBeTruthy()
+      expect(screen.getByTestId('category-card')).toBeTruthy()
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+      expect(screen.getByTestId('category-subject')).toBeTruthy()
     })
 
     // Concept of benchmark profiles is cut: no person-selector-dropdown in studio
     expect(screen.queryByTestId('person-selector-dropdown')).toBeNull()
+
+    // Open Content category
+    fireEvent.press(screen.getByTestId('category-content'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('slot-input1')).toBeTruthy()
+    })
 
     // Inputs start blank and show generic instructional placeholders, NOT Maya Angelou
     expect(screen.getByTestId('slot-input1').props.value).toBe('')
@@ -224,6 +231,12 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
   // 2. Missing/blank optional attributes
   it('resolves missing attributes to empty string without injecting benchmark fallback content', async () => {
     const screen = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+    })
+
+    fireEvent.press(screen.getByTestId('category-content'))
 
     await waitFor(() => {
       expect(screen.getByTestId('slot-input1')).toBeTruthy()
@@ -241,19 +254,39 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
+      expect(screen.getByTestId('category-content')).toBeTruthy()
     })
 
-    // Standard template has standard field placeholders
-    expect(screen.getByPlaceholderText('Enter subject or person name...')).toBeTruthy()
-    expect(screen.getByPlaceholderText('e.g. Architect, Musician, Athlete')).toBeTruthy()
+    // Open Content to check Standard template field placeholders
+    fireEvent.press(screen.getByTestId('category-content'))
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Enter subject or person name...')).toBeTruthy()
+      expect(screen.getByPlaceholderText('e.g. Architect, Musician, Athlete')).toBeTruthy()
+    })
 
-    // Switch to Stats template
+    // Step back to Level 1
+    fireEvent.press(screen.getByTestId('panel-back-button'))
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card')).toBeTruthy()
+    })
+
+    // Switch to Stats template in Card category
+    fireEvent.press(screen.getByTestId('category-card'))
+    await waitFor(() => {
+      expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
+    })
     fireEvent.press(screen.getByTestId('card-type-dropdown'))
     await waitFor(() => {
       expect(screen.getByTestId('card-type-option-stats')).toBeTruthy()
     })
     fireEvent.press(screen.getByTestId('card-type-option-stats'))
+
+    // Step back to Level 1 and reopen Content
+    fireEvent.press(screen.getByTestId('panel-back-button'))
+    await waitFor(() => {
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('category-content'))
 
     // Field placeholders changed to Stats template fields
     await waitFor(() => {
@@ -261,12 +294,29 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
       expect(screen.getByPlaceholderText('e.g. Basketball, Track & Field, Racing')).toBeTruthy()
     })
 
+    // Step back to Level 1
+    fireEvent.press(screen.getByTestId('panel-back-button'))
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card')).toBeTruthy()
+    })
+
     // Switch to Minimal template
+    fireEvent.press(screen.getByTestId('category-card'))
+    await waitFor(() => {
+      expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
+    })
     fireEvent.press(screen.getByTestId('card-type-dropdown'))
     await waitFor(() => {
       expect(screen.getByTestId('card-type-option-minimal')).toBeTruthy()
     })
     fireEvent.press(screen.getByTestId('card-type-option-minimal'))
+
+    // Step back to Level 1 and check Content
+    fireEvent.press(screen.getByTestId('panel-back-button'))
+    await waitFor(() => {
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('category-content'))
 
     // Field placeholders changed to Minimal template fields
     await waitFor(() => {
@@ -280,6 +330,12 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+    })
+
+    // Open Content
+    fireEvent.press(screen.getByTestId('category-content'))
+    await waitFor(() => {
       expect(screen.getByTestId('slot-input1')).toBeTruthy()
     })
 
@@ -289,12 +345,29 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
       expect(screen.getByTestId('slot-input1').props.value).toBe('Custom Hero Subject')
     })
 
-    // Switch design to Brutalist Block
+    // Step back to Level 1
+    fireEvent.press(screen.getByTestId('panel-back-button'))
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card')).toBeTruthy()
+    })
+
+    // Switch design to Brutalist Block in Card category
+    fireEvent.press(screen.getByTestId('category-card'))
+    await waitFor(() => {
+      expect(screen.getByTestId('design-picker-dropdown')).toBeTruthy()
+    })
     fireEvent.press(screen.getByTestId('design-picker-dropdown'))
     await waitFor(() => {
       expect(screen.getByTestId('design-option-brutalist-block')).toBeTruthy()
     })
     fireEvent.press(screen.getByTestId('design-option-brutalist-block'))
+
+    // Step back to Level 1 and reopen Content
+    fireEvent.press(screen.getByTestId('panel-back-button'))
+    await waitFor(() => {
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('category-content'))
 
     await waitFor(() => {
       // Manual content is preserved across style switches!
@@ -307,6 +380,12 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+    })
+
+    // Open Content
+    fireEvent.press(screen.getByTestId('category-content'))
+    await waitFor(() => {
       expect(screen.getByTestId('slot-input1')).toBeTruthy()
     })
 
@@ -315,12 +394,29 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
       expect(screen.getByTestId('slot-input1').props.value).toBe('Universal Title Subject')
     })
 
-    // Switch to Minimal template
+    // Step back to Level 1
+    fireEvent.press(screen.getByTestId('panel-back-button'))
+    await waitFor(() => {
+      expect(screen.getByTestId('category-card')).toBeTruthy()
+    })
+
+    // Switch to Minimal template in Card category
+    fireEvent.press(screen.getByTestId('category-card'))
+    await waitFor(() => {
+      expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
+    })
     fireEvent.press(screen.getByTestId('card-type-dropdown'))
     await waitFor(() => {
       expect(screen.getByTestId('card-type-option-minimal')).toBeTruthy()
     })
     fireEvent.press(screen.getByTestId('card-type-option-minimal'))
+
+    // Step back to Level 1 and reopen Content
+    fireEvent.press(screen.getByTestId('panel-back-button'))
+    await waitFor(() => {
+      expect(screen.getByTestId('category-content')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('category-content'))
 
     await waitFor(() => {
       expect(screen.getByTestId('slot-input1').props.value).toBe('Universal Title Subject')

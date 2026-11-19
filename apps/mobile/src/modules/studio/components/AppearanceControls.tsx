@@ -1,24 +1,33 @@
 import React from 'react'
 import { Pressable, View } from 'react-native'
-import { Check, Sparkles, SunMedium, Layers, Type, Palette } from 'lucide-react-native'
+import { Check } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
 import { useNativeColor } from '@/lib/theme'
 import { cn } from '@/lib/utils'
-import type { AppearanceGroup } from '../types/panelNavigation'
-import type { StudioAppearanceState } from '@/modules/designs/flagshipDesigns'
+import type {
+  StudioAppearanceState,
+  LayoutVariant,
+  ArtworkStyle,
+  FinishEffect,
+} from '@/modules/designs/flagshipDesigns'
 import type { FontRole } from '@/modules/typography/textFit'
 
 export interface AppearanceControlsProps {
-  group: AppearanceGroup
   appearance: StudioAppearanceState
   onUpdate: (patch: Partial<StudioAppearanceState>) => void
 }
 
+const LAYOUT_VARIANTS: Array<{ id: LayoutVariant; label: string; desc: string }> = [
+  { id: 'portrait', label: 'Portrait', desc: 'Subject-focused vertical emphasis' },
+  { id: 'balanced', label: 'Balanced', desc: 'Harmonious composition and spacing' },
+  { id: 'editorial', label: 'Editorial', desc: 'Magazine layout with expansive text space' },
+]
+
 const FONT_ROLES: Array<{ id: FontRole; label: string; desc: string }> = [
-  { id: 'serif', label: 'Serif', desc: 'Editorial, classic, archival' },
-  { id: 'sans', label: 'Sans', desc: 'Modern, clean, balanced' },
-  { id: 'mono', label: 'Mono', desc: 'Technical, tabular, structured' },
-  { id: 'display', label: 'Display', desc: 'Bold, prominent, stylized' },
+  { id: 'serif', label: 'Editorial Serif', desc: 'Refined, literary, archival' },
+  { id: 'sans', label: 'Modern Sans', desc: 'Clean, neutral, contemporary' },
+  { id: 'mono', label: 'Technical Mono', desc: 'Structured, tabular, data-driven' },
+  { id: 'display', label: 'Bold Display', desc: 'Prominent, poster-grade headline' },
 ]
 
 const COLOR_PRESETS: Array<{
@@ -29,81 +38,126 @@ const COLOR_PRESETS: Array<{
   fg: string
 }> = [
   { name: 'Obsidian', bg: '#09090b', accent: '#E4E4E7', border: '#27272a', fg: '#FAFAFA' },
-  { name: 'Paper', bg: '#F4F4F5', accent: '#18181B', border: '#E4E4E7', fg: '#09090b' },
   { name: 'Gold', bg: '#0A0F1D', accent: '#F59E0B', border: '#1E293B', fg: '#F8FAFC' },
+  { name: 'Paper', bg: '#F4F4F5', accent: '#18181B', border: '#E4E4E7', fg: '#09090b' },
   { name: 'Crimson', bg: '#180709', accent: '#F43F5E', border: '#3B0D14', fg: '#FFF1F2' },
   { name: 'Emerald', bg: '#041711', accent: '#10B981', border: '#064E3B', fg: '#ECFDF5' },
   { name: 'Cyber', bg: '#060B1E', accent: '#38BDF8', border: '#1E293B', fg: '#F0F9FF' },
 ]
 
-const BORDER_WIDTHS = [0, 4, 8, 16]
+const ARTWORK_STYLES: Array<{ id: ArtworkStyle; label: string; desc: string }> = [
+  { id: 'photographic', label: 'Photographic', desc: 'Clean, unaltered natural portrait' },
+  { id: 'cinematic', label: 'Cinematic', desc: 'Dramatic contrast and vignette focus' },
+  { id: 'vintage', label: 'Vintage', desc: 'Archival sepia and warm patina' },
+  { id: 'illustrated', label: 'Illustrated', desc: 'Stylized poster graphic aesthetic' },
+]
 
+const FINISH_EFFECTS: Array<{ id: FinishEffect; label: string; desc: string }> = [
+  { id: 'matte', label: 'Matte', desc: 'Smooth, glare-free archival finish' },
+  { id: 'metallic', label: 'Metallic', desc: 'Polished reflective gold accent trim' },
+  { id: 'holographic', label: 'Holographic', desc: 'Prismatic light reflection sheen' },
+  { id: 'textured', label: 'Textured', desc: 'Tactile physical paper grain' },
+]
+
+/**
+ * Cohesive visual selections for Card Appearance:
+ * - Layout (Portrait, Balanced, Editorial)
+ * - Typography (Curated font pairings)
+ * - Colors (Coordinated harmonic palettes)
+ * - Style (Photographic, Illustrated, Vintage, Cinematic)
+ * - Finish (Matte, Metallic, Holographic, Textured)
+ *
+ * Intelligently handles borders and composition details without exposing technical sliders.
+ */
 export function AppearanceControls({
-  group,
   appearance,
   onUpdate,
 }: AppearanceControlsProps) {
   const brandColor = useNativeColor('brand')
-  const mutedColor = useNativeColor('mutedText')
 
-  if (group === 'typography') {
-    const activeRole = appearance.fontRole || 'serif'
-    return (
-      <View className="gap-4">
-        <View className="gap-1">
-          <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
-            Font Style
-          </Text>
-          <Text variant="caption" className="text-xs text-muted-text">
-            Choose the typographic tone that best reflects the card&apos;s era:
-          </Text>
+  const activeLayout = appearance.layoutVariant || 'balanced'
+  const activeFontRole = appearance.fontRole || 'serif'
+  const activeStyle = appearance.artworkStyle || 'photographic'
+  const activeFinish = appearance.finishEffect || (appearance.textureEffect === 'holo' ? 'holographic' : appearance.textureEffect === 'foil' ? 'metallic' : 'matte')
+
+  return (
+    <View className="gap-6">
+      {/* 1. Layout Variants */}
+      <View className="gap-2">
+        <Text className="text-sm font-semibold text-text">
+          Layout
+        </Text>
+        <View className="gap-1.5">
+          {LAYOUT_VARIANTS.map((item) => {
+            const isSelected = activeLayout === item.id
+            return (
+              <Pressable
+                key={item.id}
+                testID={`layout-variant-${item.id}`}
+                onPress={() => onUpdate({ layoutVariant: item.id })}
+                className={cn(
+                  'flex-row items-center justify-between rounded-xl border p-2.5 active:opacity-70 transition-all',
+                  isSelected
+                    ? 'border-brand bg-brand/10 shadow-2xs'
+                    : 'border-border/80 bg-surface hover:border-brand/40',
+                )}
+              >
+                <View className="flex-1 pr-2">
+                  <Text className={cn('text-xs font-bold', isSelected ? 'text-brand' : 'text-text')}>
+                    {item.label}
+                  </Text>
+                  <Text variant="caption" className="text-[11px] text-muted-text">
+                    {item.desc}
+                  </Text>
+                </View>
+                {isSelected ? <Check size={14} color={brandColor} /> : null}
+              </Pressable>
+            )
+          })}
         </View>
+      </View>
 
-        <View className="gap-2">
+      {/* 2. Typography Pairings */}
+      <View className="gap-2">
+        <Text className="text-sm font-semibold text-text">
+          Typography
+        </Text>
+        <View className="flex-row flex-wrap gap-2">
           {FONT_ROLES.map((role) => {
-            const isSelected = activeRole === role.id
+            const isSelected = activeFontRole === role.id
             return (
               <Pressable
                 key={role.id}
                 testID={`font-role-${role.id}`}
                 onPress={() => onUpdate({ fontRole: role.id })}
                 className={cn(
-                  'flex-row items-center justify-between rounded-xl border p-3 active:opacity-70 transition-all',
+                  'flex-1 min-w-[130px] rounded-xl border p-2.5 active:opacity-70 transition-all',
                   isSelected
                     ? 'border-brand bg-brand/10 shadow-2xs'
-                    : 'border-border/80 bg-surface hover:border-brand/40'
+                    : 'border-border/80 bg-surface hover:border-brand/40',
                 )}
               >
-                <View>
-                  <Text className={cn('text-sm font-bold', isSelected ? 'text-brand' : 'text-text')}>
+                <View className="flex-row items-center justify-between">
+                  <Text className={cn('text-xs font-bold', isSelected ? 'text-brand' : 'text-text')}>
                     {role.label}
                   </Text>
-                  <Text variant="caption" className="text-xs text-muted-text">
-                    {role.desc}
-                  </Text>
+                  {isSelected ? <Check size={12} color={brandColor} /> : null}
                 </View>
-                {isSelected ? <Check size={16} color={brandColor} /> : null}
+                <Text variant="caption" className="text-[10px] text-muted-text mt-0.5">
+                  {role.desc}
+                </Text>
               </Pressable>
             )
           })}
         </View>
       </View>
-    )
-  }
 
-  if (group === 'colors') {
-    return (
-      <View className="gap-4">
-        <View className="gap-1">
-          <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
-            Color Palette
-          </Text>
-          <Text variant="caption" className="text-xs text-muted-text">
-            Select a harmonic palette preset for background and accent highlights:
-          </Text>
-        </View>
-
-        <View className="flex-row flex-wrap gap-2.5">
+      {/* 3. Coordinated Color Palettes */}
+      <View className="gap-2">
+        <Text className="text-sm font-semibold text-text">
+          Colors
+        </Text>
+        <View className="flex-row flex-wrap gap-2">
           {COLOR_PRESETS.map((p) => {
             const isSelected =
               appearance.backgroundColor === p.bg && appearance.accentColor === p.accent
@@ -120,190 +174,109 @@ export function AppearanceControls({
                   })
                 }
                 className={cn(
-                  'w-[calc(50%-5px)] rounded-xl border p-3 gap-2.5 active:opacity-70 transition-all',
+                  'w-[calc(50%-4px)] rounded-xl border p-2.5 gap-2 active:opacity-70 transition-all',
                   isSelected
                     ? 'border-brand bg-brand/10 shadow-2xs'
-                    : 'border-border/80 bg-surface hover:border-brand/40'
+                    : 'border-border/80 bg-surface hover:border-brand/40',
                 )}
               >
                 <View className="flex-row items-center justify-between">
                   <Text className="text-xs font-bold text-text">
                     {p.name}
                   </Text>
-                  {isSelected ? <Check size={14} color={brandColor} /> : null}
+                  {isSelected ? <Check size={12} color={brandColor} /> : null}
                 </View>
-
-                {/* Color swatches */}
-                <View className="flex-row items-center gap-1.5">
+                <View className="flex-row items-center gap-1">
                   <View
                     style={{ backgroundColor: p.bg }}
-                    className="h-5 flex-1 rounded border border-white/20"
+                    className="h-4 flex-1 rounded border border-white/20"
                   />
                   <View
                     style={{ backgroundColor: p.accent }}
-                    className="h-5 flex-1 rounded border border-white/20"
+                    className="h-4 flex-1 rounded border border-white/20"
                   />
                   <View
                     style={{ backgroundColor: p.fg }}
-                    className="h-5 flex-1 rounded border border-white/20"
+                    className="h-4 flex-1 rounded border border-white/20"
                   />
                 </View>
               </Pressable>
             )
           })}
         </View>
-
-        {/* Reset to Design Defaults */}
-        <Pressable
-          onPress={() =>
-            onUpdate({
-              backgroundColor: undefined,
-              accentColor: undefined,
-              borderColor: undefined,
-              textColor: undefined,
-            })
-          }
-          className="rounded-lg border border-border/80 p-2.5 items-center justify-center hover:bg-surface active:opacity-70"
-        >
-          <Text className="text-xs font-medium text-muted-text">
-            Reset to Preset Defaults
-          </Text>
-        </Pressable>
       </View>
-    )
-  }
 
-  if (group === 'framing') {
-    const activeWidth = appearance.borderWidth ?? 0
-    return (
-      <View className="gap-4">
-        <View className="gap-1">
-          <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
-            Border Width
-          </Text>
-          <Text variant="caption" className="text-xs text-muted-text">
-            Control the inner framing border around the card artwork:
-          </Text>
-        </View>
-
-        <View className="flex-row gap-2">
-          {BORDER_WIDTHS.map((bw) => {
-            const isSelected = activeWidth === bw
+      {/* 4. Artwork Treatment Style */}
+      <View className="gap-2">
+        <Text className="text-sm font-semibold text-text">
+          Style
+        </Text>
+        <View className="flex-row flex-wrap gap-2">
+          {ARTWORK_STYLES.map((style) => {
+            const isSelected = activeStyle === style.id
             return (
               <Pressable
-                key={bw}
-                testID={`border-width-${bw}`}
-                onPress={() => onUpdate({ borderWidth: bw })}
+                key={style.id}
+                testID={`artwork-style-${style.id}`}
+                onPress={() => onUpdate({ artworkStyle: style.id })}
                 className={cn(
-                  'flex-1 rounded-xl border p-3 items-center justify-center active:opacity-70 transition-all',
+                  'flex-1 min-w-[130px] rounded-xl border p-2.5 active:opacity-70 transition-all',
                   isSelected
-                    ? 'border-brand bg-brand/10'
-                    : 'border-border/80 bg-surface hover:border-brand/40'
+                    ? 'border-brand bg-brand/10 shadow-2xs'
+                    : 'border-border/80 bg-surface hover:border-brand/40',
                 )}
               >
-                <Text className={cn('text-xs font-bold', isSelected ? 'text-brand' : 'text-text')}>
-                  {bw === 0 ? 'None' : `${bw}px`}
+                <View className="flex-row items-center justify-between">
+                  <Text className={cn('text-xs font-bold', isSelected ? 'text-brand' : 'text-text')}>
+                    {style.label}
+                  </Text>
+                  {isSelected ? <Check size={12} color={brandColor} /> : null}
+                </View>
+                <Text variant="caption" className="text-[10px] text-muted-text mt-0.5">
+                  {style.desc}
                 </Text>
               </Pressable>
             )
           })}
         </View>
       </View>
-    )
-  }
 
-  if (group === 'effects') {
-    const activeTexture = appearance.textureEffect || 'none'
-    const isVignette = Boolean(appearance.vignetteEffect)
-
-    return (
-      <View className="gap-4">
-        <View className="gap-1">
-          <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
-            Texture & Sheen
-          </Text>
-          <Text variant="caption" className="text-xs text-muted-text">
-            Add physical collectible finishes to the composition:
-          </Text>
-        </View>
-
-        <View className="gap-2">
-          {[
-            { id: 'none', label: 'Clean', desc: 'Smooth digital finish' },
-            { id: 'holo', label: 'Holographic', desc: 'Prismatic light reflection accent' },
-            { id: 'foil', label: 'Gold Foil', desc: 'Polished metallic gold trim' },
-          ].map((tex) => {
-            const isSelected = activeTexture === tex.id
+      {/* 5. Decorative Finishes */}
+      <View className="gap-2">
+        <Text className="text-sm font-semibold text-text">
+          Finish
+        </Text>
+        <View className="flex-row flex-wrap gap-2">
+          {FINISH_EFFECTS.map((fin) => {
+            const isSelected = activeFinish === fin.id
             return (
               <Pressable
-                key={tex.id}
-                testID={`effect-texture-${tex.id}`}
-                onPress={() => onUpdate({ textureEffect: tex.id as any })}
+                key={fin.id}
+                testID={`finish-effect-${fin.id}`}
+                onPress={() => {
+                  const textureEffect = fin.id === 'holographic' ? 'holo' : fin.id === 'metallic' ? 'foil' : fin.id === 'textured' ? 'grain' : 'none'
+                  onUpdate({ finishEffect: fin.id, textureEffect })
+                }}
                 className={cn(
-                  'flex-row items-center justify-between rounded-xl border p-3 active:opacity-70 transition-all',
+                  'flex-1 min-w-[130px] rounded-xl border p-2.5 active:opacity-70 transition-all',
                   isSelected
                     ? 'border-brand bg-brand/10 shadow-2xs'
-                    : 'border-border/80 bg-surface hover:border-brand/40'
+                    : 'border-border/80 bg-surface hover:border-brand/40',
                 )}
               >
-                <View>
-                  <Text className={cn('text-sm font-bold', isSelected ? 'text-brand' : 'text-text')}>
-                    {tex.label}
+                <View className="flex-row items-center justify-between">
+                  <Text className={cn('text-xs font-bold', isSelected ? 'text-brand' : 'text-text')}>
+                    {fin.label}
                   </Text>
-                  <Text variant="caption" className="text-xs text-muted-text">
-                    {tex.desc}
-                  </Text>
+                  {isSelected ? <Check size={12} color={brandColor} /> : null}
                 </View>
-                {isSelected ? <Check size={16} color={brandColor} /> : null}
+                <Text variant="caption" className="text-[10px] text-muted-text mt-0.5">
+                  {fin.desc}
+                </Text>
               </Pressable>
             )
           })}
         </View>
-
-        {/* Vignette Toggle */}
-        <Pressable
-          testID="effect-vignette-toggle"
-          onPress={() => onUpdate({ vignetteEffect: !isVignette })}
-          className={cn(
-            'flex-row items-center justify-between rounded-xl border p-3 active:opacity-70 transition-all',
-            isVignette
-              ? 'border-brand bg-brand/10'
-              : 'border-border/80 bg-surface'
-          )}
-        >
-          <View>
-            <Text className={cn('text-sm font-bold', isVignette ? 'text-brand' : 'text-text')}>
-              Vignette
-            </Text>
-            <Text variant="caption" className="text-xs text-muted-text">
-              Soft cinematic edge shadowing
-            </Text>
-          </View>
-          {isVignette ? <Check size={16} color={brandColor} /> : null}
-        </Pressable>
-      </View>
-    )
-  }
-
-  // Layout group
-  return (
-    <View className="gap-4">
-      <View className="gap-1">
-        <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
-          Layout Geometry
-        </Text>
-        <Text variant="caption" className="text-xs text-muted-text">
-          Geometry is tailored by your Card Template (Standard, Stats, or Minimal) and flagship aesthetic recipe.
-        </Text>
-      </View>
-
-      <View className="rounded-xl border border-border/80 bg-surface p-3.5 gap-2">
-        <Text className="text-xs font-semibold text-text">
-          Active Layout Adaptation
-        </Text>
-        <Text variant="caption" className="text-xs text-muted-text">
-          Positioning and typography bounds adapt smoothly without clipping or content distortion.
-        </Text>
       </View>
     </View>
   )

@@ -1,40 +1,47 @@
-import React, { useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
-import { Palette, ChevronRight } from 'lucide-react-native'
+import { ChevronDown, ChevronRight, ChevronLeft, Layers, Palette, Type, User } from 'lucide-react-native'
 import { Screen } from '@/shared/layout/Screen'
 import { Text } from '@/shared/ui/Text'
-import { Button } from '@/shared/ui/Button'
-import { Badge } from '@/shared/ui/Badge'
 import { useNativeColor } from '@/lib/theme'
 import { usePageTitle } from '@/lib/pageTitle'
 import { useCardStudioState } from './hooks/useCardStudioState'
 import { StudioTopBar } from './components/StudioTopBar'
 import { StudioAlerts } from './components/StudioAlerts'
 import { StudioPublishDrawer } from './components/StudioPublishDrawer'
-import { StudioPanelHeader } from './components/StudioPanelHeader'
 import { SubjectCategoryCard } from './components/SubjectCategoryCard'
 import { CardTypeSelector } from './components/CardTypeSelector'
 import { ContentFieldsEditor } from './components/ContentFieldsEditor'
 import { FlagshipDesignPicker } from './components/FlagshipDesignPicker'
-import { MediaLibrarySelector } from './components/MediaLibrarySelector'
-import { AppearanceGroupList } from './components/AppearanceGroupList'
 import { AppearanceControls } from './components/AppearanceControls'
-import { ArtworkAdjustControls } from './components/ArtworkAdjustControls'
 import { CardPreviewStage } from './components/CardPreviewStage'
+
+export type StudioSection = 'subject' | 'card' | 'content' | 'appearance'
+
+interface SectionConfig {
+  id: StudioSection
+  label: string
+  icon: typeof User
+}
+
+const SECTIONS: SectionConfig[] = [
+  { id: 'subject', label: 'Subject', icon: User },
+  { id: 'card', label: 'Card', icon: Layers },
+  { id: 'content', label: 'Content', icon: Type },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+]
 
 /**
  * CardStudioScreen
  *
- * Full-width workspace-first product experience inspired by modern creative suites.
- *
- * Architecture:
- * 1. Persistent Top Chrome: Full-width document title, saved designs loader, undo/redo, and save/publish actions.
- * 2. 3-Level Contextual Left Panel:
- *    - Level 1: Category overview (Subject, Template, Style, Artwork, Content, Appearance)
- *    - Level 2: Property groups (Layout, Typography, Colors, Framing, Effects)
- *    - Level 3: Granular controls (Font role, swatches, border widths, surface sheens)
- * 3. Expansive Fluid Stage: Center canvas occupying all remaining viewport space with a neutral workspace backdrop.
- * 4. Responsive Scaling: Card scales dynamically to fit available stage height preserving its 2:3 aspect ratio.
+ * Single, consistent creative workspace adhering strictly to the RARE Studio UX:
+ * 1. Persistent Top Chrome: RARE / Card Studio branding, title, undo/redo, save/publish
+ * 2. 4 Inline Expandable Sections:
+ *    - Subject: Person attribution, primary portrait, background removal, cutout toggle
+ *    - Card: Card title, template type (Standard, Stats, Minimal), design preset
+ *    - Content: Dynamically bound positional text fields
+ *    - Appearance: Cohesive visual selections (Layout, Typography, Colors, Style, Finish)
+ * 3. Large, fixed, continuously updating live card preview stage
  */
 export function CardStudioScreen() {
   const { width, height } = useWindowDimensions()
@@ -64,28 +71,135 @@ export function CardStudioScreen() {
   // Centralized dynamic document title reacting to the active design title
   usePageTitle(studio.designTitle ? `${studio.designTitle} · Card Studio` : 'Card Studio')
 
-  const panelTitle = useMemo(() => {
-    if (studio.panelLocation.level === 1) return 'Studio'
-    if (studio.panelLocation.level === 2) return 'Appearance'
-    if (studio.panelLocation.level === 3) {
-      if (studio.panelLocation.category === 'artwork') return 'Framing'
-      if (studio.panelLocation.group) {
-        return studio.panelLocation.group.charAt(0).toUpperCase() + studio.panelLocation.group.slice(1)
-      }
+  // Inline expandable accordion state
+  const [openSections, setOpenSections] = useState<Record<StudioSection, boolean>>({
+    subject: false,
+    card: false,
+    content: false,
+    appearance: false,
+  })
+
+  const toggleSection = useCallback((section: StudioSection) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }))
+  }, [])
+
+  const collapseAll = useCallback(() => {
+    setOpenSections({
+      subject: false,
+      card: false,
+      content: false,
+      appearance: false,
+    })
+  }, [])
+
+  // Section summary captions
+  const sectionSummaries = useMemo(() => {
+    const subjectSummary =
+      studio.activeProfile?.displayName ||
+      studio.publishSubjectName ||
+      'No subject linked'
+
+    const cardSummary = `${studio.activeCardType.name} · ${studio.activeFlagship.name}`
+
+    const filledCount = studio.boundFields.filter((bf) => Boolean(bf.effectiveValue)).length
+    const contentSummary = `${filledCount} of ${studio.boundFields.length} fields filled`
+
+    const appearanceSummary = `${studio.appearance.layoutVariant || 'balanced'} · ${
+      studio.appearance.fontRole || 'serif'
+    } · ${studio.appearance.finishEffect || 'matte'}`
+
+    return {
+      subject: subjectSummary,
+      card: cardSummary,
+      content: contentSummary,
+      appearance: appearanceSummary,
     }
-    return 'Studio'
-  }, [studio.panelLocation])
+  }, [
+    studio.activeProfile?.displayName,
+    studio.publishSubjectName,
+    studio.activeCardType.name,
+    studio.activeFlagship.name,
+    studio.boundFields,
+    studio.appearance,
+  ])
+
+  const renderSectionBody = (sectionId: StudioSection) => {
+    switch (sectionId) {
+      case 'subject':
+        return (
+          <View className="pt-3 border-t border-border/60">
+            <SubjectCategoryCard
+              activeProfile={studio.activeProfile}
+              subjectName={studio.publishSubjectName}
+              userProfile={studio.currentUserProfile}
+              subjectImageUri={studio.subjectImageUri}
+              subjectCutoutUri={studio.subjectCutoutUri}
+              activeSubjectImageType={studio.activeSubjectImageType}
+              isRemovingBackground={studio.isRemovingBackground}
+              onUseMyProfile={studio.handleUseMyProfile}
+              onClearSubject={studio.handleUnlinkSubject}
+              onSubjectNameChange={studio.handleUpdateSubjectName}
+              onRemoveBackground={studio.handleRemoveBackground}
+              onToggleSubjectImageType={studio.handleToggleSubjectImageType}
+              onPickSubjectImage={studio.handlePickCustomImage}
+            />
+          </View>
+        )
+
+      case 'card':
+        return (
+          <View className="pt-3 border-t border-border/60 gap-4">
+            <CardTypeSelector
+              activeCardTypeId={studio.activeCardTypeId}
+              activeCardType={studio.activeCardType}
+              isOpen={studio.cardTypeDropdownOpen}
+              onToggle={studio.toggleCardTypeDropdown}
+              onSelectType={studio.handleSelectCardType}
+            />
+            <FlagshipDesignPicker
+              activeFlagshipId={studio.activeFlagshipId}
+              activeFlagship={studio.activeFlagship}
+              isOpen={studio.designDropdownOpen}
+              onToggle={studio.toggleDesignDropdown}
+              onSelectDesign={studio.handleSelectFlagshipDesign}
+            />
+          </View>
+        )
+
+      case 'content':
+        return (
+          <View className="pt-3 border-t border-border/60">
+            <ContentFieldsEditor
+              boundFields={studio.boundFields}
+              activeCardType={studio.activeCardType}
+              activeFlagship={studio.activeFlagship}
+              isOverflow={studio.currentFlagshipResult.isOverflow}
+              onUpdateField={studio.handleUpdatePositionalInput}
+              onRelinkField={studio.handleRelinkField}
+            />
+          </View>
+        )
+
+      case 'appearance':
+        return (
+          <View className="pt-3 border-t border-border/60">
+            <AppearanceControls
+              appearance={studio.appearance}
+              onUpdate={studio.handleUpdateAppearance}
+            />
+          </View>
+        )
+
+      default:
+        return null
+    }
+  }
 
   const renderPanelBody = () => (
     <>
-      <StudioPanelHeader
-        location={studio.panelLocation}
-        breadcrumbs={studio.breadcrumbs}
-        title={panelTitle}
-        onBack={studio.navigateBack}
-        onNavigate={studio.navigateTo}
-      />
-
       {/* Notifications & Alerts */}
       <StudioAlerts
         conflictMessage={studio.conflictMessage}
@@ -108,133 +222,65 @@ export function CardStudioScreen() {
         onConfirmPublish={studio.handleConfirmPublish}
       />
 
-      {/* Level 1: Category Stack */}
-      {studio.panelLocation.level === 1 && (
-        <View className="gap-md">
-          {/* Subject with Independent vs Linked Attribution */}
-          <SubjectCategoryCard
-            activeProfile={studio.activeProfile}
-            people={studio.customPeople}
-            isOpen={studio.personDropdownOpen}
-            onToggle={studio.togglePersonDropdown}
-            onSelectPerson={studio.handleSelectPersonProfile}
-            onUnlink={studio.handleUnlinkSubject}
-          />
+      {/* 4 Inline Expandable Accordion Sections */}
+      <View className="gap-3">
+        {SECTIONS.map((sec) => {
+          const isOpen = openSections[sec.id]
+          const IconComponent = sec.icon
+          const summary = sectionSummaries[sec.id]
 
-          {/* 1. Template Selector (Standard, Stats, Minimal) */}
-          <CardTypeSelector
-            activeCardTypeId={studio.activeCardTypeId}
-            activeCardType={studio.activeCardType}
-            isOpen={studio.cardTypeDropdownOpen}
-            onToggle={studio.toggleCardTypeDropdown}
-            onSelectType={studio.handleSelectCardType}
-          />
-
-          {/* 2. Style (Flagship Design Picker) */}
-          <FlagshipDesignPicker
-            activeFlagshipId={studio.activeFlagshipId}
-            activeFlagship={studio.activeFlagship}
-            isOpen={studio.designDropdownOpen}
-            onToggle={studio.toggleDesignDropdown}
-            onSelectDesign={studio.handleSelectFlagshipDesign}
-          />
-
-          {/* 3. Media Library with Artwork Adjust shortcut */}
-          <View className="gap-2">
-            <MediaLibrarySelector
-              mediaItems={studio.displayedMediaItems}
-              selectedImageId={studio.selectedImageId}
-              mediaCategoryFilter={studio.mediaCategoryFilter}
-              onCategoryFilterChange={studio.setMediaCategoryFilter}
-              onSelectArtwork={studio.handleSelectArtwork}
-              onPickCustomImage={studio.handlePickCustomImage}
-            />
-            <Button
-              size="sm"
-              variant="secondary"
-              onPress={() =>
-                studio.navigateTo({
-                  level: 3,
-                  category: 'artwork',
-                  group: 'adjust',
-                })
-              }
-              testID="open-artwork-adjust-button"
+          return (
+            <View
+              key={sec.id}
+              testID={`accordion-${sec.id}`}
+              className="rounded-2xl border border-border/80 bg-surface overflow-hidden shadow-2xs"
             >
-              Adjust Framing
-            </Button>
-          </View>
+              {/* Accordion Header */}
+              <Pressable
+                testID={`category-${sec.id}`}
+                onPress={() => toggleSection(sec.id)}
+                className="flex-row items-center justify-between p-3.5 active:bg-canvas/40"
+                accessibilityRole="button"
+                accessibilityLabel={`${sec.label} section`}
+              >
+                <View className="flex-row items-center gap-3 flex-1 min-w-0 pr-2">
+                  <View
+                    className={`h-8 w-8 rounded-xl items-center justify-center ${
+                      isOpen ? 'bg-brand/10' : 'bg-muted-text/10'
+                    }`}
+                  >
+                    <IconComponent
+                      size={17}
+                      color={isOpen ? brandColor : mutedColor}
+                    />
+                  </View>
+                  <View className="flex-1 min-w-0">
+                    <Text className="text-sm font-bold text-text" numberOfLines={1}>
+                      {sec.label}
+                    </Text>
+                    <Text variant="caption" className="text-xs text-muted-text" numberOfLines={1}>
+                      {summary}
+                    </Text>
+                  </View>
+                </View>
 
-          {/* 4. Dynamic Content Fields */}
-          <ContentFieldsEditor
-            boundFields={studio.boundFields}
-            activeCardType={studio.activeCardType}
-            activeFlagship={studio.activeFlagship}
-            isOverflow={studio.currentFlagshipResult.isOverflow}
-            onUpdateField={studio.handleUpdatePositionalInput}
-            onRelinkField={studio.handleRelinkField}
-          />
+                {isOpen ? (
+                  <ChevronDown size={18} color={mutedColor} />
+                ) : (
+                  <ChevronRight size={18} color={mutedColor} />
+                )}
+              </Pressable>
 
-          {/* 5. Appearance Levers Entry Card */}
-          <Pressable
-            onPress={() => studio.navigateTo({ level: 2, category: 'appearance' })}
-            testID="open-appearance-button"
-            className="rounded-xl border border-border/80 bg-surface p-4 gap-2.5 active:bg-canvas/50 shadow-2xs"
-          >
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-2">
-                <Palette size={15} color={brandColor} />
-                <Text className="text-[11px] font-extrabold uppercase tracking-widest text-muted-text">
-                  Appearance
-                </Text>
-              </View>
-              <ChevronRight size={16} color={mutedColor} />
-            </View>
-            <Text className="text-xs text-muted-text">
-              Customize layout, typography, colors, framing, and surface effects.
-            </Text>
-            <View className="flex-row items-center gap-2 mt-1">
-              <Badge tone="muted-text">
-                {studio.appearance.fontRole ? studio.appearance.fontRole.toUpperCase() : 'Default Type'}
-              </Badge>
-              {studio.appearance.textureEffect && studio.appearance.textureEffect !== 'none' && (
-                <Badge tone="brand">{studio.appearance.textureEffect.toUpperCase()}</Badge>
+              {/* Inline Expanded Controls */}
+              {isOpen && (
+                <View className="px-3.5 pb-4">
+                  {renderSectionBody(sec.id)}
+                </View>
               )}
-              {studio.appearance.vignetteEffect && <Badge tone="brand">Vignette</Badge>}
             </View>
-          </Pressable>
-        </View>
-      )}
-
-      {/* Level 2: Property Group List */}
-      {studio.panelLocation.level === 2 && studio.panelLocation.category === 'appearance' && (
-        <AppearanceGroupList
-          onSelectGroup={(group) =>
-            studio.navigateTo({
-              level: 3,
-              category: 'appearance',
-              group,
-            })
-          }
-        />
-      )}
-
-      {/* Level 3: Granular Appearance Controls */}
-      {studio.panelLocation.level === 3 && studio.panelLocation.category === 'appearance' && studio.panelLocation.group && (
-        <AppearanceControls
-          group={studio.panelLocation.group}
-          appearance={studio.appearance}
-          onUpdate={studio.handleUpdateAppearance}
-        />
-      )}
-
-      {/* Level 3: Artwork Adjust Controls */}
-      {studio.panelLocation.level === 3 && studio.panelLocation.category === 'artwork' && (
-        <ArtworkAdjustControls
-          appearance={studio.appearance}
-          onUpdate={studio.handleUpdateAppearance}
-        />
-      )}
+          )
+        })}
+      </View>
     </>
   )
 
@@ -271,7 +317,7 @@ export function CardStudioScreen() {
         />
       </View>
 
-      {/* 2. Workspace Body */}
+      {/* 2. Workspace Body: Left Accordion Panel + Right Live Card Preview */}
       {isWide ? (
         // Desktop / Tablet: Fixed-width editor column + flexible card canvas stage
         <View className="flex-1 flex-row w-full overflow-hidden">

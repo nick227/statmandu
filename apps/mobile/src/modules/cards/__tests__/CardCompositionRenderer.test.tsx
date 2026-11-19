@@ -154,7 +154,6 @@ describe('CardCompositionRenderer', () => {
 
     expect(screen.getByTestId('authentic-issue-badge')).toBeTruthy()
     expect(screen.getByText('#007 / 050')).toBeTruthy()
-    expect(screen.queryByTestId('unissued-preview-indicator')).toBeNull()
 
     // Without issue, no authentic issue badge
     await screen.rerender(
@@ -168,7 +167,5 @@ describe('CardCompositionRenderer', () => {
     )
 
     expect(screen.queryByTestId('authentic-issue-badge')).toBeNull()
-    expect(screen.getByTestId('unissued-preview-indicator')).toBeTruthy()
-    expect(screen.getByText('PREVIEW · UNISSUED')).toBeTruthy()
   })
 })

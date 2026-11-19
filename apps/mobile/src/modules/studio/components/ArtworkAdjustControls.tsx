@@ -23,7 +23,7 @@ export function ArtworkAdjustControls({
   return (
     <View className="gap-4">
       <View className="gap-1">
-        <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
+        <Text className="text-sm font-semibold text-text">
           Artwork Framing
         </Text>
         <Text variant="caption" className="text-xs text-muted-text">

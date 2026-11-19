@@ -24,13 +24,7 @@ export function StudioPanelHeader({
   const mutedColor = useNativeColor('mutedText')
 
   if (location.level === 1) {
-    return (
-      <View className="border-b border-border/40 pb-3 mb-1">
-        <Text className="text-xs font-bold uppercase tracking-wider text-muted-text">
-          Editor
-        </Text>
-      </View>
-    )
+    return null
   }
 
   return (

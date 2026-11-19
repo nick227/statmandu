@@ -17,6 +17,11 @@ jest.mock('../hooks/useStudioUser', () => ({
   useStudioUser: jest.fn(),
 }))
 
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+
 jest.mock('../hooks/useCardDesigns', () => {
   const actual = jest.requireActual('../hooks/useCardDesigns')
   return {
@@ -43,10 +48,7 @@ const mockCreatePerson = jest.fn().mockImplementation((p: any) =>
 
 jest.mock('../hooks/usePersonSelector', () => ({
   usePersonSelector: () => ({
-    people: [
-      { id: 'person-test-1', displayName: 'Miles Davis', bio: 'Legendary trumpeter' },
-      { id: 'person-test-2', displayName: 'Wilma Rudolph', bio: 'Olympic champion' },
-    ],
+    people: [],
     isLoading: false,
     createPerson: mockCreatePerson,
     isCreating: false,
@@ -57,10 +59,11 @@ jest.mock('@/modules/media/useUnifiedMediaLibrary', () => ({
   useUnifiedMediaLibrary: () => ({
     allMedia: [{ id: 'art-1', url: 'https://example.com/art.jpg', label: 'Preset', source: 'CURATED' }],
     userLibrary: [],
-    curatedPresets: [],
+    curatedPresets: [{ id: 'art-1', url: 'https://example.com/art.jpg', label: 'Preset', source: 'CURATED' }],
     profileGallery: [],
     isLoading: false,
     registerUploadedMedia: jest.fn(),
+    pickAndUploadMedia: jest.fn(),
   }),
 }))
 
@@ -99,51 +102,79 @@ jest.mock('@/shared/ui/Button', () => ({
   },
 }))
 
-jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
-  SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
-}))
+describe('RARE Card Studio — 4 Inline Expandable Sections & Live Preview', () => {
+  const mockUseStudioUser = useStudioUser as jest.Mock
+  const mockUseCardDesigns = useCardDesigns as jest.Mock
+  const mockUseCreateCardDesign = useCreateCardDesign as jest.Mock
+  const mockUseUpdateCardDesign = useUpdateCardDesign as jest.Mock
+  const mockUseCreateRelease = useCreateRelease as jest.Mock
+  const mockUseGenerateRelease = useGenerateRelease as jest.Mock
+  const mockUsePublishRelease = usePublishRelease as jest.Mock
 
-const mockPush = jest.fn()
-jest.mock('expo-router', () => ({
-  useRouter: () => ({
-    push: mockPush,
-    replace: jest.fn(),
-    back: jest.fn(),
-  }),
-  useLocalSearchParams: () => ({}),
-}))
-
-describe('RARE Card Studio — Single View & 3-Level Contextual Left Panel', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(useStudioUser as jest.Mock).mockReturnValue({
-      user: { id: 'u1', username: 'testcreator' },
-      username: 'testcreator',
-      isLoggedIn: true,
+
+    mockUseStudioUser.mockReturnValue({
+      user: { id: 'usr-1', username: 'elena' },
+      username: 'elena',
+      profile: {
+        id: 'usr-1',
+        displayName: 'Elena Rostova',
+        username: 'elena',
+        avatarUrl: 'https://example.com/avatar.jpg',
+        bio: 'Digital artist & collector',
+        hometown: 'Berlin',
+      },
       isLoading: false,
     })
-    ;(useCreateCardDesign as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn().mockResolvedValue({ id: 'd-1', revision: 1 }),
-      isPending: false,
-    })
-    ;(useUpdateCardDesign as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn().mockResolvedValue({ id: 'd-1', revision: 2 }),
-      isPending: false,
-    })
-    ;(useCardDesigns as jest.Mock).mockReturnValue({
+
+    mockUseCardDesigns.mockReturnValue({
       data: [],
       isLoading: false,
+      refetch: jest.fn(),
     })
-    ;(useCreateRelease as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn().mockResolvedValue({ id: 'rel-1' }),
+
+    mockUseCreateCardDesign.mockReturnValue({
+      mutateAsync: jest.fn().mockImplementation((payload) =>
+        Promise.resolve({
+          id: 'design-new-1',
+          userId: 'usr-1',
+          title: payload.title,
+          revision: 1,
+          composition: payload.composition,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
+      ),
       isPending: false,
     })
-    ;(useGenerateRelease as jest.Mock).mockReturnValue({
+
+    mockUseUpdateCardDesign.mockReturnValue({
+      mutateAsync: jest.fn().mockImplementation((payload) =>
+        Promise.resolve({
+          id: payload.designId,
+          userId: 'usr-1',
+          title: payload.title,
+          revision: payload.expectedRevision + 1,
+          composition: payload.composition,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
+      ),
+      isPending: false,
+    })
+
+    mockUseCreateRelease.mockReturnValue({
+      mutateAsync: jest.fn().mockResolvedValue({ id: 'rel-12345678' }),
+      isPending: false,
+    })
+
+    mockUseGenerateRelease.mockReturnValue({
       mutateAsync: jest.fn().mockResolvedValue({}),
       isPending: false,
     })
-    ;(usePublishRelease as jest.Mock).mockReturnValue({
+
+    mockUsePublishRelease.mockReturnValue({
       mutateAsync: jest.fn().mockResolvedValue({}),
       isPending: false,
     })
@@ -153,189 +184,154 @@ describe('RARE Card Studio — Single View & 3-Level Contextual Left Panel', () 
     cleanup()
   })
 
-  it('renders initial state with Subject as Independent and full card preview canvas continuously visible', async () => {
+  it('renders 4 inline accordion headers (Subject, Card, Content, Appearance) and live preview stage', async () => {
     const utils = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(utils.getByTestId('category-subject')).toBeTruthy()
+      expect(utils.getByTestId('category-card')).toBeTruthy()
+      expect(utils.getByTestId('category-content')).toBeTruthy()
+      expect(utils.getByTestId('category-appearance')).toBeTruthy()
+    })
+
+    // Top branding
+    expect(utils.getByText('RARE / Card Studio')).toBeTruthy()
+
+    // Fixed live card canvas preview on the right
+    expect(utils.getByTestId('card-preview-stage')).toBeTruthy()
+  })
+
+  it('expands Subject inline: supports 1-click creator profile and background removal cutout toggle', async () => {
+    const utils = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(utils.getByTestId('category-subject')).toBeTruthy()
+    })
+
+    // Expand Subject section inline
+    fireEvent.press(utils.getByTestId('category-subject'))
+
+    await waitFor(() => {
+      expect(utils.getByTestId('use-my-profile-button')).toBeTruthy()
+      expect(utils.getByTestId('subject-name-input')).toBeTruthy()
+      expect(utils.getByTestId('remove-background-button')).toBeTruthy()
+    })
+
+    // Zero seeded mock athletes (Nasir Alston, Josiah Davis) in studio
+    expect(utils.queryByText('Nasir Alston')).toBeNull()
+    expect(utils.queryByText('Josiah Davis')).toBeNull()
+
+    // 1-Click "Use My Profile"
+    fireEvent.press(utils.getByTestId('use-my-profile-button'))
+
+    await waitFor(() => {
+      expect(utils.getAllByText('Elena Rostova').length).toBeGreaterThanOrEqual(1)
+      expect(utils.getByTestId('unlink-subject-button')).toBeTruthy()
+    })
+
+    // Priority Background Removal
+    fireEvent.press(utils.getByTestId('remove-background-button'))
+
+    await waitFor(() => {
+      expect(utils.getByTestId('subject-image-type-cutout')).toBeTruthy()
+      expect(utils.getByTestId('subject-image-type-original')).toBeTruthy()
+    })
+
+    // 1-click toggle between Cutout and Original
+    fireEvent.press(utils.getByTestId('subject-image-type-original'))
+    await waitFor(() => {
+      expect(utils.getByTestId('subject-image-type-original')).toBeTruthy()
+    })
+
+    fireEvent.press(utils.getByTestId('subject-image-type-cutout'))
+    await waitFor(() => {
+      expect(utils.getByTestId('subject-image-type-cutout')).toBeTruthy()
+    })
+
+    // Card canvas remains continuously mounted
+    expect(utils.getByTestId('card-preview-stage')).toBeTruthy()
+  })
+
+  it('expands Card and Content inline without leaving the workspace', async () => {
+    const utils = await render(<CardStudioScreen />)
+
+    await waitFor(() => {
+      expect(utils.getByTestId('category-card')).toBeTruthy()
+      expect(utils.getByTestId('category-content')).toBeTruthy()
+    })
+
+    // Expand Card section inline
+    fireEvent.press(utils.getByTestId('category-card'))
 
     await waitFor(() => {
       expect(utils.getByTestId('card-type-dropdown')).toBeTruthy()
-      expect(utils.getByTestId('open-appearance-button')).toBeTruthy()
+      expect(utils.getByTestId('design-picker-dropdown')).toBeTruthy()
     })
 
-    // Verify Subject category card shows Independent
-    expect(utils.getByText('Independent')).toBeTruthy()
-    expect(utils.getByText('Original Creative Work')).toBeTruthy()
+    // Expand Content section inline
+    fireEvent.press(utils.getByTestId('category-content'))
 
-    // Verify Level 1 categories are visible
-    expect(utils.getByTestId('card-type-dropdown')).toBeTruthy()
-    expect(utils.getByTestId('design-picker-dropdown')).toBeTruthy()
-    expect(utils.getByTestId('open-appearance-button')).toBeTruthy()
-    expect(utils.getByTestId('open-artwork-adjust-button')).toBeTruthy()
+    await waitFor(() => {
+      expect(utils.getByTestId('slot-input1')).toBeTruthy()
+    })
 
-    // Verify Card Stage canvas is rendered
+    // Edit input1 directly
+    fireEvent.changeText(utils.getByTestId('slot-input1'), 'New Collectible Headline')
+    await waitFor(() => {
+      expect(utils.getByTestId('slot-input1').props.value).toBe('New Collectible Headline')
+    })
+
+    // Card canvas remains visible
     expect(utils.getByTestId('card-preview-stage')).toBeTruthy()
   })
 
-  it('supports attaching and unlinking a subject with Subject vs Card separation', async () => {
+  it('expands Appearance inline with cohesive visual selections (Layout, Typography, Colors, Style, Finish)', async () => {
     const utils = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(utils.getByTestId('select-subject-button')).toBeTruthy()
+      expect(utils.getByTestId('category-appearance')).toBeTruthy()
     })
 
-    // Initial state is Independent
-    expect(utils.getByText('Independent')).toBeTruthy()
-
-    // Open subject dropdown
-    fireEvent.press(utils.getByTestId('select-subject-button'))
-
-    // Select Miles Davis
-    await waitFor(() => {
-      expect(utils.getByTestId('subject-option-person-test-1')).toBeTruthy()
-    })
-    fireEvent.press(utils.getByTestId('subject-option-person-test-1'))
-
-    // Subject is now Linked
-    await waitFor(() => {
-      expect(utils.getByText('Linked')).toBeTruthy()
-      expect(utils.getByText('Miles Davis')).toBeTruthy()
-    })
-
-    // Content fields receive profile data
-    expect(utils.getByDisplayValue('Miles Davis')).toBeTruthy()
-
-    // Card canvas remains continuously rendered
-    expect(utils.getByTestId('card-preview-stage')).toBeTruthy()
-
-    // Unlink subject
-    fireEvent.press(utils.getByTestId('unlink-subject-button'))
-
-    // Switches back to Independent without destroying the card canvas
-    await waitFor(() => {
-      expect(utils.getByText('Independent')).toBeTruthy()
-    })
-    expect(utils.getByTestId('card-preview-stage')).toBeTruthy()
-  })
-
-  it('navigates the 3-level left panel hierarchy with back button and breadcrumbs', async () => {
-    const utils = await render(<CardStudioScreen />)
+    // Expand Appearance inline
+    fireEvent.press(utils.getByTestId('category-appearance'))
 
     await waitFor(() => {
-      expect(utils.getByTestId('open-appearance-button')).toBeTruthy()
-    })
+      // 1. Layout Variants
+      expect(utils.getByTestId('layout-variant-portrait')).toBeTruthy()
+      expect(utils.getByTestId('layout-variant-balanced')).toBeTruthy()
+      expect(utils.getByTestId('layout-variant-editorial')).toBeTruthy()
 
-    // 1. Navigate from Level 1 to Level 2 (Appearance groups)
-    fireEvent.press(utils.getByTestId('open-appearance-button'))
-
-    // Level 2 should now display property groups: Layout, Typography, Colors, Framing, Effects
-    await waitFor(() => {
-      expect(utils.getByTestId('appearance-group-typography')).toBeTruthy()
-      expect(utils.getByTestId('appearance-group-colors')).toBeTruthy()
-      expect(utils.getByTestId('appearance-group-framing')).toBeTruthy()
-      expect(utils.getByTestId('appearance-group-effects')).toBeTruthy()
-    })
-
-    // Card canvas is still continuously mounted and visible
-    expect(utils.getByTestId('card-preview-stage')).toBeTruthy()
-
-    // Header displays back button
-    expect(utils.getByTestId('panel-back-button')).toBeTruthy()
-
-    // 2. Navigate from Level 2 to Level 3 (Typography Granular Controls)
-    fireEvent.press(utils.getByTestId('appearance-group-typography'))
-
-    await waitFor(() => {
+      // 2. Typography Pairings
       expect(utils.getByTestId('font-role-serif')).toBeTruthy()
       expect(utils.getByTestId('font-role-sans')).toBeTruthy()
-      expect(utils.getByTestId('font-role-mono')).toBeTruthy()
-      expect(utils.getByTestId('font-role-display')).toBeTruthy()
-    })
 
-    // Selecting a font role applies it to appearance without navigation away
-    fireEvent.press(utils.getByTestId('font-role-serif'))
-    await waitFor(() => {
-      expect(utils.getByTestId('font-role-serif')).toBeTruthy()
-    })
-    expect(utils.getByTestId('card-preview-stage')).toBeTruthy()
-
-    // 3. Test Back Navigation from Level 3 to Level 2
-    fireEvent.press(utils.getByTestId('panel-back-button'))
-
-    await waitFor(() => {
-      expect(utils.getAllByText('Appearance').length).toBeGreaterThanOrEqual(1)
-      expect(utils.getByTestId('appearance-group-typography')).toBeTruthy()
-    })
-
-    // 4. Test Back Navigation from Level 2 to Level 1
-    fireEvent.press(utils.getByTestId('panel-back-button'))
-
-    await waitFor(() => {
-      expect(utils.getByTestId('open-appearance-button')).toBeTruthy()
-      expect(utils.getByTestId('card-type-dropdown')).toBeTruthy()
-    })
-  })
-
-  it('allows direct breadcrumb jump back to Level 1 Studio from Level 3', async () => {
-    const utils = await render(<CardStudioScreen />)
-
-    await waitFor(() => {
-      expect(utils.getByTestId('open-appearance-button')).toBeTruthy()
-    })
-
-    // Open Appearance (Level 2)
-    fireEvent.press(utils.getByTestId('open-appearance-button'))
-
-    // Open Colors (Level 3)
-    await waitFor(() => {
-      expect(utils.getByTestId('appearance-group-colors')).toBeTruthy()
-    })
-    fireEvent.press(utils.getByTestId('appearance-group-colors'))
-
-    await waitFor(() => {
+      // 3. Coordinated Color Palettes
       expect(utils.getByTestId('color-preset-obsidian')).toBeTruthy()
       expect(utils.getByTestId('color-preset-gold')).toBeTruthy()
+
+      // 4. Artwork Treatment Style
+      expect(utils.getByTestId('artwork-style-photographic')).toBeTruthy()
+      expect(utils.getByTestId('artwork-style-cinematic')).toBeTruthy()
+
+      // 5. Decorative Finishes
+      expect(utils.getByTestId('finish-effect-matte')).toBeTruthy()
+      expect(utils.getByTestId('finish-effect-holographic')).toBeTruthy()
     })
 
-    // Select Gold palette preset
-    fireEvent.press(utils.getByTestId('color-preset-gold'))
-    await waitFor(() => {
-      expect(utils.getByTestId('color-preset-gold')).toBeTruthy()
-    })
+    // Verify technical border controls (border-width-0, border-width-4) are NOT exposed
+    expect(utils.queryByTestId('border-width-0')).toBeNull()
+    expect(utils.queryByTestId('border-width-4')).toBeNull()
 
-    // Jump directly to Studio using breadcrumb button
-    const studioBreadcrumb = utils.getByTestId('breadcrumb-studio')
-    expect(studioBreadcrumb).toBeTruthy()
-    fireEvent.press(studioBreadcrumb)
+    // Select Portrait layout
+    fireEvent.press(utils.getByTestId('layout-variant-portrait'))
 
-    // Should be at Level 1 immediately
-    await waitFor(() => {
-      expect(utils.getByTestId('open-appearance-button')).toBeTruthy()
-      expect(utils.getByTestId('card-type-dropdown')).toBeTruthy()
-    })
-  })
+    // Select Cinematic style
+    fireEvent.press(utils.getByTestId('artwork-style-cinematic'))
 
-  it('supports direct Level 3 Artwork Framing adjustments', async () => {
-    const utils = await render(<CardStudioScreen />)
+    // Select Holographic finish
+    fireEvent.press(utils.getByTestId('finish-effect-holographic'))
 
-    await waitFor(() => {
-      expect(utils.getByTestId('open-artwork-adjust-button')).toBeTruthy()
-    })
-
-    // Click Adjust Framing on Level 1
-    fireEvent.press(utils.getByTestId('open-artwork-adjust-button'))
-
-    // Enters Level 3 Artwork Framing
-    await waitFor(() => {
-      expect(utils.getByText('Artwork Framing')).toBeTruthy()
-    })
-
-    // Canvas remains continuously mounted
+    // Live card canvas remains continuously rendered
     expect(utils.getByTestId('card-preview-stage')).toBeTruthy()
-
-    // Back button returns to Level 1
-    fireEvent.press(utils.getByTestId('panel-back-button'))
-
-    await waitFor(() => {
-      expect(utils.getByTestId('open-appearance-button')).toBeTruthy()
-    })
   })
 })

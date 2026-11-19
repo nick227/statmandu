@@ -38,9 +38,6 @@ export function CardTypeSelector({
         className="flex-row items-center justify-between rounded-xl border border-border bg-card-surface px-md py-sm"
       >
         <View className="flex-1">
-          <Text variant="caption" className="text-muted-text uppercase text-[10px] tracking-wider font-bold">
-            Template
-          </Text>
           <Text className="font-semibold text-sm text-text">
             {activeCardType.name}
           </Text>

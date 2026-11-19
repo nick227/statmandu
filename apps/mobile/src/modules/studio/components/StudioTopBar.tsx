@@ -65,8 +65,11 @@ export function StudioTopBar({
 }: StudioTopBarProps) {
   return (
     <View className="mb-md flex-col md:flex-row md:items-center justify-between gap-sm border-b border-border pb-md">
-      {/* Primary Left/Top Row: Design Title & Revision Badge */}
-      <View className="flex-row items-center gap-xs flex-1 max-w-full md:max-w-md">
+      {/* Primary Left/Top Row: Branding + Design Title & Revision Badge */}
+      <View className="flex-row items-center gap-xs flex-1 max-w-full md:max-w-xl">
+        <Text className="text-sm font-extrabold tracking-tight text-text whitespace-nowrap mr-1">
+          RARE / Card Studio
+        </Text>
         <Input
           value={designTitle}
           onChangeText={onTitleChange}
