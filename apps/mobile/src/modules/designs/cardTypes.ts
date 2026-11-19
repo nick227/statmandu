@@ -1,10 +1,10 @@
 /**
  * RARE Card Type Definitions
  *
- * Card Type defines the content schema, fields, and informational structure of a card,
- * while Design defines the visual appearance, typography, layout, and styling.
- *
- * 10 distinct Card Types × 20 Flagship Designs = 200 possible combinations.
+ * 3 Ultra-Simple Templates:
+ * 1. Standard (Identity & Bio) - Portrait layout with name, role, origin, and bio story
+ * 2. Stats (Hero Stat & Metrics) - Performance layout with competitor, category, big stat callout, and record
+ * 3. Minimal (Full-Bleed Artwork) - Artwork presentation with full-bleed canvas, piece title, creator, and year
  */
 
 export interface CardTypeField {
@@ -26,415 +26,118 @@ export interface CardType {
 }
 
 export const CARD_TYPES: CardType[] = [
-  // 1. Person Profile
+  // 1. Standard (Identity & Bio)
   {
-    id: 'profile',
-    name: 'Person Profile',
-    description: 'Personal identity, achievements, and biography',
+    id: 'standard',
+    name: 'Standard',
+    description: 'Identity & Bio portrait layout',
     badge: 'Identity',
     fields: [
       {
         id: 'name',
-        label: 'Subject Name',
+        label: 'Name',
         defaultVal: '',
         placeholder: 'Enter subject or person name...',
         required: true,
       },
       {
-        id: 'title',
-        label: 'Profession / Calling',
+        id: 'role',
+        label: 'Role',
         defaultVal: '',
-        placeholder: 'e.g. Author, Engineer, Athlete',
-      },
-      {
-        id: 'bio',
-        label: 'Biographical Summary',
-        defaultVal: '',
-        placeholder: 'Brief biography or statement...',
-        multiline: true,
-        maxLines: 4,
+        placeholder: 'e.g. Architect, Musician, Athlete',
       },
       {
         id: 'origin',
-        label: 'Origin & Era',
+        label: 'Origin',
         defaultVal: '',
         placeholder: 'e.g. City, Country, or Historic Era',
       },
-    ],
-  },
-
-  // 2. Achievement / Milestone
-  {
-    id: 'achievement',
-    name: 'Achievement & Milestone',
-    description: 'Records, accolades, awards, breakthroughs, and historic triumphs',
-    badge: 'Milestone',
-    fields: [
       {
-        id: 'recipient',
-        label: 'Honoree / Subject Name',
+        id: 'bio',
+        label: 'Bio',
         defaultVal: '',
-        placeholder: 'Enter recipient or honoree name...',
-        required: true,
-      },
-      {
-        id: 'achievement',
-        label: 'Milestone / Honor',
-        defaultVal: '',
-        placeholder: 'e.g. Championship, Award, Breakthrough',
-      },
-      {
-        id: 'details',
-        label: 'Achievement Details',
-        defaultVal: '',
-        placeholder: 'Describe the milestone or achievement...',
+        placeholder: 'Brief biographical statement...',
         multiline: true,
         maxLines: 4,
       },
-      {
-        id: 'dateLocation',
-        label: 'Date & Venue',
-        defaultVal: '',
-        placeholder: 'e.g. City, Venue, or Year',
-      },
-      {
-        id: 'category',
-        label: 'Category / Domain',
-        defaultVal: '',
-        placeholder: 'e.g. Science, Literature, Athletics',
-      },
     ],
   },
 
-  // 3. Event / Moment
+  // 2. Stats (Hero Stat & Metrics)
   {
-    id: 'event',
-    name: 'Event & Historic Moment',
-    description: 'Historic gatherings, festivals, keynotes, inaugurations, and exhibitions',
-    badge: 'Event',
+    id: 'stats',
+    name: 'Stats',
+    description: 'Hero Stat & Metrics performance layout',
+    badge: 'Metrics',
     fields: [
       {
-        id: 'presenter',
-        label: 'Presenter / Key Figure',
+        id: 'name',
+        label: 'Name',
         defaultVal: '',
-        placeholder: 'Enter speakers, headliners, or presenter...',
+        placeholder: 'Enter competitor or subject name...',
         required: true,
       },
       {
-        id: 'eventName',
-        label: 'Event Title',
+        id: 'discipline',
+        label: 'Category',
         defaultVal: '',
-        placeholder: 'e.g. Historic Gathering, Keynote, Festival',
+        placeholder: 'e.g. Basketball, Track & Field, Racing',
       },
       {
-        id: 'description',
-        label: 'Moment Narrative',
+        id: 'stat',
+        label: 'Hero Stat',
         defaultVal: '',
-        placeholder: 'Describe the significance of the event...',
-        multiline: true,
-        maxLines: 4,
+        placeholder: 'e.g. 3x Champion, 28.4 PPG, World Record',
       },
       {
-        id: 'dateLocation',
-        label: 'Date & Location',
+        id: 'record',
+        label: 'Record',
         defaultVal: '',
-        placeholder: 'Date and venue...',
-      },
-      {
-        id: 'edition',
-        label: 'Commemorative Tag',
-        defaultVal: '',
-        placeholder: 'e.g. Live Recording, Commemorative Drop',
+        placeholder: 'e.g. 1960 Olympic Games, Hall of Fame',
       },
     ],
   },
 
-  // 4. Artwork & Creator
+  // 3. Minimal (Full-Bleed Artwork)
   {
-    id: 'creator',
-    name: 'Artwork & Masterpiece',
-    description: 'Paintings, sculpture, photography, architecture, and design works',
+    id: 'minimal',
+    name: 'Minimal',
+    description: 'Full-bleed artwork & minimal caption layout',
     badge: 'Artwork',
     fields: [
       {
+        id: 'title',
+        label: 'Title',
+        defaultVal: '',
+        placeholder: 'Enter artwork or subject title...',
+        required: true,
+      },
+      {
         id: 'artist',
-        label: 'Creator / Artist',
+        label: 'Creator',
         defaultVal: '',
         placeholder: 'Enter creator or artist name...',
-        required: true,
       },
       {
-        id: 'workTitle',
-        label: 'Work Title',
+        id: 'year',
+        label: 'Year',
         defaultVal: '',
-        placeholder: 'Title of the artwork or creative piece...',
-      },
-      {
-        id: 'statement',
-        label: 'Creative Statement / Description',
-        defaultVal: '',
-        placeholder: 'Curatorial notes or artist statement...',
-        multiline: true,
-        maxLines: 4,
-      },
-      {
-        id: 'mediumYear',
-        label: 'Medium & Year',
-        defaultVal: '',
-        placeholder: 'e.g. Oil on Canvas 1907, Vinyl LP 1959',
-      },
-    ],
-  },
-
-  // 5. Sports Legend
-  {
-    id: 'sports',
-    name: 'Sports & Athletic Legend',
-    description: 'Championships, player statlines, franchises, and hall of fame careers',
-    badge: 'Athletics',
-    fields: [
-      {
-        id: 'athleteName',
-        label: 'Athlete Name',
-        defaultVal: '',
-        placeholder: 'Player or athlete name...',
-        required: true,
-      },
-      {
-        id: 'team',
-        label: 'Team / Discipline',
-        defaultVal: '',
-        placeholder: 'Team, nation, or position...',
-      },
-      {
-        id: 'highlights',
-        label: 'Career Highlights',
-        defaultVal: '',
-        placeholder: 'Career summary, championships, records...',
-        multiline: true,
-        maxLines: 4,
-      },
-      {
-        id: 'stat1',
-        label: 'Primary Stat',
-        defaultVal: '',
-        placeholder: 'e.g. Scoring Average, Gold Medals, Wins',
-      },
-      {
-        id: 'stat2',
-        label: 'Era / Season',
-        defaultVal: '',
-        placeholder: 'e.g. 1996 - 2016, 2024 Season',
-      },
-      {
-        id: 'badge',
-        label: 'Honor / Recognition',
-        defaultVal: '',
-        placeholder: 'e.g. Hall of Fame, All-Star, MVP',
-      },
-    ],
-  },
-
-  // 6. Publication & Press
-  {
-    id: 'publication',
-    name: 'Publication & Feature',
-    description: 'Magazine covers, investigative journalism, essays, and front page press',
-    badge: 'Press',
-    fields: [
-      {
-        id: 'author',
-        label: 'Author / Subject Name',
-        defaultVal: '',
-        placeholder: 'Enter author or subject name...',
-        required: true,
-      },
-      {
-        id: 'headline',
-        label: 'Cover Headline',
-        defaultVal: '',
-        placeholder: 'Feature headline or title...',
-      },
-      {
-        id: 'deck',
-        label: 'Sub-deck / Subject',
-        defaultVal: '',
-        placeholder: 'Subject or secondary teaser...',
-      },
-      {
-        id: 'excerpt',
-        label: 'Story Excerpt',
-        defaultVal: '',
-        placeholder: 'Lead paragraph or story excerpt...',
-        multiline: true,
-        maxLines: 4,
-      },
-      {
-        id: 'issue',
-        label: 'Issue & Date',
-        defaultVal: '',
-        placeholder: 'Volume, issue, date...',
-      },
-    ],
-  },
-
-  // 7. Quote & Manifesto
-  {
-    id: 'manifesto',
-    name: 'Quote & Manifesto',
-    description: 'Memorable aphorisms, philosophical insights, and influential doctrines',
-    badge: 'Wisdom',
-    fields: [
-      {
-        id: 'speaker',
-        label: 'Speaker / Author',
-        defaultVal: '',
-        placeholder: 'Enter speaker or author name...',
-        required: true,
-      },
-      {
-        id: 'quote',
-        label: 'Core Quote',
-        defaultVal: '',
-        placeholder: 'The core quote or thesis...',
-      },
-      {
-        id: 'context',
-        label: 'Reflection / Context',
-        defaultVal: '',
-        placeholder: 'Extended quote or contextual background...',
-        multiline: true,
-        maxLines: 4,
-      },
-      {
-        id: 'citation',
-        label: 'Citation / Year',
-        defaultVal: '',
-        placeholder: 'Source work, date, or speech...',
-      },
-    ],
-  },
-
-  // 8. Character & Lore
-  {
-    id: 'lore',
-    name: 'Character & Mythic Lore',
-    description: 'Fictional avatars, graphic novel heroes, game characters, and mythology',
-    badge: 'Fiction',
-    fields: [
-      {
-        id: 'alias',
-        label: 'Character / Alias',
-        defaultVal: '',
-        placeholder: 'Hero name or alias...',
-        required: true,
-      },
-      {
-        id: 'faction',
-        label: 'Faction / Realm',
-        defaultVal: '',
-        placeholder: 'Class, realm, or allegiance...',
-      },
-      {
-        id: 'lore',
-        label: 'Origin Lore & Abilities',
-        defaultVal: '',
-        placeholder: 'Character backstory and powers...',
-        multiline: true,
-        maxLines: 4,
-      },
-      {
-        id: 'rarity',
-        label: 'Rarity / Tier',
-        defaultVal: '',
-        placeholder: 'e.g. Ultra Rare, Tier 1',
-      },
-    ],
-  },
-
-  // 9. Tech & Systems Spec
-  {
-    id: 'tech',
-    name: 'Tech & Telemetry Spec',
-    description: 'System architectures, patents, cybernetic agents, and node manifests',
-    badge: 'Tech',
-    fields: [
-      {
-        id: 'systemName',
-        label: 'System / Agent ID',
-        defaultVal: '',
-        placeholder: 'System code or prototype ID...',
-        required: true,
-      },
-      {
-        id: 'role',
-        label: 'Classification & Role',
-        defaultVal: '',
-        placeholder: 'Classification or protocol...',
-      },
-      {
-        id: 'telemetry',
-        label: 'Telemetry Readout',
-        defaultVal: '',
-        placeholder: 'Diagnostic log or technical overview...',
-        multiline: true,
-        maxLines: 4,
-      },
-      {
-        id: 'nodeHash',
-        label: 'Node Hash / Port',
-        defaultVal: '',
-        placeholder: 'Hash, endpoint, or serial...',
-      },
-      {
-        id: 'clearance',
-        label: 'Clearance Level',
-        defaultVal: '',
-        placeholder: 'Security clearance or tier...',
-      },
-    ],
-  },
-
-  // 10. Memorabilia & Relic
-  {
-    id: 'relic',
-    name: 'Memorabilia & Relic',
-    description: 'Tickets, vintage photography, tokens, polaroid moments, and artifacts',
-    badge: 'Relic',
-    fields: [
-      {
-        id: 'caption',
-        label: 'Memory Caption',
-        defaultVal: '',
-        placeholder: 'Handwritten-style note or caption...',
-        required: true,
-      },
-      {
-        id: 'provenance',
-        label: 'Provenance & Archive',
-        defaultVal: '',
-        placeholder: 'Source, venue, or personal note...',
-      },
-      {
-        id: 'chronicle',
-        label: 'Historical Chronicle',
-        defaultVal: '',
-        placeholder: 'Story of how this piece was created or discovered...',
-        multiline: true,
-        maxLines: 4,
-      },
-      {
-        id: 'serial',
-        label: 'Catalog Serial',
-        defaultVal: '',
-        placeholder: 'Serial or accession number...',
+        placeholder: 'e.g. 2026 or Contemporary Era',
       },
     ],
   },
 ]
 
+/**
+ * Resolves a CardType by ID with backward compatibility aliasing for legacy draft IDs.
+ */
 export function getCardTypeById(id: string): CardType {
-  return CARD_TYPES.find((t) => t.id === id) || CARD_TYPES[0]
+  const normalized =
+    id === 'profile' || id === 'standard' ? 'standard' :
+    id === 'stats' || id === 'sports' || id === 'achievement' || id === 'award' ? 'stats' :
+    id === 'minimal' || id === 'creator' || id === 'art' ? 'minimal' :
+    id
+  return CARD_TYPES.find((t) => t.id === normalized) || CARD_TYPES[0]
 }
 
 /**
