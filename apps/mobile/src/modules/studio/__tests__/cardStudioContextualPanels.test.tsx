@@ -180,8 +180,8 @@ describe('RARE Card Studio — 4 Inline Expandable Sections & Live Preview', () 
     })
   })
 
-  afterEach(() => {
-    cleanup()
+  afterEach(async () => {
+    await cleanup()
   })
 
   it('renders 4 inline accordion headers (Subject, Card, Content, Appearance) and live preview stage', async () => {
