@@ -44,6 +44,24 @@ Profile:
       type:
         - string
         - 'null'
+UpdateUserProfileInput:
+  type: object
+  properties:
+    displayName: { type: string }
+    bio: { type: string }
+    avatarUrl: { type: string }
+    hometown: { type: string }
+    calling: { type: string }
+    age: { type: string }
+    quote: { type: string }
+    debut: { type: string }
+    specializations:
+      type: array
+      items: { type: object }
+    customFields:
+      type: array
+      items: { type: object }
+
 RegisterInput:
   type: object
   required:
@@ -66,35 +84,6 @@ RegisterInput:
       type: string
       minLength: 1
       maxLength: 50
-UpdateCurrentUserProfileInput:
-  type: object
-  properties:
-    displayName: { type: string, minLength: 1, maxLength: 100 }
-    bio: { type: string }
-    avatarUrl: { type: string }
-    hometown: { type: string }
-    calling: { type: string }
-    age: { type: string }
-    quote: { type: string }
-    debut: { type: string }
-    specializations:
-      type: array
-      items:
-        type: object
-        required: [type]
-        properties:
-          type: { type: string }
-          attributes: { type: object, additionalProperties: true }
-    customFields:
-      type: array
-      items:
-        type: object
-        required: [id, label, value]
-        properties:
-          id: { type: string }
-          label: { type: string }
-          value: { type: string }
-
 LoginInput:
   type: object
   required:
