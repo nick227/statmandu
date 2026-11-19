@@ -1,12 +1,12 @@
 /**
- * RARE 20 Flagship Designs & Positional Content Slot Engine
+ * RARE Flagship Designs & Variable Positional Content Engine
  *
  * Each flagship design defines a complete, visually distinctive composition:
- * - Specific spatial layout and geometric slots
- * - Positional inputs (input1, input2, input3) with preferred/min font sizes, wrapping rules, and bounds
+ * - Specific spatial layout and geometric bounds
+ * - Variable positional inputs (DesignInput[]) with preferred/min font sizes, wrapping rules, and bounds
  * - Unique backgrounds, decorative layers, and visual traditions
  *
- * All 20 designs compile through the deterministic adaptive typography engine into rdc-composition-v1.
+ * All designs compile through the deterministic adaptive typography engine into rdc-composition-v1.
  */
 
 import type {
@@ -16,19 +16,11 @@ import type {
 import {
   fitTextToSlot,
   type FontRole,
-  type TextSlotBounds,
+  type Rect,
+  type DesignInput,
 } from '@/modules/typography/textFit'
 
-export interface PositionalTextSlot {
-  id: 'input1' | 'input2' | 'input3'
-  label: string
-  bounds: TextSlotBounds
-  x: number
-  y: number
-  fill: string
-  fontRole: FontRole
-  allCaps?: boolean
-}
+export type { Rect, DesignInput }
 
 export interface FlagshipDesign {
   id: string
@@ -53,16 +45,12 @@ export interface FlagshipDesign {
     borderWidth?: number
     borderColor?: string
   }
-  slots: {
-    input1: PositionalTextSlot
-    input2: PositionalTextSlot
-    input3: PositionalTextSlot
-  }
+  inputs: DesignInput[]
   decorations?: (palette: FlagshipDesign['palette']) => CardCompositionLayer[]
 }
 
 // ----------------------------------------------------------------------------
-// The 20 Curated Flagship Designs
+// The 20 Curated Flagship Designs (with Variable Positional Inputs)
 // ----------------------------------------------------------------------------
 
 export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
@@ -82,37 +70,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#94A3B8',
     },
     artwork: { x: 44, y: 56, width: 512, height: 480, tint: '#0F172A', borderWidth: 3, borderColor: '#D4AF37' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Subject Name',
-        x: 50,
-        y: 570,
+        bounds: { x: 50, y: 570, width: 500, height: 60 },
+        preferredFontSize: 34,
+        minFontSize: 20,
+        maxLines: 1,
+        required: true,
         fill: '#FFFFFF',
         fontRole: 'serif',
         allCaps: true,
-        bounds: { width: 500, height: 60, preferredFontSize: 34, minFontSize: 20, maxLines: 1, fontRole: 'serif' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Discipline / Team',
-        x: 50,
-        y: 636,
+        bounds: { x: 50, y: 636, width: 500, height: 32 },
+        preferredFontSize: 16,
+        minFontSize: 12,
+        maxLines: 1,
+        required: false,
         fill: '#EAB308',
         fontRole: 'sans',
         allCaps: true,
-        bounds: { width: 500, height: 32, preferredFontSize: 16, minFontSize: 12, maxLines: 1, fontRole: 'sans' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Career Highlights / Bio',
-        x: 50,
-        y: 680,
+        bounds: { x: 50, y: 680, width: 500, height: 160 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 6,
+        required: false,
         fill: '#CBD5E1',
         fontRole: 'sans',
-        bounds: { width: 500, height: 160, preferredFontSize: 15, minFontSize: 11, maxLines: 6, fontRole: 'sans' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-outer-frame', type: 'RECTANGLE', x: 16, y: 16, width: 568, height: 868, fill: p.border },
       { id: 'dec-inner-mat', type: 'RECTANGLE', x: 20, y: 20, width: 560, height: 860, fill: p.background },
@@ -136,37 +130,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#A3997F',
     },
     artwork: { x: 36, y: 44, width: 528, height: 530, tint: '#141418', borderWidth: 2, borderColor: '#D4AF37' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Headline',
-        x: 40,
-        y: 600,
+        bounds: { x: 40, y: 600, width: 520, height: 72 },
+        preferredFontSize: 38,
+        minFontSize: 22,
+        maxLines: 1,
+        required: true,
         fill: '#FDFBF7',
         fontRole: 'serif',
         allCaps: true,
-        bounds: { width: 520, height: 72, preferredFontSize: 38, minFontSize: 22, maxLines: 1, fontRole: 'serif' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Title / Moniker',
-        x: 40,
-        y: 680,
+        bounds: { x: 40, y: 680, width: 520, height: 30 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 1,
+        required: false,
         fill: '#D4AF37',
         fontRole: 'mono',
         allCaps: true,
-        bounds: { width: 520, height: 30, preferredFontSize: 14, minFontSize: 10, maxLines: 1, fontRole: 'mono' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Provenance / Citation',
-        x: 40,
-        y: 722,
+        bounds: { x: 40, y: 722, width: 520, height: 130 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 5,
+        required: false,
         fill: '#A3997F',
         fontRole: 'serif',
-        bounds: { width: 520, height: 130, preferredFontSize: 15, minFontSize: 11, maxLines: 5, fontRole: 'serif' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-prestige-inset', type: 'RECTANGLE', x: 12, y: 12, width: 576, height: 876, fill: p.accent },
       { id: 'dec-prestige-void', type: 'RECTANGLE', x: 15, y: 15, width: 570, height: 870, fill: p.background },
@@ -189,37 +189,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#52525B',
     },
     artwork: { x: 36, y: 36, width: 528, height: 500, tint: '#E4E4E7' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Subject',
-        x: 36,
-        y: 560,
+        bounds: { x: 36, y: 560, width: 528, height: 90 },
+        preferredFontSize: 46,
+        minFontSize: 24,
+        maxLines: 2,
+        required: true,
         fill: '#0A0A0B',
         fontRole: 'sans',
         allCaps: true,
-        bounds: { width: 528, height: 90, preferredFontSize: 46, minFontSize: 24, maxLines: 2, fontRole: 'sans' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Discipline',
-        x: 36,
-        y: 662,
+        bounds: { x: 36, y: 662, width: 528, height: 28 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
         fill: '#FF4800',
         fontRole: 'sans',
         allCaps: true,
-        bounds: { width: 528, height: 28, preferredFontSize: 15, minFontSize: 11, maxLines: 1, fontRole: 'sans' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Statement',
-        x: 36,
-        y: 704,
+        bounds: { x: 36, y: 704, width: 528, height: 140 },
+        preferredFontSize: 14,
+        minFontSize: 11,
+        maxLines: 6,
+        required: false,
         fill: '#52525B',
         fontRole: 'sans',
-        bounds: { width: 528, height: 140, preferredFontSize: 14, minFontSize: 11, maxLines: 6, fontRole: 'sans' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-orange-square', type: 'RECTANGLE', x: 36, y: 856, width: 14, height: 14, fill: p.accent },
     ],
@@ -241,36 +247,42 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#3F3F46',
     },
     artwork: { x: 40, y: 70, width: 520, height: 430, tint: '#E7DFCF' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Headline',
-        x: 40,
-        y: 524,
+        bounds: { x: 40, y: 524, width: 520, height: 76 },
+        preferredFontSize: 36,
+        minFontSize: 22,
+        maxLines: 2,
+        required: true,
         fill: '#18181B',
         fontRole: 'serif',
-        bounds: { width: 520, height: 76, preferredFontSize: 36, minFontSize: 22, maxLines: 2, fontRole: 'serif' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Category / Dateline',
-        x: 40,
-        y: 612,
+        bounds: { x: 40, y: 612, width: 520, height: 26 },
+        preferredFontSize: 13,
+        minFontSize: 10,
+        maxLines: 1,
+        required: false,
         fill: '#B91C1C',
         fontRole: 'sans',
         allCaps: true,
-        bounds: { width: 520, height: 26, preferredFontSize: 13, minFontSize: 10, maxLines: 1, fontRole: 'sans' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Editorial Feature Bio',
-        x: 40,
-        y: 648,
+        bounds: { x: 40, y: 648, width: 520, height: 180 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 7,
+        required: false,
         fill: '#3F3F46',
         fontRole: 'serif',
-        bounds: { width: 520, height: 180, preferredFontSize: 15, minFontSize: 11, maxLines: 7, fontRole: 'serif' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-masthead', type: 'TEXT', x: 40, y: 28, width: 520, height: 30, text: 'THE CHRONICLE ARCHIVE', fontSize: 13, fill: p.subtext },
       { id: 'dec-masthead-rule', type: 'RECTANGLE', x: 40, y: 56, width: 520, height: 1, fill: p.border },
@@ -293,37 +305,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#A7BED3',
     },
     artwork: { x: 30, y: 40, width: 540, height: 490, tint: '#121A30' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Athlete Name',
-        x: 36,
-        y: 554,
+        bounds: { x: 36, y: 554, width: 528, height: 74 },
+        preferredFontSize: 40,
+        minFontSize: 24,
+        maxLines: 1,
+        required: true,
         fill: '#FFFFFF',
         fontRole: 'display',
         allCaps: true,
-        bounds: { width: 528, height: 74, preferredFontSize: 40, minFontSize: 24, maxLines: 1, fontRole: 'display' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Team & Number',
-        x: 36,
-        y: 638,
+        bounds: { x: 36, y: 638, width: 528, height: 32 },
+        preferredFontSize: 17,
+        minFontSize: 12,
+        maxLines: 1,
+        required: false,
         fill: '#FF0055',
         fontRole: 'sans',
         allCaps: true,
-        bounds: { width: 528, height: 32, preferredFontSize: 17, minFontSize: 12, maxLines: 1, fontRole: 'sans' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Career Milestones & Stats',
-        x: 36,
-        y: 684,
+        bounds: { x: 36, y: 684, width: 528, height: 160 },
+        preferredFontSize: 14,
+        minFontSize: 11,
+        maxLines: 6,
+        required: false,
         fill: '#A7BED3',
         fontRole: 'sans',
-        bounds: { width: 528, height: 160, preferredFontSize: 14, minFontSize: 11, maxLines: 6, fontRole: 'sans' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-pink-chevron', type: 'RECTANGLE', x: 0, y: 535, width: 600, height: 8, fill: p.accent },
     ],
@@ -345,37 +363,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#A78BFA',
     },
     artwork: { x: 40, y: 40, width: 520, height: 460, tint: '#150A2E', borderWidth: 4, borderColor: '#00F5FF' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Player 1',
-        x: 40,
-        y: 530,
+        bounds: { x: 40, y: 530, width: 520, height: 70 },
+        preferredFontSize: 36,
+        minFontSize: 20,
+        maxLines: 1,
+        required: true,
         fill: '#FFE600',
         fontRole: 'display',
         allCaps: true,
-        bounds: { width: 520, height: 70, preferredFontSize: 36, minFontSize: 20, maxLines: 1, fontRole: 'display' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Specialty / High Score',
-        x: 40,
-        y: 610,
+        bounds: { x: 40, y: 610, width: 520, height: 32 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
         fill: '#00F5FF',
         fontRole: 'mono',
         allCaps: true,
-        bounds: { width: 520, height: 32, preferredFontSize: 15, minFontSize: 11, maxLines: 1, fontRole: 'mono' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Quest History',
-        x: 40,
-        y: 654,
+        bounds: { x: 40, y: 654, width: 520, height: 180 },
+        preferredFontSize: 13,
+        minFontSize: 10,
+        maxLines: 7,
+        required: false,
         fill: '#A78BFA',
         fontRole: 'mono',
-        bounds: { width: 520, height: 180, preferredFontSize: 13, minFontSize: 10, maxLines: 7, fontRole: 'mono' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-corner-1', type: 'RECTANGLE', x: 20, y: 20, width: 16, height: 16, fill: p.accent },
       { id: 'dec-corner-2', type: 'RECTANGLE', x: 564, y: 20, width: 16, height: 16, fill: p.accent },
@@ -400,37 +424,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#64748B',
     },
     artwork: { x: 36, y: 50, width: 528, height: 470, tint: '#0F172A', borderWidth: 2, borderColor: '#38BDF8' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Agent Identifier',
-        x: 40,
-        y: 546,
+        bounds: { x: 40, y: 546, width: 520, height: 64 },
+        preferredFontSize: 32,
+        minFontSize: 18,
+        maxLines: 1,
+        required: true,
         fill: '#38BDF8',
         fontRole: 'mono',
         allCaps: true,
-        bounds: { width: 520, height: 64, preferredFontSize: 32, minFontSize: 18, maxLines: 1, fontRole: 'mono' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Sector & Clearance',
-        x: 40,
-        y: 620,
+        bounds: { x: 40, y: 620, width: 520, height: 28 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 1,
+        required: false,
         fill: '#22C55E',
         fontRole: 'mono',
         allCaps: true,
-        bounds: { width: 520, height: 28, preferredFontSize: 14, minFontSize: 10, maxLines: 1, fontRole: 'mono' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Telemetry Readout',
-        x: 40,
-        y: 658,
+        bounds: { x: 40, y: 658, width: 520, height: 180 },
+        preferredFontSize: 13,
+        minFontSize: 10,
+        maxLines: 7,
+        required: false,
         fill: '#94A3B8',
         fontRole: 'mono',
-        bounds: { width: 520, height: 180, preferredFontSize: 13, minFontSize: 10, maxLines: 7, fontRole: 'mono' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-hud-bar', type: 'RECTANGLE', x: 36, y: 24, width: 200, height: 4, fill: p.foreground },
       { id: 'dec-status-dot', type: 'RECTANGLE', x: 550, y: 22, width: 8, height: 8, fill: p.accent },
@@ -453,37 +483,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#E2B4FF',
     },
     artwork: { x: 36, y: 44, width: 528, height: 480, tint: '#290647' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Title',
-        x: 40,
-        y: 550,
+        bounds: { x: 40, y: 550, width: 520, height: 76 },
+        preferredFontSize: 40,
+        minFontSize: 22,
+        maxLines: 1,
+        required: true,
         fill: '#FF71CE',
         fontRole: 'display',
         allCaps: true,
-        bounds: { width: 520, height: 76, preferredFontSize: 40, minFontSize: 22, maxLines: 1, fontRole: 'display' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Genre / Tempo',
-        x: 40,
-        y: 636,
+        bounds: { x: 40, y: 636, width: 520, height: 30 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
         fill: '#01CDFE',
         fontRole: 'sans',
         allCaps: true,
-        bounds: { width: 520, height: 30, preferredFontSize: 15, minFontSize: 11, maxLines: 1, fontRole: 'sans' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Tracklist / Lore',
-        x: 40,
-        y: 678,
+        bounds: { x: 40, y: 678, width: 520, height: 170 },
+        preferredFontSize: 14,
+        minFontSize: 11,
+        maxLines: 6,
+        required: false,
         fill: '#E2B4FF',
         fontRole: 'sans',
-        bounds: { width: 520, height: 170, preferredFontSize: 14, minFontSize: 11, maxLines: 6, fontRole: 'sans' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-laser-line-1', type: 'RECTANGLE', x: 0, y: 532, width: 600, height: 2, fill: p.accent },
       { id: 'dec-laser-line-2', type: 'RECTANGLE', x: 0, y: 538, width: 600, height: 4, fill: p.foreground },
@@ -506,37 +542,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#1C1917',
     },
     artwork: { x: 30, y: 40, width: 540, height: 470, tint: '#FFFFFF', borderWidth: 6, borderColor: '#000000' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Hero / Issue Name',
-        x: 36,
-        y: 534,
+        bounds: { x: 36, y: 534, width: 528, height: 80 },
+        preferredFontSize: 44,
+        minFontSize: 24,
+        maxLines: 1,
+        required: true,
         fill: '#000000',
         fontRole: 'display',
         allCaps: true,
-        bounds: { width: 528, height: 80, preferredFontSize: 44, minFontSize: 24, maxLines: 1, fontRole: 'display' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Superpower / Origin',
-        x: 36,
-        y: 622,
+        bounds: { x: 36, y: 622, width: 528, height: 34 },
+        preferredFontSize: 18,
+        minFontSize: 13,
+        maxLines: 1,
+        required: false,
         fill: '#E60000',
         fontRole: 'display',
         allCaps: true,
-        bounds: { width: 528, height: 34, preferredFontSize: 18, minFontSize: 13, maxLines: 1, fontRole: 'display' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Issue Synopsis',
-        x: 36,
-        y: 666,
+        bounds: { x: 36, y: 666, width: 528, height: 170 },
+        preferredFontSize: 14,
+        minFontSize: 11,
+        maxLines: 6,
+        required: false,
         fill: '#1C1917',
         fontRole: 'sans',
-        bounds: { width: 528, height: 170, preferredFontSize: 14, minFontSize: 11, maxLines: 6, fontRole: 'sans' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-action-badge', type: 'RECTANGLE', x: 440, y: 20, width: 120, height: 30, fill: p.accent },
       { id: 'dec-action-text', type: 'TEXT', x: 445, y: 26, width: 110, height: 20, text: 'AUTHENTIC #1', fontSize: 11, fill: '#FFFFFF' },
@@ -559,36 +601,42 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#A38F92',
     },
     artwork: { x: 44, y: 60, width: 512, height: 460, tint: '#160E11', borderWidth: 3, borderColor: '#9B111E' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Figure Name',
-        x: 44,
-        y: 544,
+        bounds: { x: 44, y: 544, width: 512, height: 76 },
+        preferredFontSize: 36,
+        minFontSize: 20,
+        maxLines: 1,
+        required: true,
         fill: '#E8D7D8',
         fontRole: 'serif',
-        bounds: { width: 512, height: 76, preferredFontSize: 36, minFontSize: 20, maxLines: 1, fontRole: 'serif' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Title / Epitaph',
-        x: 44,
-        y: 630,
+        bounds: { x: 44, y: 630, width: 512, height: 30 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
         fill: '#9B111E',
         fontRole: 'serif',
         allCaps: true,
-        bounds: { width: 512, height: 30, preferredFontSize: 15, minFontSize: 11, maxLines: 1, fontRole: 'serif' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Legend & Testament',
-        x: 44,
-        y: 672,
+        bounds: { x: 44, y: 672, width: 512, height: 180 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 7,
+        required: false,
         fill: '#A38F92',
         fontRole: 'serif',
-        bounds: { width: 512, height: 180, preferredFontSize: 14, minFontSize: 10, maxLines: 7, fontRole: 'serif' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-outer-crimson', type: 'RECTANGLE', x: 14, y: 14, width: 572, height: 872, fill: p.accent },
       { id: 'dec-inner-night', type: 'RECTANGLE', x: 18, y: 18, width: 564, height: 864, fill: p.background },
@@ -600,7 +648,7 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
     id: 'fantasy-parchment',
     name: 'Fantasy',
     family: 'Fantasy',
-    description: 'Illuminated parchment borders, aged parchment field, heroic mythical attributes.',
+    description: 'Illuminated parchment borders, aged leather tones, heroic attribute block.',
     visualTradition: 'Medieval Manuscripts & Tabletop Lore',
     palette: {
       background: '#EAE1CE',
@@ -611,36 +659,42 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#594436',
     },
     artwork: { x: 44, y: 50, width: 512, height: 460, tint: '#CBBBA3', borderWidth: 4, borderColor: '#785429' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Hero / Entity',
-        x: 44,
-        y: 536,
+        bounds: { x: 44, y: 536, width: 512, height: 72 },
+        preferredFontSize: 36,
+        minFontSize: 22,
+        maxLines: 1,
+        required: true,
         fill: '#2B1E16',
         fontRole: 'serif',
-        bounds: { width: 512, height: 72, preferredFontSize: 36, minFontSize: 22, maxLines: 1, fontRole: 'serif' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Guild / Realm',
-        x: 44,
-        y: 618,
+        bounds: { x: 44, y: 618, width: 512, height: 30 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
         fill: '#8A5D28',
         fontRole: 'serif',
         allCaps: true,
-        bounds: { width: 512, height: 30, preferredFontSize: 15, minFontSize: 11, maxLines: 1, fontRole: 'serif' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Chronicles',
-        x: 44,
-        y: 660,
+        bounds: { x: 44, y: 660, width: 512, height: 180 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 7,
+        required: false,
         fill: '#594436',
         fontRole: 'serif',
-        bounds: { width: 512, height: 180, preferredFontSize: 14, minFontSize: 10, maxLines: 7, fontRole: 'serif' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-parchment-border', type: 'RECTANGLE', x: 20, y: 20, width: 560, height: 860, fill: p.border },
       { id: 'dec-parchment-fill', type: 'RECTANGLE', x: 24, y: 24, width: 552, height: 852, fill: p.background },
@@ -663,37 +717,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#A3A3A3',
     },
     artwork: { x: 0, y: 80, width: 600, height: 480, tint: '#171717' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Title',
-        x: 40,
-        y: 590,
+        bounds: { x: 40, y: 590, width: 520, height: 70 },
+        preferredFontSize: 38,
+        minFontSize: 22,
+        maxLines: 1,
+        required: true,
         fill: '#FAFAFA',
         fontRole: 'serif',
         allCaps: true,
-        bounds: { width: 520, height: 70, preferredFontSize: 38, minFontSize: 22, maxLines: 1, fontRole: 'serif' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Case Number / Year',
-        x: 40,
-        y: 670,
+        bounds: { x: 40, y: 670, width: 520, height: 26 },
+        preferredFontSize: 13,
+        minFontSize: 10,
+        maxLines: 1,
+        required: false,
         fill: '#A3A3A3',
         fontRole: 'mono',
         allCaps: true,
-        bounds: { width: 520, height: 26, preferredFontSize: 13, minFontSize: 10, maxLines: 1, fontRole: 'mono' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Case Synopsis',
-        x: 40,
-        y: 706,
+        bounds: { x: 40, y: 706, width: 520, height: 140 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 5,
+        required: false,
         fill: '#E5E5E5',
         fontRole: 'serif',
-        bounds: { width: 520, height: 140, preferredFontSize: 14, minFontSize: 10, maxLines: 5, fontRole: 'serif' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-cinematic-top', type: 'RECTANGLE', x: 0, y: 0, width: 600, height: 80, fill: '#000000' },
       { id: 'dec-cinematic-rule', type: 'RECTANGLE', x: 40, y: 574, width: 520, height: 1, fill: p.border },
@@ -716,37 +776,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#9E9E9E',
     },
     artwork: { x: 40, y: 40, width: 520, height: 500, tint: '#262626' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Artist / Alias',
-        x: 40,
-        y: 560,
+        bounds: { x: 40, y: 560, width: 520, height: 80 },
+        preferredFontSize: 44,
+        minFontSize: 24,
+        maxLines: 1,
+        required: true,
         fill: '#FFFFFF',
         fontRole: 'display',
         allCaps: true,
-        bounds: { width: 520, height: 80, preferredFontSize: 44, minFontSize: 24, maxLines: 1, fontRole: 'display' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Mixtape Volume',
-        x: 40,
-        y: 650,
+        bounds: { x: 40, y: 650, width: 520, height: 30 },
+        preferredFontSize: 16,
+        minFontSize: 12,
+        maxLines: 1,
+        required: false,
         fill: '#FF0033',
         fontRole: 'sans',
         allCaps: true,
-        bounds: { width: 520, height: 30, preferredFontSize: 16, minFontSize: 12, maxLines: 1, fontRole: 'sans' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Credits & Production',
-        x: 40,
-        y: 692,
+        bounds: { x: 40, y: 692, width: 520, height: 150 },
+        preferredFontSize: 13,
+        minFontSize: 10,
+        maxLines: 6,
+        required: false,
         fill: '#9E9E9E',
         fontRole: 'mono',
-        bounds: { width: 520, height: 150, preferredFontSize: 13, minFontSize: 10, maxLines: 6, fontRole: 'mono' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-parental-box', type: 'RECTANGLE', x: 44, y: 490, width: 110, height: 40, fill: '#000000' },
       { id: 'dec-parental-text', type: 'TEXT', x: 48, y: 502, width: 100, height: 18, text: 'RARE EXCLUSIVE', fontSize: 10, fill: '#FFFFFF' },
@@ -769,37 +835,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#EFEFD0',
     },
     artwork: { x: 40, y: 150, width: 520, height: 450, tint: '#331B13' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Headliner Name',
-        x: 40,
-        y: 40,
+        bounds: { x: 40, y: 40, width: 520, height: 96 },
+        preferredFontSize: 52,
+        minFontSize: 28,
+        maxLines: 1,
+        required: true,
         fill: '#FF6B35',
         fontRole: 'display',
         allCaps: true,
-        bounds: { width: 520, height: 96, preferredFontSize: 52, minFontSize: 28, maxLines: 1, fontRole: 'display' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Support Acts / Tour',
-        x: 40,
-        y: 620,
+        bounds: { x: 40, y: 620, width: 520, height: 34 },
+        preferredFontSize: 18,
+        minFontSize: 12,
+        maxLines: 1,
+        required: false,
         fill: '#F7C59F',
         fontRole: 'sans',
         allCaps: true,
-        bounds: { width: 520, height: 34, preferredFontSize: 18, minFontSize: 12, maxLines: 1, fontRole: 'sans' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Dates & Venue Schedule',
-        x: 40,
-        y: 666,
+        bounds: { x: 40, y: 666, width: 520, height: 180 },
+        preferredFontSize: 13,
+        minFontSize: 10,
+        maxLines: 7,
+        required: false,
         fill: '#EFEFD0',
         fontRole: 'mono',
-        bounds: { width: 520, height: 180, preferredFontSize: 13, minFontSize: 10, maxLines: 7, fontRole: 'mono' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-tour-rule-top', type: 'RECTANGLE', x: 40, y: 140, width: 520, height: 2, fill: p.accent },
       { id: 'dec-tour-rule-bottom', type: 'RECTANGLE', x: 40, y: 608, width: 520, height: 2, fill: p.accent },
@@ -822,37 +894,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#5E4F49',
     },
     artwork: { x: 44, y: 56, width: 512, height: 460, tint: '#DDD2C0', borderWidth: 2, borderColor: '#362B28' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Name',
-        x: 44,
-        y: 536,
+        bounds: { x: 44, y: 536, width: 512, height: 72 },
+        preferredFontSize: 36,
+        minFontSize: 20,
+        maxLines: 1,
+        required: true,
         fill: '#362B28',
         fontRole: 'serif',
         allCaps: true,
-        bounds: { width: 512, height: 72, preferredFontSize: 36, minFontSize: 20, maxLines: 1, fontRole: 'serif' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Occupation',
-        x: 44,
-        y: 618,
+        bounds: { x: 44, y: 618, width: 512, height: 30 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
         fill: '#8B4513',
         fontRole: 'serif',
         allCaps: true,
-        bounds: { width: 512, height: 30, preferredFontSize: 15, minFontSize: 11, maxLines: 1, fontRole: 'serif' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Historical Account',
-        x: 44,
-        y: 660,
+        bounds: { x: 44, y: 660, width: 512, height: 180 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 7,
+        required: false,
         fill: '#5E4F49',
         fontRole: 'serif',
-        bounds: { width: 512, height: 180, preferredFontSize: 14, minFontSize: 10, maxLines: 7, fontRole: 'serif' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-press-border-outer', type: 'RECTANGLE', x: 18, y: 18, width: 564, height: 864, fill: p.foreground },
       { id: 'dec-press-border-inner', type: 'RECTANGLE', x: 22, y: 22, width: 556, height: 856, fill: p.background },
@@ -875,39 +953,44 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#285960',
     },
     artwork: { x: 40, y: 50, width: 520, height: 480, tint: '#F0E6D6' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Subject Headline',
-        x: 40,
-        y: 556,
+        bounds: { x: 40, y: 556, width: 520, height: 76 },
+        preferredFontSize: 40,
+        minFontSize: 22,
+        maxLines: 1,
+        required: true,
         fill: '#0E3B43',
         fontRole: 'sans',
         allCaps: true,
-        bounds: { width: 520, height: 76, preferredFontSize: 40, minFontSize: 22, maxLines: 1, fontRole: 'sans' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Edition & Ink Run',
-        x: 40,
-        y: 642,
+        bounds: { x: 40, y: 642, width: 520, height: 30 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
         fill: '#FF5733',
         fontRole: 'mono',
         allCaps: true,
-        bounds: { width: 520, height: 30, preferredFontSize: 15, minFontSize: 11, maxLines: 1, fontRole: 'mono' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Artist Statement',
-        x: 40,
-        y: 684,
+        bounds: { x: 40, y: 684, width: 520, height: 160 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 6,
+        required: false,
         fill: '#285960',
         fontRole: 'sans',
-        bounds: { width: 520, height: 160, preferredFontSize: 14, minFontSize: 10, maxLines: 6, fontRole: 'sans' },
       },
-    },
+    ],
     decorations: (p) => [
-      // Simulated misregistration offset rectangle
       { id: 'dec-riso-offset', type: 'RECTANGLE', x: 44, y: 54, width: 520, height: 480, fill: 'rgba(255, 87, 51, 0.15)' },
     ],
   },
@@ -928,37 +1011,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#222222',
     },
     artwork: { x: 24, y: 24, width: 552, height: 490, tint: '#D4D4D4', borderWidth: 8, borderColor: '#000000' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'ID NAME',
-        x: 24,
-        y: 536,
+        bounds: { x: 24, y: 536, width: 552, height: 86 },
+        preferredFontSize: 46,
+        minFontSize: 24,
+        maxLines: 1,
+        required: true,
         fill: '#000000',
         fontRole: 'mono',
         allCaps: true,
-        bounds: { width: 552, height: 86, preferredFontSize: 46, minFontSize: 24, maxLines: 1, fontRole: 'mono' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'CATEGORY CODE',
-        x: 24,
-        y: 634,
+        bounds: { x: 24, y: 634, width: 552, height: 32 },
+        preferredFontSize: 17,
+        minFontSize: 12,
+        maxLines: 1,
+        required: false,
         fill: '#000000',
         fontRole: 'mono',
         allCaps: true,
-        bounds: { width: 552, height: 32, preferredFontSize: 17, minFontSize: 12, maxLines: 1, fontRole: 'mono' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'DATA SPECIFICATION',
-        x: 24,
-        y: 678,
+        bounds: { x: 24, y: 678, width: 552, height: 180 },
+        preferredFontSize: 13,
+        minFontSize: 10,
+        maxLines: 7,
+        required: false,
         fill: '#222222',
         fontRole: 'mono',
-        bounds: { width: 552, height: 180, preferredFontSize: 13, minFontSize: 10, maxLines: 7, fontRole: 'mono' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-brutalist-rule', type: 'RECTANGLE', x: 24, y: 626, width: 552, height: 4, fill: '#000000' },
     ],
@@ -980,37 +1069,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#453225',
     },
     artwork: { x: 36, y: 44, width: 528, height: 470, tint: '#CBB48B', borderWidth: 4, borderColor: '#1B140E' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Story Title',
-        x: 36,
-        y: 536,
+        bounds: { x: 36, y: 536, width: 528, height: 80 },
+        preferredFontSize: 42,
+        minFontSize: 22,
+        maxLines: 1,
+        required: true,
         fill: '#C1121F',
         fontRole: 'display',
         allCaps: true,
-        bounds: { width: 528, height: 80, preferredFontSize: 42, minFontSize: 22, maxLines: 1, fontRole: 'display' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'The Case Of...',
-        x: 36,
-        y: 624,
+        bounds: { x: 36, y: 624, width: 528, height: 30 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
         fill: '#1B140E',
         fontRole: 'serif',
         allCaps: true,
-        bounds: { width: 528, height: 30, preferredFontSize: 15, minFontSize: 11, maxLines: 1, fontRole: 'serif' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Dime Story Synopsis',
-        x: 36,
-        y: 666,
+        bounds: { x: 36, y: 666, width: 528, height: 180 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 7,
+        required: false,
         fill: '#453225',
         fontRole: 'serif',
-        bounds: { width: 528, height: 180, preferredFontSize: 14, minFontSize: 10, maxLines: 7, fontRole: 'serif' },
       },
-    },
+    ],
     decorations: (p) => [
       { id: 'dec-pulp-price', type: 'TEXT', x: 480, y: 16, width: 80, height: 24, text: '10¢ RARE', fontSize: 13, fill: p.accent },
     ],
@@ -1031,39 +1126,43 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       border: '#E5E7EB',
       subtext: '#4B5563',
     },
-    // The photo area is centered inside the white film housing
     artwork: { x: 50, y: 50, width: 500, height: 500, tint: '#1E293B' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Photo Caption',
-        x: 50,
-        y: 580,
+        bounds: { x: 50, y: 580, width: 500, height: 60 },
+        preferredFontSize: 30,
+        minFontSize: 18,
+        maxLines: 1,
+        required: true,
         fill: '#111827',
         fontRole: 'sans',
-        bounds: { width: 500, height: 60, preferredFontSize: 30, minFontSize: 18, maxLines: 1, fontRole: 'sans' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Date & Location',
-        x: 50,
-        y: 650,
+        bounds: { x: 50, y: 650, width: 500, height: 28 },
+        preferredFontSize: 15,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
         fill: '#4B5563',
         fontRole: 'sans',
-        bounds: { width: 500, height: 28, preferredFontSize: 15, minFontSize: 11, maxLines: 1, fontRole: 'sans' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Memory Note',
-        x: 50,
-        y: 688,
+        bounds: { x: 50, y: 688, width: 500, height: 130 },
+        preferredFontSize: 14,
+        minFontSize: 10,
+        maxLines: 5,
+        required: false,
         fill: '#6B7280',
         fontRole: 'sans',
-        bounds: { width: 500, height: 130, preferredFontSize: 14, minFontSize: 10, maxLines: 5, fontRole: 'sans' },
       },
-    },
+    ],
     decorations: (p) => [
-      // The iconic instant film casing
       { id: 'dec-polaroid-casing', type: 'RECTANGLE', x: 26, y: 26, width: 548, height: 830, fill: '#FFFFFF' },
     ],
   },
@@ -1084,39 +1183,44 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
       subtext: '#3A3A40',
     },
     artwork: { x: 120, y: 40, width: 440, height: 540, tint: '#C8C8BF' },
-    slots: {
-      input1: {
+    inputs: [
+      {
         id: 'input1',
         label: 'Manifesto Title',
-        x: 40,
-        y: 604,
+        bounds: { x: 40, y: 604, width: 520, height: 84 },
+        preferredFontSize: 44,
+        minFontSize: 22,
+        maxLines: 1,
+        required: true,
         fill: '#0E0E10',
         fontRole: 'display',
         allCaps: true,
-        bounds: { width: 520, height: 84, preferredFontSize: 44, minFontSize: 22, maxLines: 1, fontRole: 'display' },
       },
-      input2: {
+      {
         id: 'input2',
         label: 'Movement / Sector',
-        x: 40,
-        y: 700,
+        bounds: { x: 40, y: 700, width: 520, height: 30 },
+        preferredFontSize: 16,
+        minFontSize: 11,
+        maxLines: 1,
+        required: false,
         fill: '#2B50EC',
         fontRole: 'sans',
         allCaps: true,
-        bounds: { width: 520, height: 30, preferredFontSize: 16, minFontSize: 11, maxLines: 1, fontRole: 'sans' },
       },
-      input3: {
+      {
         id: 'input3',
         label: 'Thesis Statement',
-        x: 40,
-        y: 740,
+        bounds: { x: 40, y: 740, width: 520, height: 120 },
+        preferredFontSize: 13,
+        minFontSize: 10,
+        maxLines: 5,
+        required: false,
         fill: '#3A3A40',
         fontRole: 'sans',
-        bounds: { width: 520, height: 120, preferredFontSize: 13, minFontSize: 10, maxLines: 5, fontRole: 'sans' },
       },
-    },
+    ],
     decorations: (p) => [
-      // Blue avant-garde color block column on the left
       { id: 'dec-blue-pillar', type: 'RECTANGLE', x: 40, y: 40, width: 60, height: 540, fill: p.accent },
     ],
   },
@@ -1126,17 +1230,13 @@ export const FLAGSHIP_DESIGNS: FlagshipDesign[] = [
 // Compiler & Positional Text Fit Engine
 // ----------------------------------------------------------------------------
 
-export interface PositionalInputs {
-  input1?: string
-  input2?: string
-  input3?: string
-}
+export type PositionalInputs = Record<string, string>
 
 export interface FlagshipCompilationResult {
   composition: CardComposition
   design: FlagshipDesign
-  fittedFontSizes: Record<'input1' | 'input2' | 'input3', number>
-  isOverflow: Record<'input1' | 'input2' | 'input3', boolean>
+  fittedFontSizes: Record<string, number>
+  isOverflow: Record<string, boolean>
 }
 
 export function getFlagshipDesignById(id: string): FlagshipDesign | undefined {
@@ -1144,7 +1244,7 @@ export function getFlagshipDesignById(id: string): FlagshipDesign | undefined {
 }
 
 /**
- * Compiles a Flagship Design with 3 positional text inputs into an rdc-composition-v1 CardComposition.
+ * Compiles a Flagship Design with variable positional text inputs into an rdc-composition-v1 CardComposition.
  */
 export function compileFlagshipDesign(
   designId: string,
@@ -1153,29 +1253,11 @@ export function compileFlagshipDesign(
   assets?: Array<{ id: string; url: string; objectKey?: string }>,
 ): FlagshipCompilationResult {
   const design = getFlagshipDesignById(designId) || FLAGSHIP_DESIGNS[0]
-  const { palette, artwork, slots } = design
+  const { palette, artwork, inputs: designInputs } = design
 
-  // Resolve input texts with sensible fallbacks from person or defaults
-  const resolvedText1 = (inputs.input1?.trim() || person?.displayName || 'MAYA ANGELOU').trim()
-  const resolvedText2 = (inputs.input2?.trim() || person?.hometown || 'POET & CIVIL RIGHTS ICON').trim()
-  const resolvedText3 = (inputs.input3?.trim() || person?.bio || 'Phenomenal Woman, celebrated author, presidential poet, and civil rights champion whose literary voice moved generations.').trim()
-
-  // Run bounded binary search text fitting for each of the 3 slots
-  const fit1 = fitTextToSlot(resolvedText1, slots.input1.bounds)
-  const fit2 = fitTextToSlot(resolvedText2, slots.input2.bounds)
-  const fit3 = fitTextToSlot(resolvedText3, slots.input3.bounds)
-
-  const fittedFontSizes = {
-    input1: fit1.fontSize,
-    input2: fit2.fontSize,
-    input3: fit3.fontSize,
-  }
-
-  const isOverflow = {
-    input1: fit1.isOverflow,
-    input2: fit2.isOverflow,
-    input3: fit3.isOverflow,
-  }
+  const fittedFontSizes: Record<string, number> = {}
+  const isOverflow: Record<string, boolean> = {}
+  const resolvedInputs: Record<string, string> = {}
 
   const layers: CardCompositionLayer[] = []
 
@@ -1223,44 +1305,48 @@ export function compileFlagshipDesign(
     layers.push(...design.decorations(palette))
   }
 
-  // 6. Positional Text Slot 1 (Headline)
-  layers.push({
-    id: 'slot-input1',
-    type: 'TEXT',
-    x: slots.input1.x,
-    y: slots.input1.y,
-    width: slots.input1.bounds.width,
-    height: slots.input1.bounds.height,
-    text: slots.input1.allCaps ? resolvedText1.toUpperCase() : resolvedText1,
-    fontSize: fit1.fontSize,
-    fill: slots.input1.fill,
-  })
+  // 6. Variable Positional Content Slots
+  for (const inputDef of designInputs) {
+    let rawText = inputs[inputDef.id]
+    if (rawText === undefined) {
+      if (inputDef.id === 'input1') {
+        rawText = person?.displayName || 'MAYA ANGELOU'
+      } else if (inputDef.id === 'input2') {
+        rawText = person?.hometown || 'POET & CIVIL RIGHTS ICON'
+      } else if (inputDef.id === 'input3') {
+        rawText = person?.bio || 'Phenomenal Woman, celebrated author, presidential poet, and civil rights champion whose literary voice moved generations.'
+      } else {
+        rawText = inputDef.label || ''
+      }
+    }
+    const cleanText = rawText.trim()
+    resolvedInputs[inputDef.id] = cleanText
 
-  // 7. Positional Text Slot 2 (Subhead)
-  layers.push({
-    id: 'slot-input2',
-    type: 'TEXT',
-    x: slots.input2.x,
-    y: slots.input2.y,
-    width: slots.input2.bounds.width,
-    height: slots.input2.bounds.height,
-    text: slots.input2.allCaps ? resolvedText2.toUpperCase() : resolvedText2,
-    fontSize: fit2.fontSize,
-    fill: slots.input2.fill,
-  })
+    // Run text-fitting
+    const fit = fitTextToSlot(cleanText, {
+      width: inputDef.bounds.width,
+      height: inputDef.bounds.height,
+      preferredFontSize: inputDef.preferredFontSize,
+      minFontSize: inputDef.minFontSize,
+      maxLines: inputDef.maxLines,
+      fontRole: inputDef.fontRole,
+    })
 
-  // 8. Positional Text Slot 3 (Bio / Details)
-  layers.push({
-    id: 'slot-input3',
-    type: 'TEXT',
-    x: slots.input3.x,
-    y: slots.input3.y,
-    width: slots.input3.bounds.width,
-    height: slots.input3.bounds.height,
-    text: slots.input3.allCaps ? resolvedText3.toUpperCase() : resolvedText3,
-    fontSize: fit3.fontSize,
-    fill: slots.input3.fill,
-  })
+    fittedFontSizes[inputDef.id] = fit.fontSize
+    isOverflow[inputDef.id] = fit.isOverflow
+
+    layers.push({
+      id: `slot-${inputDef.id}`,
+      type: 'TEXT',
+      x: inputDef.bounds.x,
+      y: inputDef.bounds.y,
+      width: inputDef.bounds.width,
+      height: inputDef.bounds.height,
+      text: inputDef.allCaps ? cleanText.toUpperCase() : cleanText,
+      fontSize: fit.fontSize,
+      fill: inputDef.fill || palette.foreground,
+    })
+  }
 
   const composition: CardComposition = {
     schemaVersion: 1,
@@ -1271,11 +1357,7 @@ export function compileFlagshipDesign(
       flagship: {
         id: design.id,
         name: design.name,
-        inputs: {
-          input1: resolvedText1,
-          input2: resolvedText2,
-          input3: resolvedText3,
-        },
+        inputs: resolvedInputs,
         fittedFontSizes,
         isOverflow,
       },

@@ -4,7 +4,7 @@ import {
   getFlagshipDesignById,
 } from '../flagshipDesigns'
 
-describe('RARE 20 Flagship Designs & Positional Content Engine', () => {
+describe('RARE Flagship Designs & Variable Positional Content Engine', () => {
   describe('Catalog Specification', () => {
     test('contains exactly 20 distinct flagship designs', () => {
       expect(FLAGSHIP_DESIGNS).toHaveLength(20)
@@ -17,21 +17,21 @@ describe('RARE 20 Flagship Designs & Positional Content Engine', () => {
       expect(names.size).toBe(20)
     })
 
-    test('each design defines 3 positional text slots (input1, input2, input3)', () => {
+    test('each design defines variable positional inputs conforming to DesignInput', () => {
       for (const design of FLAGSHIP_DESIGNS) {
-        expect(design.slots.input1).toBeDefined()
-        expect(design.slots.input2).toBeDefined()
-        expect(design.slots.input3).toBeDefined()
+        expect(Array.isArray(design.inputs)).toBe(true)
+        expect(design.inputs.length).toBeGreaterThanOrEqual(2)
 
-        expect(design.slots.input1.bounds.preferredFontSize).toBeGreaterThanOrEqual(
-          design.slots.input1.bounds.minFontSize,
-        )
-        expect(design.slots.input2.bounds.preferredFontSize).toBeGreaterThanOrEqual(
-          design.slots.input2.bounds.minFontSize,
-        )
-        expect(design.slots.input3.bounds.preferredFontSize).toBeGreaterThanOrEqual(
-          design.slots.input3.bounds.minFontSize,
-        )
+        for (const input of design.inputs) {
+          expect(typeof input.id).toBe('string')
+          expect(typeof input.bounds.x).toBe('number')
+          expect(typeof input.bounds.y).toBe('number')
+          expect(typeof input.bounds.width).toBe('number')
+          expect(typeof input.bounds.height).toBe('number')
+          expect(input.preferredFontSize).toBeGreaterThanOrEqual(input.minFontSize)
+          expect(input.maxLines).toBeGreaterThanOrEqual(1)
+          expect(typeof input.required).toBe('boolean')
+        }
       }
     })
   })
@@ -61,8 +61,9 @@ describe('RARE 20 Flagship Designs & Positional Content Engine', () => {
         }
 
         // Font sizes must be within slot bounds
-        expect(result.fittedFontSizes.input1).toBeGreaterThanOrEqual(design.slots.input1.bounds.minFontSize)
-        expect(result.fittedFontSizes.input1).toBeLessThanOrEqual(design.slots.input1.bounds.preferredFontSize)
+        const slot1 = design.inputs.find((i) => i.id === 'input1')!
+        expect(result.fittedFontSizes.input1).toBeGreaterThanOrEqual(slot1.minFontSize)
+        expect(result.fittedFontSizes.input1).toBeLessThanOrEqual(slot1.preferredFontSize)
       }
     })
 
@@ -84,7 +85,8 @@ describe('RARE 20 Flagship Designs & Positional Content Engine', () => {
       })
 
       expect(result.isOverflow.input3).toBe(true)
-      expect(result.fittedFontSizes.input3).toBe(FLAGSHIP_DESIGNS[0].slots.input3.bounds.minFontSize)
+      const slot3 = FLAGSHIP_DESIGNS[0].inputs.find((i) => i.id === 'input3')!
+      expect(result.fittedFontSizes.input3).toBe(slot3.minFontSize)
     })
   })
 

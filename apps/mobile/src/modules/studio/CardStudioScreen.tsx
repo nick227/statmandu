@@ -203,7 +203,7 @@ export function CardStudioScreen() {
     updateCompositionWithHistory(result.composition)
   }
 
-  function handleUpdatePositionalInput(field: 'input1' | 'input2' | 'input3', value: string) {
+  function handleUpdatePositionalInput(field: string, value: string) {
     const nextInputs = { ...positionalInputs, [field]: value }
     setPositionalInputs(nextInputs)
     const result = compileFlagshipDesign(activeFlagshipId, nextInputs, selectedPerson)
@@ -665,79 +665,39 @@ export function CardStudioScreen() {
                   <Text variant="caption">Auto-fits into {activeFlagship.name} slots</Text>
                 </View>
 
-                {/* Slot 1: Headline / Name */}
-                <View className="gap-1">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-xs font-semibold text-text">
-                      Slot 1 ({activeFlagship.slots.input1.label})
-                    </Text>
-                    <View className="flex-row items-center gap-xs">
-                      {currentFlagshipResult.isOverflow.input1 ? (
-                        <Text className="text-[10px] font-bold text-warning">Overflow</Text>
-                      ) : (
-                        <Text className="text-[10px] font-semibold text-muted-text">
-                          Fitted: {currentFlagshipResult.fittedFontSizes.input1}px
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                  <Input
-                    testID="slot-input1"
-                    value={positionalInputs.input1}
-                    onChangeText={(t) => handleUpdatePositionalInput('input1', t)}
-                    placeholder="Primary headline / name..."
-                  />
-                </View>
+                {/* Dynamically render all defined variable positional slots */}
+                {activeFlagship.inputs.map((slotDef, sIdx) => {
+                  const fittedSize = currentFlagshipResult.fittedFontSizes[slotDef.id]
+                  const isOverflow = currentFlagshipResult.isOverflow[slotDef.id]
+                  const val = positionalInputs[slotDef.id] ?? ''
 
-                {/* Slot 2: Subtitle / Discipline */}
-                <View className="gap-1">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-xs font-semibold text-text">
-                      Slot 2 ({activeFlagship.slots.input2.label})
-                    </Text>
-                    <View className="flex-row items-center gap-xs">
-                      {currentFlagshipResult.isOverflow.input2 ? (
-                        <Text className="text-[10px] font-bold text-warning">Overflow</Text>
-                      ) : (
-                        <Text className="text-[10px] font-semibold text-muted-text">
-                          Fitted: {currentFlagshipResult.fittedFontSizes.input2}px
+                  return (
+                    <View key={slotDef.id} className="gap-1">
+                      <View className="flex-row items-center justify-between">
+                        <Text className="text-xs font-semibold text-text">
+                          Slot {sIdx + 1} ({slotDef.label || slotDef.id})
                         </Text>
-                      )}
+                        <View className="flex-row items-center gap-xs">
+                          {isOverflow ? (
+                            <Text className="text-[10px] font-bold text-warning">Overflow</Text>
+                          ) : (
+                            <Text className="text-[10px] font-semibold text-muted-text">
+                              Fitted: {fittedSize}px
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                      <Input
+                        testID={`slot-${slotDef.id}`}
+                        value={val}
+                        onChangeText={(t) => handleUpdatePositionalInput(slotDef.id, t)}
+                        placeholder={`Enter ${slotDef.label || slotDef.id}...`}
+                        multiline={slotDef.maxLines > 1}
+                        numberOfLines={Math.min(3, slotDef.maxLines)}
+                      />
                     </View>
-                  </View>
-                  <Input
-                    testID="slot-input2"
-                    value={positionalInputs.input2}
-                    onChangeText={(t) => handleUpdatePositionalInput('input2', t)}
-                    placeholder="Subtitle, discipline, team or category..."
-                  />
-                </View>
-
-                {/* Slot 3: Bio / Details / Highlights */}
-                <View className="gap-1">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-xs font-semibold text-text">
-                      Slot 3 ({activeFlagship.slots.input3.label})
-                    </Text>
-                    <View className="flex-row items-center gap-xs">
-                      {currentFlagshipResult.isOverflow.input3 ? (
-                        <Text className="text-[10px] font-bold text-warning">Overflow</Text>
-                      ) : (
-                        <Text className="text-[10px] font-semibold text-muted-text">
-                          Fitted: {currentFlagshipResult.fittedFontSizes.input3}px
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                  <Input
-                    testID="slot-input3"
-                    value={positionalInputs.input3}
-                    onChangeText={(t) => handleUpdatePositionalInput('input3', t)}
-                    placeholder="Career highlights, biographical notes, discography or quote..."
-                    multiline
-                    numberOfLines={3}
-                  />
-                </View>
+                  )
+                })}
               </View>
             </View>
           )}

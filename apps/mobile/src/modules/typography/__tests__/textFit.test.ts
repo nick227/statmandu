@@ -1,6 +1,7 @@
 import {
   fitTextToSlot,
   estimateTextWidth,
+  measureTextWidth,
   breakTextIntoLines,
   type TextSlotBounds,
 } from '../textFit'
@@ -34,7 +35,6 @@ describe('Deterministic Adaptive Typography (textFit)', () => {
     const text = 'The Complete Collection of Modernist Poetry and Essays'
     const { lines } = breakTextIntoLines(text, 24, 300, 'sans')
     expect(lines.length).toBeGreaterThan(1)
-    // All original words must be present
     expect(lines.join(' ')).toBe(text)
   })
 
@@ -56,6 +56,11 @@ describe('Deterministic Adaptive Typography (textFit)', () => {
     const narrowWidth = estimateTextWidth('iiiiiii', 20, 'sans')
     const wideWidth = estimateTextWidth('WWWWWWW', 20, 'sans')
     expect(wideWidth).toBeGreaterThan(narrowWidth * 2)
+  })
+
+  test('measureTextWidth calculates rendered metrics and falls back gracefully', () => {
+    const width = measureTextWidth('Maya Angelou', 32, 'serif')
+    expect(width).toBeGreaterThan(0)
   })
 
   test('caches results for identical parameters', () => {

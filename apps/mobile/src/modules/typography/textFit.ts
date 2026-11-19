@@ -5,12 +5,33 @@
  * Features:
  * - Word wrapping respecting maxLines and bounds.
  * - Width & height constraints.
- * - Font role character measurement approximations (sans, serif, mono, display, condensed).
+ * - Actual rendered font measurement via HTML5 Canvas when available,
+ *   with fallback to weighted character metrics.
  * - Overflow detection when text cannot fit at minFontSize.
  * - LRU / Map caching for high performance.
  */
 
 export type FontRole = 'sans' | 'serif' | 'mono' | 'display' | 'condensed'
+
+export interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface DesignInput {
+  id: string
+  bounds: Rect
+  preferredFontSize: number
+  minFontSize: number
+  maxLines: number
+  required: boolean
+  label?: string
+  fill?: string
+  fontRole?: FontRole
+  allCaps?: boolean
+}
 
 export interface TextSlotBounds {
   width: number
@@ -30,7 +51,7 @@ export interface TextFitResult {
   maxLineWidth: number
 }
 
-// Character width factor relative to font size for different roles
+// Character width factor relative to font size for different roles (fallback)
 const FONT_ROLE_WIDTH_RATIOS: Record<FontRole, number> = {
   sans: 0.54,
   serif: 0.52,
@@ -39,18 +60,41 @@ const FONT_ROLE_WIDTH_RATIOS: Record<FontRole, number> = {
   condensed: 0.46,
 }
 
+const FONT_ROLE_CSS_FAMILIES: Record<FontRole, string> = {
+  sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  serif: "'Georgia', 'Times New Roman', Times, serif",
+  mono: "'SF Mono', Monaco, Menlo, 'Courier New', monospace",
+  display: "'Impact', 'Arial Black', sans-serif",
+  condensed: "'Arial Narrow', sans-serif",
+}
+
+// Canvas measurement context for actual rendered font metrics
+let offscreenCanvasCtx: CanvasRenderingContext2D | null = null
+
+function getCanvasMeasurementContext(): CanvasRenderingContext2D | null {
+  if (typeof document === 'undefined') return null
+  if (!offscreenCanvasCtx) {
+    try {
+      const canvas = document.createElement('canvas')
+      offscreenCanvasCtx = canvas.getContext('2d')
+    } catch {
+      offscreenCanvasCtx = null
+    }
+  }
+  return offscreenCanvasCtx
+}
+
 // Global cache for computed fits
 const FIT_CACHE = new Map<string, TextFitResult>()
 const MAX_CACHE_SIZE = 1000
 
 /**
- * Estimates the width of a given text string at a given font size.
+ * Estimates text width using weighted character heuristic (fallback for Node / non-DOM).
  */
 export function estimateTextWidth(text: string, fontSize: number, fontRole: FontRole = 'sans'): number {
   if (!text) return 0
   const ratio = FONT_ROLE_WIDTH_RATIOS[fontRole] || 0.54
 
-  // Weighted character widths (narrow chars like i, l, t vs wide chars like W, M, m)
   let unitCount = 0
   for (let i = 0; i < text.length; i++) {
     const ch = text[i]
@@ -69,6 +113,21 @@ export function estimateTextWidth(text: string, fontSize: number, fontRole: Font
 }
 
 /**
+ * Measures actual rendered font width using Canvas measureText when available,
+ * otherwise falls back to character metric estimation.
+ */
+export function measureTextWidth(text: string, fontSize: number, fontRole: FontRole = 'sans'): number {
+  if (!text) return 0
+  const ctx = getCanvasMeasurementContext()
+  if (ctx) {
+    const family = FONT_ROLE_CSS_FAMILIES[fontRole] || FONT_ROLE_CSS_FAMILIES.sans
+    ctx.font = `600 ${fontSize}px ${family}`
+    return ctx.measureText(text).width
+  }
+  return estimateTextWidth(text, fontSize, fontRole)
+}
+
+/**
  * Splits text into lines fitting within maxWidth at fontSize.
  */
 export function breakTextIntoLines(
@@ -84,12 +143,12 @@ export function breakTextIntoLines(
 
   const lines: string[] = []
   let currentLine = words[0]
-  let maxLineWidth = estimateTextWidth(currentLine, fontSize, fontRole)
+  let maxLineWidth = measureTextWidth(currentLine, fontSize, fontRole)
 
   for (let i = 1; i < words.length; i++) {
     const word = words[i]
     const testLine = `${currentLine} ${word}`
-    const testWidth = estimateTextWidth(testLine, fontSize, fontRole)
+    const testWidth = measureTextWidth(testLine, fontSize, fontRole)
 
     if (testWidth <= maxWidth) {
       currentLine = testLine
@@ -97,7 +156,7 @@ export function breakTextIntoLines(
     } else {
       lines.push(currentLine)
       currentLine = word
-      const wordWidth = estimateTextWidth(word, fontSize, fontRole)
+      const wordWidth = measureTextWidth(word, fontSize, fontRole)
       if (wordWidth > maxLineWidth) maxLineWidth = wordWidth
     }
   }
@@ -177,7 +236,6 @@ export function fitTextToSlot(
   let bestFitSize = min
   let bestFitCheck = doesTextFit(cleanText, min, bounds)
 
-  // Up to 8 iterations guarantees 0.5px precision across a 100px range
   for (let iter = 0; iter < 8; iter++) {
     const mid = Math.floor((low + high) / 2)
     const check = doesTextFit(cleanText, mid, bounds)
@@ -193,7 +251,6 @@ export function fitTextToSlot(
     if (low > high) break
   }
 
-  // 3. If even min font size doesn't fit, mark overflow
   const isOverflow = !bestFitCheck.fits
 
   const result: TextFitResult = {
