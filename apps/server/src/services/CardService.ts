@@ -1,10 +1,11 @@
+import { legacyCardHash as sha256 } from './CardHashes'
 import { activeAccount, lockPerson, officialAuthority } from './PublishingAuthority'
 import { signManifest } from './ReleaseSigning'
 import { releaseAssetDigests } from './ReleaseManifest'
 import type { Prisma } from '@prisma/client'
 import { requireActiveCreator, requireCardCreator } from './CardAccess'
 import { personName, serializePerson } from './PersonService'
-import { createHash, randomUUID } from 'crypto'
+import { randomUUID } from 'crypto'
 import { db } from '@statman/db'
 import type { CardEditionMode, CardTemplateStatus, CardType, CardVisibility, UserRole } from '@statman/db'
 import { getCardPoses, getSportDefinition } from '@statman/sports'
@@ -94,23 +95,6 @@ function readPosePromptTemplate(statsSnapshotJson: unknown): string | null {
   if (!studio || typeof studio !== 'object' || Array.isArray(studio)) return null
   const template = (studio as { posePromptTemplate?: unknown }).posePromptTemplate
   return typeof template === 'string' ? template : null
-}
-
-function canonicalize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonicalize)
-  if (value && typeof value === 'object') {
-    return Object.keys(value as Record<string, unknown>)
-      .sort()
-      .reduce<Record<string, unknown>>((acc, key) => {
-        acc[key] = canonicalize((value as Record<string, unknown>)[key])
-        return acc
-      }, {})
-  }
-  return value
-}
-
-function sha256(value: unknown) {
-  return createHash('sha256').update(JSON.stringify(canonicalize(value))).digest('hex')
 }
 
 function validateEdition(mode: CardEditionMode, size?: number | null) {
@@ -584,7 +568,8 @@ export class CardService {
       const authorization = authority ? { basis: 'REVIEWED_SELF_CLAIM', policyVersion: 1, claimId: authority.id, personProfileId: existing.athleteProfileId, userId: actor.id, approvedAt: authority.publishingApprovedAt!.toISOString(), reviewedByUserId: authority.publishingApprovedByUserId } : null
       const signed = signManifest({ schemaVersion: 1, releaseId: id, personProfileId: existing.athleteProfileId, createdByUserId: existing.createdByUserId, publishedByUserId: actor.id, publicationType, content: snapshot, edition: { mode: editionMode, size: editionSize }, rendererVersion: (existing.templateSnapshotJson as any)?.rendererVersion ?? 'legacy-card-v1', assets, publishedAt: publishedAt.toISOString(), publicationVisibility: options.visibility ?? 'PUBLIC', authorization, originHash })
       return tx.cardRelease.update({ where: { id }, data: { ...signed, attestationVersion: 1, authorizationClaimId: authority?.id ?? null, storefrontId: storefront.id, status: 'PUBLISHED', visibility: options.visibility ?? 'PUBLIC', editionMode, editionSize, originHash, publishedAt, publishedByUserId: actor.id, publicationType, contentSnapshotJson: snapshot as any }, include: CARD_INCLUDE })
-    }, { timeout: 30000 })
+    // The release read above must not pin a pre-revocation authority snapshot.
+    }, { timeout: 30000, isolationLevel: 'ReadCommitted' })
     await feedService.record({ type: 'CARD_PUBLISHED', targetType: 'CARD_TEMPLATE', targetId: card.id, summary: `Card published: ${card.title}` })
     return serialize(card, actor.id)
   }

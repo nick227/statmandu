@@ -5,6 +5,7 @@ import { CardService } from '../services/CardService'
 import { ClaimService } from '../services/ClaimService'
 import { AuthenticityService } from '../services/AuthenticityService'
 import { canonicalManifest, MANIFEST_DOMAIN } from '../services/ReleaseSigning'
+import { readStoredImage } from '../lib/imageStorage'
 import * as authority from '../services/PublishingAuthority'
 import { asAuth, buildTestApp, testUserId, testOtherUserId, validateResponse } from './helpers'
 const app = buildTestApp()
@@ -39,7 +40,9 @@ describe('Official publishing and platform attestations', () => {
     const manifest = record.manifestJson as any
     expect(manifest.authorization.claimId).toBe(claim.id)
     expect(JSON.stringify(manifest)).not.toContain('private review material')
-    expect(manifest.assets[0].sha256).toMatch(/^[0-9a-f]{64}$/)
+    const imageBytes = createHash('sha256')
+    for await (const chunk of await readStoredImage(manifest.assets[0].objectKey) as AsyncIterable<Buffer>) imageBytes.update(chunk)
+    expect(manifest.assets[0].sha256).toBe(imageBytes.digest('hex'))
     const ring = JSON.parse(process.env.RARE_SIGNING_KEYS_JSON!)
     expect(verify(null, Buffer.from(MANIFEST_DOMAIN + canonicalManifest(manifest)), createPublicKey(ring.keys[0].publicKeyPem), Buffer.from(record.manifestSignature!, 'base64'))).toBe(true)
     const inspected = await app.inject({ method: 'GET', url: `/releases/${draft.id}/authenticity` })
@@ -51,14 +54,17 @@ describe('Official publishing and platform attestations', () => {
     expect(issueResponse.json().data.bindingStatus).toBe('LEDGER_MATCH')
     await validateResponse('inspectIssueAuthenticity', 200, issueResponse.json())
     const originalIssue = await db.cardIssue.findUniqueOrThrow({ where: { id: issue.id } })
+    const beforeRevocation = await db.cardRelease.findUniqueOrThrow({ where: { id: draft.id } })
     await claims.revokeClaim(testUserId, claim.id, 'Account owner withdrew authority')
     const revoked = await inspections.release(draft.id)
     expect(revoked).toMatchObject({ platformAttestation: 'VALID', officialAtPublication: 'VERIFIED', currentAuthority: 'REVOKED', withdrawalStatus: 'PUBLISHED' })
     const after = await db.cardRelease.findUniqueOrThrow({ where: { id: draft.id } })
-    expect(after).toEqual(record)
+    expect(after).toEqual(beforeRevocation)
     expect(await db.cardIssue.findUnique({ where: { id: issue.id } })).toEqual(originalIssue)
     await cards.updateDraftCard(actor, draft.id, { status: 'ARCHIVED' })
     expect(await inspections.release(draft.id)).toMatchObject({ platformAttestation: 'VALID', officialAtPublication: 'VERIFIED', withdrawalStatus: 'WITHDRAWN' })
+    await db.cardRelease.update({ where: { id: draft.id }, data: { authorizationClaimId: null } })
+    expect((await inspections.release(draft.id)).officialAtPublication).toBe('MISSING_OR_INVALID_EVIDENCE')
     expect((await inspections.issue(issue.id)).bindingStatus).toBe('LEDGER_MATCH')
   })
 
@@ -74,6 +80,9 @@ describe('Official publishing and platform attestations', () => {
     const next = await claims.claimPerson(person.id, testUserId)
     await claims.reviewClaim(testOtherUserId, next.id, { status: 'REJECTED' })
     await expect(official(draft.id)).rejects.toMatchObject({ statusCode: 403 })
+    const renewed = await claims.claimPerson(person.id, testUserId)
+    await approve(renewed.id)
+    expect((await official(draft.id)).publicationType).toBe('OFFICIAL')
   })
 
   it('keeps subject control separate from creator privacy and denies unauthorized revocation', async () => {
@@ -125,6 +134,37 @@ describe('Official publishing and platform attestations', () => {
     expect((await db.cardRelease.findUniqueOrThrow({ where: { id: draft.id } })).publishedAt).toBeNull()
     await db.user.update({ where: { id: testUserId }, data: { role: 'ADMIN' } })
     await expect(claims.reviewClaim(testUserId, claim.id, { status: 'APPROVED' })).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+
+  it('fails closed on missing artwork and keeps signed private publications out of public inspection', async () => {
+    const { draft, claim } = await setup()
+    await approve(claim.id)
+    const asset = await db.imageAsset.create({ data: { targetType: 'CARD_TEMPLATE', targetId: draft.id, usage: 'HERO', objectKey: 'missing/never-created.png', url: 'https://unused.example/image.png', contentType: 'image/png', byteSize: 5, uploadedByUserId: testUserId } })
+    await db.cardRelease.update({ where: { id: draft.id }, data: { frontImageAssetId: asset.id } })
+    await expect(official(draft.id)).rejects.toMatchObject({ statusCode: 503 })
+    expect((await db.cardRelease.findUniqueOrThrow({ where: { id: draft.id } })).manifestSignature).toBeNull()
+    await db.cardRelease.update({ where: { id: draft.id }, data: { frontImageAssetId: null } })
+    await cards.publishCard(actor, draft.id, { publicationType: 'OFFICIAL', visibility: 'PRIVATE' })
+    await expect(inspections.release(draft.id)).rejects.toMatchObject({ statusCode: 404 })
+    await cards.updateDraftCard(actor, draft.id, { status: 'ARCHIVED' })
+    await expect(inspections.release(draft.id)).rejects.toMatchObject({ statusCode: 404 })
+  })
+
+  it('canonicalizes JSON deterministically and rejects invalid Unicode', () => {
+    expect(canonicalManifest({ z: -0, a: [1e30, 4.50, { b: 2, a: 1 }] })).toBe('{"a":[1e+30,4.5,{"a":1,"b":2}],"z":0}')
+    expect(() => canonicalManifest({ a: '\ud800' })).toThrow()
+  })
+
+
+  it('prevents a second active grant and can revoke a deleted subject without clearing a different controller', async () => {
+    const { person, claim } = await setup()
+    await approve(claim.id)
+    const legacy = await db.claim.create({ data: { athleteProfileId: person.id, requestedByUserId: testUserId, status: 'APPROVED' } })
+    await expect(approve(legacy.id)).rejects.toMatchObject({ statusCode: 409 })
+    await db.personProfile.update({ where: { id: person.id }, data: { claimedByUserId: testOtherUserId, deletedAt: new Date() } })
+    await claims.revokeClaim(testOtherUserId, claim.id, 'Subject removed')
+    expect((await db.personProfile.findUniqueOrThrow({ where: { id: person.id } })).claimedByUserId).toBe(testOtherUserId)
   })
 
   for (const first of ['publication', 'revocation'] as const) it(`serializes a real publication/revocation race when ${first} acquires the person lock first`, async () => {

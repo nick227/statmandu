@@ -18,7 +18,7 @@ export class ClaimService {
       if (approved) throw { statusCode: 409, message: 'Existing approved claim requires admin revalidation if publishing authority is missing' }
       const pending = await tx.claim.findFirst({ where: { athleteProfileId: personId, requestedByUserId: userId, status: 'PENDING' } })
       return pending ?? tx.claim.create({ data: { athleteProfileId: personId, requestedByUserId: userId, verificationNote } })
-    })
+    }, { isolationLevel: 'ReadCommitted' })
   }
 
   listClaims(status?: string) {
@@ -40,6 +40,8 @@ export class ClaimService {
       if (person.claimedByUserId && person.claimedByUserId !== claim.requestedByUserId) throw { statusCode: 409, message: 'Profile already controlled by another user' }
       const now = new Date()
       if (data.status === 'APPROVED') {
+        const grant = await tx.claim.findFirst({ where: { athleteProfileId: person.id, id: { not: claimId }, status: 'APPROVED', revokedAt: null, publishingApprovedAt: { not: null } } })
+        if (grant) throw { statusCode: 409, message: 'Revoke the existing publishing grant before approving another' }
         const other = await tx.personProfile.findFirst({ where: { claimedByUserId: claim.requestedByUserId, id: { not: person.id } } })
         if (other) throw { statusCode: 409, message: 'Account already controls another person' }
         await tx.personProfile.update({ where: { id: person.id }, data: { claimedByUserId: claim.requestedByUserId } })
@@ -53,7 +55,7 @@ export class ClaimService {
       } })
       await tx.adminAuditLog.create({ data: { actorUserId: adminUserId, subjectUserId: claim.requestedByUserId, method: 'PATCH', path: `/claims/${claimId}`, targetType: 'ATHLETE_PROFILE', targetId: person.id, diffJson: { claimId, status: data.status, publishingAuthority: data.status === 'APPROVED', revalidation } } })
       return updated
-    })
+    }, { isolationLevel: 'ReadCommitted' })
   }
 
   async revokeClaim(actorId: string, claimId: string, reason: string) {
@@ -61,7 +63,7 @@ export class ClaimService {
     const locator = await db.claim.findUnique({ where: { id: claimId } })
     if (!locator) throw { statusCode: 404, message: 'Claim not found' }
     return db.$transaction(async tx => {
-      const person = await lockPerson(tx, locator.athleteProfileId)
+      const person = await lockPerson(tx, locator.athleteProfileId, true)
       const actor = await activeAccount(tx, actorId)
       const claim = await tx.claim.findUniqueOrThrow({ where: { id: claimId } })
       if (actor.role !== 'ADMIN' && actor.id !== claim.requestedByUserId) throw { statusCode: 403, message: 'Only the claimant or an administrator may revoke authority' }
@@ -72,6 +74,6 @@ export class ClaimService {
       if (!remaining) await tx.personProfile.updateMany({ where: { id: person.id, claimedByUserId: claim.requestedByUserId }, data: { claimedByUserId: null } })
       await tx.adminAuditLog.create({ data: { actorUserId: actorId, subjectUserId: claim.requestedByUserId, method: 'POST', path: `/claims/${claimId}/revoke`, targetType: 'ATHLETE_PROFILE', targetId: person.id, diffJson: { claimId, status: 'REVOKED' } } })
       return updated
-    })
+    }, { isolationLevel: 'ReadCommitted' })
   }
 }

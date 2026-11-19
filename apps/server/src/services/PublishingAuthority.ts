@@ -1,10 +1,10 @@
 import { db } from '@statman/db'
 import type { Prisma } from '@prisma/client'
 
-export async function lockPerson(tx: Prisma.TransactionClient, personId: string) {
+export async function lockPerson(tx: Prisma.TransactionClient, personId: string, includeDeleted = false) {
   await tx.$queryRaw`SELECT id FROM AthleteProfile WHERE id = ${personId} FOR UPDATE`
   const person = await tx.personProfile.findUnique({ where: { id: personId } })
-  if (!person || person.deletedAt) throw { statusCode: 404, message: 'Person not found' }
+  if (!person || (!includeDeleted && person.deletedAt)) throw { statusCode: 404, message: 'Person not found' }
   return person
 }
 
@@ -28,5 +28,5 @@ export async function publishingAuthorityState(personId: string, userId: string)
     await activeAccount(tx, userId)
     const claim = await officialAuthority(tx, personId, userId)
     return { personProfileId: personId, userId, canPublishOfficial: Boolean(claim), claimId: claim?.id ?? null, approvedAt: claim?.publishingApprovedAt ?? null, basis: claim ? 'REVIEWED_SELF_CLAIM' as const : 'NONE' as const }
-  })
+  }, { isolationLevel: 'ReadCommitted' })
 }

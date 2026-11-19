@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { legacyCardHash } from './CardHashes'
 import { db } from '@statman/db'
 import { canonicalManifest, inspectSignature } from './ReleaseSigning'
 
@@ -20,14 +20,14 @@ export class AuthenticityService {
     const platformAttestation = signatureStatus === 'VALID' && !contentMatches ? 'INVALID' : signatureStatus
     const officialAtPublication = release.publicationType === 'COMMUNITY' ? 'NOT_APPLICABLE' : platformAttestation === 'VALID' && evidenceMatches ? 'VERIFIED' : 'MISSING_OR_INVALID_EVIDENCE'
     const currentAuthority = release.publicationType === 'COMMUNITY' ? 'NOT_APPLICABLE' : !evidenceMatches ? 'UNKNOWN' : claim?.revokedAt || claim?.status === 'REVOKED' ? 'REVOKED' : claim?.status === 'APPROVED' && release.athleteProfile.claimedByUserId === release.publishedByUserId && !release.athleteProfile.deletedAt && release.publishedByUser && !release.publishedByUser.suspendedAt && !release.publishedByUser.deletedAt ? 'ACTIVE' : 'INACTIVE'
-    return { releaseId: id, publicationType: release.publicationType, platformAttestation, officialAtPublication, currentAuthority, withdrawalStatus: release.status === 'ARCHIVED' ? 'WITHDRAWN' : 'PUBLISHED', manifest: ['VALID', 'KEY_REVOKED'].includes(signatureStatus) ? manifest : null, manifestHash: release.manifestHash, signature: release.manifestSignature, keyId: release.signingKeyId, authorizationClaimId: release.authorizationClaimId, authorityRevokedAt: claim?.revokedAt ?? null, assetVerification: manifest ? 'DIGESTS_AT_PUBLICATION_NOT_RECHECKED' : 'UNAVAILABLE', disclaimer: 'Platform attestation of a release record; not a personal signature or independent verification of its facts.' }
+    return { releaseId: id, publicationType: release.publicationType, platformAttestation, officialAtPublication, currentAuthority, withdrawalStatus: release.status === 'ARCHIVED' ? 'WITHDRAWN' : 'PUBLISHED', manifest: ['VALID', 'KEY_REVOKED'].includes(signatureStatus) ? manifest : null, manifestHash: release.manifestHash, signature: release.manifestSignature, keyId: release.signingKeyId, authorizationClaimId: release.authorizationClaimId, authorityRevokedAt: claim?.revokedAt ?? null, assetVerification: ['VALID', 'KEY_REVOKED'].includes(signatureStatus) ? 'DIGESTS_AT_PUBLICATION_NOT_RECHECKED' : 'UNAVAILABLE', disclaimer: 'Platform attestation of a release record; not a personal signature or independent verification of its facts.' }
   }
 
   async issue(id: string) {
     const issue = await db.cardIssue.findUnique({ where: { id }, include: { release: true } })
     if (!issue) throw { statusCode: 404, message: 'Issue not found' }
     const release = await this.release(issue.releaseId)
-    const expected = createHash('sha256').update(JSON.stringify({ cardTemplateId: issue.releaseId, originHash: issue.release.originHash, issueNumber: issue.issueNumber, claimedByUserId: issue.claimedByUserId })).digest('hex')
+    const expected = legacyCardHash({ cardTemplateId: issue.releaseId, originHash: issue.release.originHash, issueNumber: issue.issueNumber, claimedByUserId: issue.claimedByUserId })
     const bindingStatus = release.platformAttestation === 'UNSIGNED' ? 'UNVERIFIABLE_LEGACY' : expected === issue.issueHash && issue.issueNumber !== null && issue.issueNumber > 0 && issue.issueNumber <= issue.release.issuedCount && (issue.release.editionSize === null || issue.issueNumber <= issue.release.editionSize) ? 'LEDGER_MATCH' : 'INVALID'
     return { issueId: id, releaseId: issue.releaseId, issueNumber: issue.issueNumber, issueHash: issue.issueHash, status: issue.status, bindingStatus, release, disclaimer: 'Issue membership is checked against the platform ledger; the cryptographic signature covers the release manifest, not this individual issue or its current owner.' }
   }
