@@ -32,6 +32,31 @@ PersonProfile:
       type:
         - string
         - 'null'
+    calling:
+      type: [string, 'null']
+    age:
+      type: [string, 'null']
+    quote:
+      type: [string, 'null']
+    debut:
+      type: [string, 'null']
+    specializations:
+      type: array
+      items:
+        type: object
+        required: [type]
+        properties:
+          type: { type: string }
+          attributes: { type: object, additionalProperties: true }
+    customFields:
+      type: array
+      items:
+        type: object
+        required: [id, label, value]
+        properties:
+          id: { type: string }
+          label: { type: string }
+          value: { type: string }
     canonicalUrl:
       type: string
     shareTitle:
