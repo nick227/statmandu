@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
 
@@ -58,11 +58,22 @@ try {
 
   mysql("UPDATE CardTemplate SET status='PUBLISHED', publishedAt=NOW(3), originHash='legacy-origin' WHERE id='c1';")
   prisma(['migrate', 'resolve', '--applied', '20260712000000_baseline'])
-  prisma(['migrate', 'deploy'])
-
+  // Populate the pre-extraction schema before applying the design/release migration.
+  const extraction = '20261118020000_designs_releases_storefronts'
+  for (const name of readdirSync('packages/db/prisma/migrations').sort()) {
+    if (name <= '20260712000000_baseline' || name >= extraction) continue
+    mysql(readFileSync(`packages/db/prisma/migrations/${name}/migration.sql`, 'utf8'))
+    prisma(['migrate', 'resolve', '--applied', name])
+  }
   mysql(`
     INSERT INTO CardSave (id,userId,cardTemplateId) VALUES ('save1','u1','c1');
     INSERT INTO CardDownloadEvent (id,cardTemplateId,cardIssueId,downloadedByUserId,context) VALUES ('download1','c1','ci1','u1','PROFILE');
+    INSERT INTO Claim (id,athleteProfileId,requestedByUserId,status,updatedAt) VALUES ('claim1','a1','u1','APPROVED',NOW(3));
+    UPDATE CardIssue SET ownerUserId='u1' WHERE id='ci1';
+    INSERT INTO User (id,email,passwordHash,updatedAt) VALUES (REPEAT('x',191),'long-id@example.test','hash',NOW(3));
+  `)
+  prisma(['migrate', 'deploy'])
+  mysql(`
     SELECT COUNT(*) AS athletes FROM AthleteProfile;
     SELECT COUNT(*) AS teams FROM Team;
     SELECT COUNT(*) AS games FROM Game;
@@ -79,5 +90,14 @@ try {
   assert.equal(mysqlOutput("SELECT issueHash FROM CardIssue WHERE id='ci1'"), 'migration-hash')
   assert.equal(mysqlOutput("SELECT CONCAT(athleteProfileId, ':', sportId) FROM Player WHERE id='p1'"), 'a1:s1')
   assert.equal(mysqlOutput("SELECT COUNT(*) FROM CardTemplate WHERE id='c1' AND teamId='t1' AND gameId='g1'"), '1')
+  assert.equal(mysqlOutput("SELECT COUNT(*) FROM Storefront WHERE userId=REPEAT('x',191) AND CHAR_LENGTH(id)<=191"), '1')
+  assert.equal(mysqlOutput("SELECT ownerUserId FROM CardIssue WHERE id='ci1'"), 'u1')
+  assert.equal(mysqlOutput("SELECT CONCAT(athleteProfileId, ':', requestedByUserId, ':', status) FROM Claim WHERE id='claim1'"), 'a1:u1:APPROVED')
+  assert.equal(mysqlOutput("SELECT COUNT(*) FROM CardDesign"), '0')
+  assert.equal(mysqlOutput("SELECT CONCAT(IFNULL(c.templateId,'NULL'), ':', s.userId) FROM CardTemplate c JOIN Storefront s ON s.id=c.storefrontId WHERE c.id='c1'"), 'NULL:u1')
+  assert.equal(mysqlOutput("SELECT CONCAT(cardTemplateId, ':', issueNumber, ':', claimedByUserId, ':', issueHash) FROM CardIssue WHERE id='ci1'"), 'c1:1:u1:migration-hash')
+  assert.equal(mysqlOutput("SELECT cardTemplateId FROM CardGenerationJob WHERE id='j1'"), 'c1')
+  assert.equal(mysqlOutput("SELECT cardTemplateId FROM CardSave WHERE id='save1'"), 'c1')
+  assert.equal(mysqlOutput("SELECT CONCAT(cardTemplateId, ':', cardIssueId) FROM CardDownloadEvent WHERE id='download1'"), 'c1:ci1')
   console.log('Populated baseline migration verification passed, including person/card preservation assertions')
 } finally {}

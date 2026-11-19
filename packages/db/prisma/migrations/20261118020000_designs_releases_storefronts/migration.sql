@@ -81,7 +81,7 @@ ALTER TABLE `CardTemplate` ADD CONSTRAINT `CardTemplate_storefrontId_fkey` FOREI
 
 -- Provision creator catalogs without inferring historical publishing authority.
 INSERT INTO Storefront (id, userId, createdAt, updatedAt)
-SELECT CONCAT('store_', id), id, NOW(3), NOW(3) FROM User
+SELECT CONCAT('store_', SHA2(id, 256)), id, NOW(3), NOW(3) FROM User
 ON DUPLICATE KEY UPDATE userId = VALUES(userId);
 UPDATE CardTemplate r JOIN Storefront s ON s.userId = r.createdByUserId
 SET r.storefrontId = s.id WHERE r.storefrontId IS NULL;
