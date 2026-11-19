@@ -263,9 +263,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
       expect(screen.getByPlaceholderText('Enter subject or person name...')).toBeTruthy()
       expect(screen.getByPlaceholderText('e.g. Architect, Musician, Athlete')).toBeTruthy()
     })
-
-    // Step back to Level 1
-    fireEvent.press(screen.getByTestId('panel-back-button'))
+    // Switch directly between inline accordion sections.
     await waitFor(() => {
       expect(screen.getByTestId('category-card')).toBeTruthy()
     })
@@ -280,9 +278,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
       expect(screen.getByTestId('card-type-option-stats')).toBeTruthy()
     })
     fireEvent.press(screen.getByTestId('card-type-option-stats'))
-
-    // Step back to Level 1 and reopen Content
-    fireEvent.press(screen.getByTestId('panel-back-button'))
+    // Switch directly between inline accordion sections.
     await waitFor(() => {
       expect(screen.getByTestId('category-content')).toBeTruthy()
     })
@@ -293,9 +289,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
       expect(screen.getByPlaceholderText('Enter competitor or subject name...')).toBeTruthy()
       expect(screen.getByPlaceholderText('e.g. Basketball, Track & Field, Racing')).toBeTruthy()
     })
-
-    // Step back to Level 1
-    fireEvent.press(screen.getByTestId('panel-back-button'))
+    // Switch directly between inline accordion sections.
     await waitFor(() => {
       expect(screen.getByTestId('category-card')).toBeTruthy()
     })
@@ -310,9 +304,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
       expect(screen.getByTestId('card-type-option-minimal')).toBeTruthy()
     })
     fireEvent.press(screen.getByTestId('card-type-option-minimal'))
-
-    // Step back to Level 1 and check Content
-    fireEvent.press(screen.getByTestId('panel-back-button'))
+    // Switch directly between inline accordion sections.
     await waitFor(() => {
       expect(screen.getByTestId('category-content')).toBeTruthy()
     })
@@ -344,9 +336,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     await waitFor(() => {
       expect(screen.getByTestId('slot-input1').props.value).toBe('Custom Hero Subject')
     })
-
-    // Step back to Level 1
-    fireEvent.press(screen.getByTestId('panel-back-button'))
+    // Switch directly between inline accordion sections.
     await waitFor(() => {
       expect(screen.getByTestId('category-card')).toBeTruthy()
     })
@@ -361,9 +351,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
       expect(screen.getByTestId('design-option-brutalist-block')).toBeTruthy()
     })
     fireEvent.press(screen.getByTestId('design-option-brutalist-block'))
-
-    // Step back to Level 1 and reopen Content
-    fireEvent.press(screen.getByTestId('panel-back-button'))
+    // Switch directly between inline accordion sections.
     await waitFor(() => {
       expect(screen.getByTestId('category-content')).toBeTruthy()
     })
@@ -393,9 +381,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     await waitFor(() => {
       expect(screen.getByTestId('slot-input1').props.value).toBe('Universal Title Subject')
     })
-
-    // Step back to Level 1
-    fireEvent.press(screen.getByTestId('panel-back-button'))
+    // Switch directly between inline accordion sections.
     await waitFor(() => {
       expect(screen.getByTestId('category-card')).toBeTruthy()
     })
@@ -410,9 +396,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
       expect(screen.getByTestId('card-type-option-minimal')).toBeTruthy()
     })
     fireEvent.press(screen.getByTestId('card-type-option-minimal'))
-
-    // Step back to Level 1 and reopen Content
-    fireEvent.press(screen.getByTestId('panel-back-button'))
+    // Switch directly between inline accordion sections.
     await waitFor(() => {
       expect(screen.getByTestId('category-content')).toBeTruthy()
     })
@@ -468,6 +452,8 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
       expect(screen.getByTestId('saved-design-saved-draft-1')).toBeTruthy()
     })
     fireEvent.press(screen.getByTestId('saved-design-saved-draft-1'))
+
+    fireEvent.press(screen.getByTestId('category-content'))
 
     await waitFor(() => {
       // Restored actual subject Grace Hopper!
@@ -548,6 +534,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
   it('does not leak template-specific overrides across card types and preserves them on return', async () => {
     const screen = await render(<CardStudioScreen />)
 
+    fireEvent.press(screen.getByTestId('category-content'))
     await waitFor(() => {
       expect(screen.getByTestId('slot-input2')).toBeTruthy()
     })
@@ -559,12 +546,14 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     })
 
     // Switch to Stats template (where input2 is Discipline / Category)
+    fireEvent.press(screen.getByTestId('category-card'))
     fireEvent.press(screen.getByTestId('card-type-dropdown'))
     await waitFor(() => {
       expect(screen.getByTestId('card-type-option-stats')).toBeTruthy()
     })
     fireEvent.press(screen.getByTestId('card-type-option-stats'))
 
+    fireEvent.press(screen.getByTestId('category-content'))
     // Stats input2 must NOT be contaminated with "Master Architect"
     await waitFor(() => {
       expect(screen.getByTestId('slot-input2').props.value).not.toBe('Master Architect')
@@ -572,6 +561,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     })
 
     // Switch back to Standard template
+    fireEvent.press(screen.getByTestId('category-card'))
     fireEvent.press(screen.getByTestId('card-type-dropdown'))
     await waitFor(() => {
       expect(screen.getByTestId('card-type-option-standard')).toBeTruthy()
@@ -579,6 +569,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     fireEvent.press(screen.getByTestId('card-type-option-standard'))
 
     // Preserved the manual Role override on return!
+    fireEvent.press(screen.getByTestId('category-content'))
     await waitFor(() => {
       expect(screen.getByTestId('slot-input2').props.value).toBe('Master Architect')
     })
