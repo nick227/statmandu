@@ -105,61 +105,44 @@ export function resolveProfileAttributeForField(
     historical?.historicContribution ||
     ''
 
-  // 1. Profile Card Type
-  if (cardTypeId === 'profile') {
-    if (field.id === 'title') {
-      return { value: calling, sourceLabel: calling ? 'Specialist Calling' : 'Unset' }
-    }
-    if (field.id === 'bio') {
-      return { value: bio, sourceLabel: bio ? 'Profile Biography' : 'Unset' }
+  // 1. Standard Template (Identity & Bio)
+  if (cardTypeId === 'standard' || cardTypeId === 'profile') {
+    if (field.id === 'role' || field.id === 'title') {
+      return { value: calling, sourceLabel: calling ? 'Role' : 'Unset' }
     }
     if (field.id === 'origin') {
-      return { value: originEra || hometown, sourceLabel: (originEra || hometown) ? 'Hometown / Era' : 'Unset' }
+      return { value: originEra || hometown, sourceLabel: (originEra || hometown) ? 'Origin' : 'Unset' }
+    }
+    if (field.id === 'bio') {
+      return { value: bio, sourceLabel: bio ? 'Bio' : 'Unset' }
     }
   }
 
-  // 2. Achievement Card Type
-  if (cardTypeId === 'achievement') {
-    if (field.id === 'achievement') {
-      return { value: primaryAccolade, sourceLabel: primaryAccolade ? 'Specialist Honor' : 'Unset' }
+  // 2. Stats Template (Hero Stat & Metrics)
+  if (cardTypeId === 'stats' || cardTypeId === 'sports' || cardTypeId === 'achievement') {
+    if (field.id === 'discipline' || field.id === 'category') {
+      const discipline = athlete?.sport ? `${athlete.sport.toUpperCase()}` : calling || 'COMPETITOR'
+      return { value: discipline, sourceLabel: discipline ? 'Category' : 'Unset' }
     }
-    if (field.id === 'details' || field.id === 'chronicle') {
-      return { value: bio, sourceLabel: bio ? 'Profile Biography' : 'Unset' }
+    if (field.id === 'stat' || field.id === 'achievement' || field.id === 'highlights') {
+      return { value: primaryAccolade, sourceLabel: primaryAccolade ? 'Hero Stat' : 'Unset' }
     }
-    if (field.id === 'dateLocation' || field.id === 'dateScope') {
-      const dates = athlete?.yearsActive || historical?.epochOrEra || originEra || ''
-      return { value: dates, sourceLabel: dates ? 'Career Era' : 'Unset' }
-    }
-    if (field.id === 'category') {
-      const domain =
-        athlete ? 'ATHLETICS & COMPETITION' :
-        musician ? 'MUSIC & PERFORMANCE' :
-        writer ? 'LITERATURE & ARTS' :
-        scientist ? 'SCIENCE & RESEARCH' :
-        creator ? 'CREATIVE ARTS' :
-        historical ? 'HERITAGE & HISTORY' :
-        ''
-      return { value: domain, sourceLabel: domain ? 'Discipline Domain' : 'Unset' }
+    if (field.id === 'record' || field.id === 'dateLocation' || field.id === 'honors') {
+      const rec = athlete?.careerAccolades?.[0] || athlete?.yearsActive || historical?.epochOrEra || originEra || ''
+      return { value: rec, sourceLabel: rec ? 'Record' : 'Unset' }
     }
   }
 
-  // 3. Sports Card Type
-  if (cardTypeId === 'sports') {
-    if (field.id === 'team' || field.id === 'sportRole') {
-      const role = athlete ? `${athlete.sport} · ${athlete.primaryRole || athlete.currentTeam || 'Competitor'}` : calling
-      return { value: role ? role.toUpperCase() : '', sourceLabel: role ? 'Sport & Role' : 'Unset' }
+  // 3. Minimal Template (Full-Bleed Artwork)
+  if (cardTypeId === 'minimal' || cardTypeId === 'creator') {
+    if (field.id === 'title') {
+      return { value: flagshipWork || (name ? `${name}` : ''), sourceLabel: flagshipWork ? 'Title' : 'Unset' }
     }
-    if (field.id === 'highlights' || field.id === 'stat1') {
-      return { value: athlete?.primaryStatistic || primaryAccolade, sourceLabel: (athlete?.primaryStatistic || primaryAccolade) ? 'Primary Stat' : 'Unset' }
+    if (field.id === 'artist') {
+      return { value: name, sourceLabel: name ? 'Creator' : 'Unset' }
     }
-    if (field.id === 'honors' || field.id === 'badge') {
-      return { value: athlete?.careerAccolades?.[0] || primaryAccolade, sourceLabel: (athlete?.careerAccolades?.[0] || primaryAccolade) ? 'Career Accolades' : 'Unset' }
-    }
-    if (field.id === 'era' || field.id === 'stat2') {
-      return { value: athlete?.yearsActive || originEra || '', sourceLabel: (athlete?.yearsActive || originEra) ? 'Years Active' : 'Unset' }
-    }
-    if (field.id === 'careerStory') {
-      return { value: bio, sourceLabel: bio ? 'Career Summary' : 'Unset' }
+    if (field.id === 'year') {
+      return { value: originEra || '2026', sourceLabel: originEra ? 'Year' : 'Unset' }
     }
   }
 

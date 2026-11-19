@@ -149,12 +149,15 @@ describe('RARE Flagship Designs & Variable Positional Content Engine', () => {
     })
   })
 
-  describe('Card Types (10 Distinct Types)', () => {
-    test('contains exactly 10 distinct card types with fields', () => {
+  describe('Card Types (3 Core Templates)', () => {
+    test('contains 3 distinct card templates with fields', () => {
       const { CARD_TYPES } = require('../cardTypes')
-      expect(CARD_TYPES).toHaveLength(10)
+      expect(CARD_TYPES).toHaveLength(3)
       const ids = new Set(CARD_TYPES.map((t: any) => t.id))
-      expect(ids.size).toBe(10)
+      expect(ids.size).toBe(3)
+      expect(ids.has('standard')).toBe(true)
+      expect(ids.has('stats')).toBe(true)
+      expect(ids.has('minimal')).toBe(true)
       for (const t of CARD_TYPES) {
         expect(Array.isArray(t.fields)).toBe(true)
         expect(t.fields.length).toBeGreaterThanOrEqual(3)
@@ -162,8 +165,8 @@ describe('RARE Flagship Designs & Variable Positional Content Engine', () => {
     })
 
     test('compiles with custom cardTypeId and persists in metadata', () => {
-      const result = compileFlagshipDesign('classic-collector', {}, undefined, undefined, 'achievement')
-      expect(result.composition.metadata?.flagship?.cardTypeId).toBe('achievement')
+      const result = compileFlagshipDesign('classic-collector', {}, undefined, undefined, 'stats')
+      expect(result.composition.metadata?.flagship?.cardTypeId).toBe('stats')
     })
   })
 

@@ -1392,14 +1392,35 @@ export function compileFlagshipDesign(
     layers.push(...bgDecorations)
   }
 
+  // 3. Layout geometry adaptation based on selected Template:
+  // - 'minimal': Full-bleed maximized artwork canvas with sleek lower title band
+  // - 'stats': Upper artwork window with prominent hero metric callout band
+  // - 'standard': Balanced portrait artwork window with identity & bio block
+  let artX = artwork.x
+  let artY = artwork.y
+  let artW = artwork.width
+  let artH = artwork.height
+
+  if (cardType.id === 'minimal') {
+    artX = 20
+    artY = 20
+    artW = 560
+    artH = 745
+  } else if (cardType.id === 'stats') {
+    artX = artwork.x
+    artY = Math.min(artwork.y, 80)
+    artW = artwork.width
+    artH = Math.min(artwork.height, 420)
+  }
+
   // 3. Artwork backdrop tint
   layers.push({
     id: 'artwork-backdrop-frame',
     type: 'RECTANGLE',
-    x: artwork.x,
-    y: artwork.y,
-    width: artwork.width,
-    height: artwork.height,
+    x: artX,
+    y: artY,
+    width: artW,
+    height: artH,
     fill: artwork.tint || palette.surface,
   })
 
@@ -1409,15 +1430,40 @@ export function compileFlagshipDesign(
   layers.push({
     id: 'artwork-subject-image',
     type: 'IMAGE',
-    x: artwork.x + borderWidth,
-    y: artwork.y + borderWidth,
-    width: artwork.width - borderWidth * 2,
-    height: artwork.height - borderWidth * 2,
+    x: artX + borderWidth,
+    y: artY + borderWidth,
+    width: artW - borderWidth * 2,
+    height: artH - borderWidth * 2,
     imageAssetId: effectiveImageAssetId,
   })
 
+  // Template-specific layout accents:
+  if (cardType.id === 'stats') {
+    // Prominent stat hero callout banner
+    layers.push({
+      id: 'stat-metric-hero-banner',
+      type: 'RECTANGLE',
+      x: 36,
+      y: 520,
+      width: 528,
+      height: 105,
+      fill: palette.surface,
+    })
+  } else if (cardType.id === 'minimal') {
+    // Sleek lower caption plate
+    layers.push({
+      id: 'minimal-caption-plate',
+      type: 'RECTANGLE',
+      x: 20,
+      y: 775,
+      width: 560,
+      height: 100,
+      fill: palette.surface,
+    })
+  }
+
   // 5. Post-artwork foreground decorations (e.g. accent lines, dividers, badges)
-  if (fgDecorations.length > 0) {
+  if (fgDecorations.length > 0 && cardType.id !== 'minimal') {
     layers.push(...fgDecorations)
   }
 
@@ -1435,10 +1481,26 @@ export function compileFlagshipDesign(
     const cleanText = (rawText || '').trim()
     resolvedInputs[inputDef.id] = cleanText
 
+    // Tailor bounds based on template layout
+    let slotBounds = { ...inputDef.bounds }
+    if (cardType.id === 'minimal') {
+      if (inputDef.id === 'input1') {
+        slotBounds = { x: 40, y: 785, width: 520, height: 40 }
+      } else if (inputDef.id === 'input2') {
+        slotBounds = { x: 40, y: 830, width: 340, height: 28 }
+      } else if (inputDef.id === 'input3') {
+        slotBounds = { x: 400, y: 830, width: 160, height: 28 }
+      }
+    } else if (cardType.id === 'stats') {
+      if (inputDef.id === 'input3') {
+        slotBounds = { x: 50, y: 535, width: 500, height: 60 }
+      }
+    }
+
     // Run text-fitting
     const fit = fitTextToSlot(cleanText, {
-      width: inputDef.bounds.width,
-      height: inputDef.bounds.height,
+      width: slotBounds.width,
+      height: slotBounds.height,
       preferredFontSize: inputDef.preferredFontSize,
       minFontSize: inputDef.minFontSize,
       maxLines: inputDef.maxLines,
@@ -1451,10 +1513,10 @@ export function compileFlagshipDesign(
     layers.push({
       id: `slot-${inputDef.id}`,
       type: 'TEXT',
-      x: inputDef.bounds.x,
-      y: inputDef.bounds.y,
-      width: inputDef.bounds.width,
-      height: inputDef.bounds.height,
+      x: slotBounds.x,
+      y: slotBounds.y,
+      width: slotBounds.width,
+      height: slotBounds.height,
       text: inputDef.allCaps ? cleanText.toUpperCase() : cleanText,
       fontSize: fit.fontSize,
       fill: inputDef.fill || palette.foreground,

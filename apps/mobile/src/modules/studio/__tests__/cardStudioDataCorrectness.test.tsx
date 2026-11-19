@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, fireEvent, waitFor } from '@testing-library/react-native'
+import { render, fireEvent, waitFor, cleanup } from '@testing-library/react-native'
 import { CardStudioScreen } from '../CardStudioScreen'
 import { useStudioUser } from '../hooks/useStudioUser'
 import {
@@ -196,18 +196,22 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     })
   })
 
-  // 1. Blank new studio
+  afterEach(() => {
+    cleanup()
+  })
+
+  // 1. Blank new studio & neutral initial state
   it('initializes a new session in a neutral state with no selected subject and empty inputs', async () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
+      expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
+      expect(screen.getByTestId('design-picker-dropdown')).toBeTruthy()
       expect(screen.getByTestId('slot-input1')).toBeTruthy()
     })
 
-    // Dropdown shows no selected subject
-    expect(screen.getByText('Select Profile')).toBeTruthy()
-    expect(screen.getByText('No subject selected')).toBeTruthy()
+    // Concept of benchmark profiles is cut: no person-selector-dropdown in studio
+    expect(screen.queryByTestId('person-selector-dropdown')).toBeNull()
 
     // Inputs start blank and show generic instructional placeholders, NOT Maya Angelou
     expect(screen.getByTestId('slot-input1').props.value).toBe('')
@@ -217,101 +221,72 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     expect(screen.queryByText('Wilma Rudolph')).toBeNull()
   })
 
-  // 2. Missing profile attributes
-  it('resolves missing profile attributes to empty string without injecting benchmark fallback content', async () => {
+  // 2. Missing/blank optional attributes
+  it('resolves missing attributes to empty string without injecting benchmark fallback content', async () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
+      expect(screen.getByTestId('slot-input1')).toBeTruthy()
     })
 
-    // Select custom person Grace Hopper (who only has displayName and bio)
-    fireEvent.press(screen.getByTestId('person-selector-dropdown'))
-    await waitFor(() => {
-      expect(screen.getByTestId('custom-person-p-custom-1')).toBeTruthy()
-    })
-    fireEvent.press(screen.getByTestId('custom-person-p-custom-1'))
+    // Slot 1 and 2 start empty, no benchmark mock data
+    expect(screen.getByTestId('slot-input1').props.value).toBe('')
+    expect(screen.getByTestId('slot-input2').props.value).toBe('')
+    expect(screen.queryByText('St. Louis, Missouri')).toBeNull()
+    expect(screen.queryByText('Author & Poet')).toBeNull()
+  })
+
+  // 3. Template switching: Standard -> Stats -> Minimal meaningfully changes fields and layout
+  it('meaningfully changes fields displayed and layout geometry when switching templates', async () => {
+    const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      // First obvious field (Name) is seamlessly bound
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Grace Hopper')
-      // Missing title/calling is EMPTY, never "Author & Poet"
-      expect(screen.getByTestId('slot-input2').props.value).toBe('')
-      // Bio field is bound
-      expect(screen.getByTestId('slot-input3').props.value).toBe('Computer pioneer')
-      // Slot 4 is not mapped in classic-collector
-      expect(screen.queryByTestId('slot-input4')).toBeNull()
-      expect(screen.queryByText('St. Louis, Missouri')).toBeNull()
-      expect(screen.queryByText('Author & Poet')).toBeNull()
+      expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
+    })
+
+    // Standard template has standard field placeholders
+    expect(screen.getByPlaceholderText('Enter subject or person name...')).toBeTruthy()
+    expect(screen.getByPlaceholderText('e.g. Architect, Musician, Athlete')).toBeTruthy()
+
+    // Switch to Stats template
+    fireEvent.press(screen.getByTestId('card-type-dropdown'))
+    await waitFor(() => {
+      expect(screen.getByTestId('card-type-option-stats')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('card-type-option-stats'))
+
+    // Field placeholders changed to Stats template fields
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Enter competitor or subject name...')).toBeTruthy()
+      expect(screen.getByPlaceholderText('e.g. Basketball, Track & Field, Racing')).toBeTruthy()
+    })
+
+    // Switch to Minimal template
+    fireEvent.press(screen.getByTestId('card-type-dropdown'))
+    await waitFor(() => {
+      expect(screen.getByTestId('card-type-option-minimal')).toBeTruthy()
+    })
+    fireEvent.press(screen.getByTestId('card-type-option-minimal'))
+
+    // Field placeholders changed to Minimal template fields
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Enter artwork or subject title...')).toBeTruthy()
+      expect(screen.getByPlaceholderText('Enter creator or artist name...')).toBeTruthy()
     })
   })
 
-  // 3. Subject switching & clean override isolation
-  it('does not transfer overrides or linked values when switching subjects', async () => {
+  // 4. Style switching preserves manual inputs
+  it('preserves manual content when switching flagship design style', async () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
+      expect(screen.getByTestId('slot-input1')).toBeTruthy()
     })
 
-    // Select Miles Davis
-    fireEvent.press(screen.getByTestId('person-selector-dropdown'))
+    // Custom input on slot 1
+    fireEvent.changeText(screen.getByTestId('slot-input1'), 'Custom Hero Subject')
     await waitFor(() => {
-      expect(screen.getByTestId('benchmark-person-miles-davis')).toBeTruthy()
-    })
-    fireEvent.press(screen.getByTestId('benchmark-person-miles-davis'))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
-    })
-
-    // Override input 2
-    fireEvent.changeText(screen.getByTestId('slot-input2'), 'Custom Jazz Fusion Master')
-    await waitFor(() => {
-      expect(screen.getByTestId('slot-input2').props.value).toBe('Custom Jazz Fusion Master')
-      expect(screen.getByTestId('relink-input2')).toBeTruthy()
-    })
-
-    // Now switch subject to Maya Angelou
-    fireEvent.press(screen.getByTestId('person-selector-dropdown'))
-    await waitFor(() => {
-      expect(screen.getByTestId('benchmark-person-maya-angelou')).toBeTruthy()
-    })
-    fireEvent.press(screen.getByTestId('benchmark-person-maya-angelou'))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Maya Angelou')
-      // Overridden calling for Miles Davis is NOT transferred to Maya Angelou!
-      expect(screen.getByTestId('slot-input2').props.value).toBe('POETRY · AUTHOR')
-      expect(screen.queryByText('Custom Jazz Fusion Master')).toBeNull()
-      // Override indicator is cleared
-      expect(screen.queryByTestId('relink-input2')).toBeNull()
-    })
-  })
-
-  // 4. Design switching preserves overrides for the same subject
-  it('preserves manual overrides when switching flagship design for the same subject', async () => {
-    const screen = await render(<CardStudioScreen />)
-
-    await waitFor(() => {
-      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
-    })
-
-    // Select Miles Davis
-    fireEvent.press(screen.getByTestId('person-selector-dropdown'))
-    await waitFor(() => {
-      expect(screen.getByTestId('benchmark-person-miles-davis')).toBeTruthy()
-    })
-    fireEvent.press(screen.getByTestId('benchmark-person-miles-davis'))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
-    })
-
-    // Custom override on slot 1
-    fireEvent.changeText(screen.getByTestId('slot-input1'), 'Sir Miles Davis (Override)')
-    await waitFor(() => {
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Sir Miles Davis (Override)')
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Custom Hero Subject')
     })
 
     // Switch design to Brutalist Block
@@ -322,42 +297,33 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     fireEvent.press(screen.getByTestId('design-option-brutalist-block'))
 
     await waitFor(() => {
-      // Manual override is preserved!
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Sir Miles Davis (Override)')
+      // Manual content is preserved across style switches!
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Custom Hero Subject')
     })
   })
 
-  // 5. Manual override and re-link
-  it('re-links an overridden field back to the current profile source value', async () => {
+  // 5. Template switching preserves manual input1 across types
+  it('preserves input content when switching between card templates', async () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
+      expect(screen.getByTestId('slot-input1')).toBeTruthy()
     })
 
-    // Select Wilma Rudolph
-    fireEvent.press(screen.getByTestId('person-selector-dropdown'))
+    fireEvent.changeText(screen.getByTestId('slot-input1'), 'Universal Title Subject')
     await waitFor(() => {
-      expect(screen.getByTestId('benchmark-person-wilma-rudolph')).toBeTruthy()
-    })
-    fireEvent.press(screen.getByTestId('benchmark-person-wilma-rudolph'))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Wilma Rudolph')
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Universal Title Subject')
     })
 
-    // Override
-    fireEvent.changeText(screen.getByTestId('slot-input1'), 'Olympic Legend Wilma')
+    // Switch to Minimal template
+    fireEvent.press(screen.getByTestId('card-type-dropdown'))
     await waitFor(() => {
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Olympic Legend Wilma')
-      expect(screen.getByTestId('relink-input1')).toBeTruthy()
+      expect(screen.getByTestId('card-type-option-minimal')).toBeTruthy()
     })
+    fireEvent.press(screen.getByTestId('card-type-option-minimal'))
 
-    // Re-link
-    fireEvent.press(screen.getByTestId('relink-input1'))
     await waitFor(() => {
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Wilma Rudolph')
-      expect(screen.queryByTestId('relink-input1')).toBeNull()
+      expect(screen.getByTestId('slot-input1').props.value).toBe('Universal Title Subject')
     })
   })
 
@@ -374,7 +340,7 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
         metadata: {
           flagship: {
             id: 'classic-collector',
-            cardTypeId: 'profile',
+            cardTypeId: 'standard',
             contentStore: {
               input1: 'Grace Hopper',
               input2: 'SYSTEMS ARCHITECT',
@@ -409,7 +375,6 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
 
     await waitFor(() => {
       // Restored actual subject Grace Hopper!
-      expect(screen.getByText('Grace Hopper')).toBeTruthy()
       expect(screen.getByTestId('slot-input1').props.value).toBe('Grace Hopper')
       expect(screen.getByTestId('slot-input2').props.value).toBe('SYSTEMS ARCHITECT')
     })
@@ -444,20 +409,21 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
+      expect(screen.getByTestId('publish-release-button')).toBeTruthy()
     })
-
-    // Select custom person Grace Hopper
-    fireEvent.press(screen.getByTestId('person-selector-dropdown'))
-    await waitFor(() => {
-      expect(screen.getByTestId('custom-person-p-custom-1')).toBeTruthy()
-    })
-    fireEvent.press(screen.getByTestId('custom-person-p-custom-1'))
 
     // Open publish drawer
     fireEvent.press(screen.getByTestId('publish-release-button'))
     await waitFor(() => {
       expect(screen.getByTestId('confirm-publish-button')).toBeTruthy()
+      expect(screen.getByTestId('publish-subject-name-input')).toBeTruthy()
+    })
+
+    // Enter real subject Grace Hopper in publish drawer
+    fireEvent.changeText(screen.getByTestId('publish-subject-name-input'), 'Grace Hopper')
+
+    await waitFor(() => {
+      expect(screen.getByTestId('publish-subject-name-input').props.value).toBe('Grace Hopper')
     })
 
     // Confirm publish
@@ -470,8 +436,6 @@ describe('RARE Card Studio — Mock Data Contamination Removal Regression Tests'
             metadata: expect.objectContaining({
               flagship: expect.objectContaining({
                 contentStore: expect.objectContaining({
-                  input1: 'Grace Hopper',
-                  input3: 'Computer pioneer',
                   // Optional inputs are empty strings, NEVER benchmark fallbacks!
                   input4: '',
                 }),

@@ -6,7 +6,6 @@ import { useCardStudioState } from './hooks/useCardStudioState'
 import { StudioTopBar } from './components/StudioTopBar'
 import { StudioAlerts } from './components/StudioAlerts'
 import { StudioPublishDrawer } from './components/StudioPublishDrawer'
-import { SubjectProfileSelector } from './components/SubjectProfileSelector'
 import { CardTypeSelector } from './components/CardTypeSelector'
 import { ContentFieldsEditor } from './components/ContentFieldsEditor'
 import { FlagshipDesignPicker } from './components/FlagshipDesignPicker'
@@ -117,18 +116,9 @@ export function CardStudioScreen() {
                 onConfirmPublish={studio.handleConfirmPublish}
               />
 
-              {/* Modular Editor Controls (Clean, unnested, minimal borders) */}
+              {/* Modular Editor Controls (Clean 2-dropdown setup: Template & Style) */}
               <View className="gap-md">
-                {/* 1. Subject Profile Selector */}
-                <SubjectProfileSelector
-                  activeProfile={studio.activeProfile}
-                  isOpen={studio.personDropdownOpen}
-                  onToggle={studio.togglePersonDropdown}
-                  onSelectProfile={studio.handleSelectPersonProfile}
-                  customPeople={studio.customPeople}
-                />
-
-                {/* 2. Card Type Selector */}
+                {/* 1. Template Selector (Standard, Stats, Minimal) */}
                 <CardTypeSelector
                   activeCardTypeId={studio.activeCardTypeId}
                   activeCardType={studio.activeCardType}
@@ -137,7 +127,7 @@ export function CardStudioScreen() {
                   onSelectType={studio.handleSelectCardType}
                 />
 
-                {/* 3. Flagship Design Picker */}
+                {/* 2. Style (Flagship Design Picker) */}
                 <FlagshipDesignPicker
                   activeFlagshipId={studio.activeFlagshipId}
                   activeFlagship={studio.activeFlagship}
@@ -210,14 +200,6 @@ export function CardStudioScreen() {
               onEditionSizeChange={studio.setPublishEditionSize}
               isPublishing={studio.isPublishing}
               onConfirmPublish={studio.handleConfirmPublish}
-            />
-
-            <SubjectProfileSelector
-              activeProfile={studio.activeProfile}
-              isOpen={studio.personDropdownOpen}
-              onToggle={studio.togglePersonDropdown}
-              onSelectProfile={studio.handleSelectPersonProfile}
-              customPeople={studio.customPeople}
             />
 
             <CardTypeSelector

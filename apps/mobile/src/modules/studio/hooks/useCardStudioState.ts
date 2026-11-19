@@ -517,20 +517,17 @@ export function useCardStudioState() {
   // ---------------------------------------------------------------------------
   const handleUpdatePositionalInput = useCallback(
     (slotId: string, value: string) => {
-      setFieldOverrides((prev) => {
-        const nextOverrides = { ...prev, [slotId]: value }
-        const nextStore = { ...currentContentStore, [slotId]: value }
-        const result = compileFlagshipDesign(
-          activeFlagshipId,
-          nextStore,
-          activeProfile,
-          assetsList,
-          activeCardTypeId,
-          selectedImageId,
-        )
-        updateCompositionWithHistory(result.composition)
-        return nextOverrides
-      })
+      setFieldOverrides((prev) => ({ ...prev, [slotId]: value }))
+      const nextStore = { ...currentContentStore, [slotId]: value }
+      const result = compileFlagshipDesign(
+        activeFlagshipId,
+        nextStore,
+        activeProfile,
+        assetsList,
+        activeCardTypeId,
+        selectedImageId,
+      )
+      updateCompositionWithHistory(result.composition)
     },
     [
       currentContentStore,

@@ -44,9 +44,14 @@ export function FlagshipDesignPicker({
             style={{ backgroundColor: activeFlagship.palette.background }}
             className="h-4 w-4 rounded-full border border-border flex-shrink-0"
           />
-          <Text className="font-semibold text-sm text-text">
-            {activeFlagship.name}
-          </Text>
+          <View className="flex-1">
+            <Text variant="caption" className="text-muted-text uppercase text-[10px] tracking-wider font-bold">
+              Style
+            </Text>
+            <Text className="font-semibold text-sm text-text">
+              {activeFlagship.name}
+            </Text>
+          </View>
         </View>
         <ChevronDown size={18} className="text-muted-text ml-sm flex-shrink-0" />
       </Pressable>

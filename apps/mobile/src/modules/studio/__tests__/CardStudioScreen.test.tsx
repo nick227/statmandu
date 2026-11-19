@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, fireEvent, waitFor } from '@testing-library/react-native'
+import { render, fireEvent, waitFor, cleanup } from '@testing-library/react-native'
 import { CardStudioScreen } from '../CardStudioScreen'
 import { useStudioUser } from '../hooks/useStudioUser'
 import {
@@ -121,6 +121,10 @@ describe('CardStudioScreen', () => {
   const mockGenerateRelease = jest.fn()
   const mockPublishRelease = jest.fn()
 
+  afterEach(() => {
+    cleanup()
+  })
+
   beforeEach(() => {
     jest.clearAllMocks()
     ;(useStudioUser as jest.Mock).mockReturnValue({
@@ -189,13 +193,12 @@ describe('CardStudioScreen', () => {
     })
   })
 
-  it('renders simplified studio layout with Subject selector, Card Type above, Content in middle, Design below, and Unified Media Library', async () => {
+  it('renders simplified studio layout with 2 dropdowns (Template and Style), Content in middle, and Unified Media Library', async () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
       expect(screen.getByTestId('card-composition-renderer')).toBeTruthy()
       expect(screen.getByPlaceholderText('Design title...')).toBeTruthy()
-      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
       expect(screen.getByTestId('card-type-dropdown')).toBeTruthy()
       expect(screen.getByText('Content Fields')).toBeTruthy()
       expect(screen.getByTestId('slot-input1')).toBeTruthy()
@@ -205,72 +208,26 @@ describe('CardStudioScreen', () => {
       expect(screen.getByTestId('saved-designs-dropdown')).toBeTruthy()
     })
 
-    // Legacy modals / elements cut
+    // Legacy modals & benchmark profile selector cut, leaving only the 2 dropdowns
+    expect(screen.queryByTestId('person-selector-dropdown')).toBeNull()
     expect(screen.queryByText('Select Subject')).toBeNull()
     expect(screen.queryByText('Designs')).toBeNull()
     expect(screen.queryByText(/Canvas 600/)).toBeNull()
     expect(screen.queryByTestId('mode-flagship-button')).toBeNull()
   })
 
-  it('links content fields to selected subject profile attributes', async () => {
+  it('allows overriding a field and retaining custom edits', async () => {
     const screen = await render(<CardStudioScreen />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
+      expect(screen.getByTestId('slot-input1')).toBeTruthy()
     })
 
-    // Open subject selector
-    fireEvent.press(screen.getByTestId('person-selector-dropdown'))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('benchmark-person-miles-davis')).toBeTruthy()
-    })
-
-    // Select Miles Davis
-    fireEvent.press(screen.getByTestId('benchmark-person-miles-davis'))
-
-    await waitFor(() => {
-      // Content slot 1 automatically linked to Miles Davis
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Miles Davis')
-      // Content slot 2 automatically linked to JAZZ · MUSICIAN
-      expect(screen.getByTestId('slot-input2').props.value).toBe('JAZZ · MUSICIAN')
-    })
-  })
-
-  it('allows overriding a linked field and re-linking back to profile value', async () => {
-    const screen = await render(<CardStudioScreen />)
-
-    await waitFor(() => {
-      expect(screen.getByTestId('person-selector-dropdown')).toBeTruthy()
-    })
-
-    // Select profile first
-    fireEvent.press(screen.getByTestId('person-selector-dropdown'))
-    await waitFor(() => {
-      expect(screen.getByTestId('benchmark-person-maya-angelou')).toBeTruthy()
-    })
-    fireEvent.press(screen.getByTestId('benchmark-person-maya-angelou'))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Maya Angelou')
-    })
-
-    // Edit input1 with custom override text
+    // Edit input1 with custom text
     fireEvent.changeText(screen.getByTestId('slot-input1'), 'Custom Override Name')
 
     await waitFor(() => {
       expect(screen.getByTestId('slot-input1').props.value).toBe('Custom Override Name')
-      // Override indicator and re-link button appear
-      expect(screen.getByTestId('relink-input1')).toBeTruthy()
-    })
-
-    // Click Re-link button
-    fireEvent.press(screen.getByTestId('relink-input1'))
-
-    await waitFor(() => {
-      // Re-linked back to active profile's displayName!
-      expect(screen.getByTestId('slot-input1').props.value).toBe('Maya Angelou')
-      expect(screen.queryByTestId('relink-input1')).toBeNull()
     })
   })
 
@@ -322,16 +279,16 @@ describe('CardStudioScreen', () => {
     fireEvent.press(screen.getByTestId('card-type-dropdown'))
 
     await waitFor(() => {
-      expect(screen.getByTestId('card-type-option-achievement')).toBeTruthy()
+      expect(screen.getByTestId('card-type-option-stats')).toBeTruthy()
     })
 
-    // Select Achievement Card Type
-    fireEvent.press(screen.getByTestId('card-type-option-achievement'))
+    // Select Stats Card Type
+    fireEvent.press(screen.getByTestId('card-type-option-stats'))
 
     await waitFor(() => {
       // Content is preserved and not wiped!
       expect(screen.getByTestId('slot-input1').props.value).toBe('Nobel Peace Laureate')
-      expect(screen.queryByTestId('card-type-option-achievement')).toBeNull()
+      expect(screen.queryByTestId('card-type-option-stats')).toBeNull()
     })
   })
 
