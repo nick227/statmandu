@@ -32,6 +32,7 @@ export function CardPreviewStage({
 }: CardPreviewStageProps) {
   return (
     <View
+      testID="card-preview-stage"
       className={cn(
         'relative items-center justify-center bg-neutral-100/90 dark:bg-neutral-900/60 overflow-hidden',
         className,

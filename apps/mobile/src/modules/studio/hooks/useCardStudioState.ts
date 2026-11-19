@@ -26,7 +26,12 @@ import {
   INITIAL_CONTENT_STORE,
   type ContentStore,
   type FlagshipDesign,
+  type StudioAppearanceState,
 } from '@/modules/designs/flagshipDesigns'
+import type {
+  StudioPanelLocation,
+  StudioBreadcrumb,
+} from '../types/panelNavigation'
 import {
   CARD_TYPES,
   getCardTypeById,
@@ -142,6 +147,72 @@ export function useCardStudioState() {
   const [fieldOverrides, setFieldOverrides] = useState<Record<string, string>>({})
   const [unlinkedSlotIds, setUnlinkedSlotIds] = useState<Set<string>>(new Set())
 
+  // ---------------------------------------------------------------------------
+  // 3-Level Contextual Left Panel Navigation
+  // ---------------------------------------------------------------------------
+  const [panelLocation, setPanelLocation] = useState<StudioPanelLocation>({
+    level: 1,
+    category: 'card',
+  })
+
+  const navigateTo = useCallback((loc: StudioPanelLocation) => {
+    setPanelLocation(loc)
+  }, [])
+
+  const navigateBack = useCallback(() => {
+    setPanelLocation((prev) => {
+      if (prev.level === 3) {
+        if (prev.category === 'appearance') {
+          return { level: 2, category: 'appearance' }
+        }
+        return { level: 1, category: prev.category }
+      }
+      if (prev.level === 2) {
+        return { level: 1, category: prev.category }
+      }
+      return prev
+    })
+  }, [])
+
+  const breadcrumbs = useMemo<StudioBreadcrumb[]>(() => {
+    const crumbs: StudioBreadcrumb[] = [
+      { label: 'Studio', location: { level: 1, category: 'card' } },
+    ]
+    if (panelLocation.level >= 2 && panelLocation.category === 'appearance') {
+      crumbs.push({
+        label: 'Appearance',
+        location: { level: 2, category: 'appearance' },
+      })
+    } else if (panelLocation.level >= 2 && panelLocation.category) {
+      const catLabel =
+        panelLocation.category.charAt(0).toUpperCase() + panelLocation.category.slice(1)
+      crumbs.push({
+        label: catLabel,
+        location: { level: 1, category: panelLocation.category },
+      })
+    }
+
+    if (panelLocation.level === 3 && panelLocation.category === 'appearance' && panelLocation.group) {
+      const grpLabel =
+        panelLocation.group.charAt(0).toUpperCase() + panelLocation.group.slice(1)
+      crumbs.push({
+        label: grpLabel,
+        location: panelLocation,
+      })
+    } else if (panelLocation.level === 3 && panelLocation.category === 'artwork') {
+      crumbs.push({
+        label: 'Adjust',
+        location: panelLocation,
+      })
+    }
+    return crumbs
+  }, [panelLocation])
+
+  // ---------------------------------------------------------------------------
+  // Creative Levers (Appearance Customization)
+  // ---------------------------------------------------------------------------
+  const [appearance, setAppearance] = useState<StudioAppearanceState>({})
+
   // Dropdown open states
   const [savedDesignsDropdownOpen, setSavedDesignsDropdownOpen] = useState(false)
   const [cardTypeDropdownOpen, setCardTypeDropdownOpen] = useState(false)
@@ -250,6 +321,7 @@ export function useCardStudioState() {
     assetsList,
     activeCardTypeId,
     selectedImageId,
+    appearance,
   )
 
   // Re-fit typography when fonts finish loading
@@ -266,6 +338,7 @@ export function useCardStudioState() {
           assetsList,
           activeCardTypeId,
           selectedImageId,
+          appearance,
         )
         setComposition(result.composition)
       }
@@ -273,7 +346,16 @@ export function useCardStudioState() {
     return () => {
       active = false
     }
-  }, [fontsLoaded, activeFlagshipId, currentContentStore, activeProfile, assetsList, activeCardTypeId, selectedImageId])
+  }, [
+    fontsLoaded,
+    activeFlagshipId,
+    currentContentStore,
+    activeProfile,
+    assetsList,
+    activeCardTypeId,
+    selectedImageId,
+    appearance,
+  ])
 
   // ---------------------------------------------------------------------------
   // History Helpers
@@ -308,6 +390,11 @@ export function useCardStudioState() {
         if (loadedStore) {
           setFieldOverrides((prev) => ({ ...prev, ...loadedStore }))
         }
+        if ((meta as any).appearance) {
+          setAppearance((meta as any).appearance)
+        } else {
+          setAppearance({})
+        }
       }
     }
   }, [historyIndex, history])
@@ -327,6 +414,11 @@ export function useCardStudioState() {
         const loadedStore = meta.contentStore || meta.inputs
         if (loadedStore) {
           setFieldOverrides((prev) => ({ ...prev, ...loadedStore }))
+        }
+        if ((meta as any).appearance) {
+          setAppearance((meta as any).appearance)
+        } else {
+          setAppearance({})
         }
       }
     }
@@ -366,6 +458,7 @@ export function useCardStudioState() {
         assetsList,
         activeCardTypeId,
         selectedImageId,
+        appearance,
       )
       updateCompositionWithHistory(result.composition)
     },
@@ -376,6 +469,7 @@ export function useCardStudioState() {
       assetsList,
       activeCardTypeId,
       selectedImageId,
+      appearance,
       updateCompositionWithHistory,
     ],
   )
@@ -396,6 +490,7 @@ export function useCardStudioState() {
       const loadedContent = meta?.contentStore || meta?.inputs || INITIAL_CONTENT_STORE
       const rawProfile = meta?.profile || null
       const loadedProfile = rawProfile ? toUniversalProfile(rawProfile) : null
+      const loadedAppearance = meta?.appearance || {}
 
       setActiveFlagshipId(loadedFlagshipId)
       setActiveCardTypeId(loadedCardTypeId)
@@ -403,6 +498,7 @@ export function useCardStudioState() {
       setFieldOverrides(loadedContent)
       setUnlinkedSlotIds(new Set())
       setActiveProfile(loadedProfile)
+      setAppearance(loadedAppearance)
       setPublishSubjectName(loadedProfile?.displayName || '')
       setPublishSubjectBio(loadedProfile?.bio || '')
 
@@ -413,6 +509,7 @@ export function useCardStudioState() {
         assetsList,
         loadedCardTypeId,
         loadedImageId,
+        loadedAppearance,
       )
       setComposition(result.composition)
       setHistory([result.composition])
@@ -432,6 +529,7 @@ export function useCardStudioState() {
     setFieldOverrides({})
     setUnlinkedSlotIds(new Set())
     setActiveProfile(null)
+    setAppearance({})
     setPublishSubjectName('')
     setPublishSubjectBio('')
 
@@ -442,6 +540,7 @@ export function useCardStudioState() {
       assetsList,
       INITIAL_CARD_TYPE_ID,
       INITIAL_IMAGE_ID,
+      {},
     )
     setComposition(result.composition)
     setHistory([result.composition])
@@ -477,6 +576,7 @@ export function useCardStudioState() {
         assetsList,
         typeId,
         selectedImageId,
+        appearance,
       )
       updateCompositionWithHistory(result.composition)
     },
@@ -488,6 +588,7 @@ export function useCardStudioState() {
       activeFlagshipId,
       assetsList,
       selectedImageId,
+      appearance,
       updateCompositionWithHistory,
     ],
   )
@@ -504,6 +605,7 @@ export function useCardStudioState() {
         assetsList,
         activeCardTypeId,
         selectedImageId,
+        appearance,
       )
       updateCompositionWithHistory(result.composition)
     },
@@ -513,6 +615,7 @@ export function useCardStudioState() {
       assetsList,
       activeCardTypeId,
       selectedImageId,
+      appearance,
       updateCompositionWithHistory,
     ],
   )
@@ -551,6 +654,7 @@ export function useCardStudioState() {
         assetsList,
         activeCardTypeId,
         selectedImageId,
+        appearance,
       )
       updateCompositionWithHistory(result.composition)
     },
@@ -564,6 +668,7 @@ export function useCardStudioState() {
       assetsList,
       activeFlagshipId,
       selectedImageId,
+      appearance,
       updateCompositionWithHistory,
     ],
   )
@@ -604,6 +709,7 @@ export function useCardStudioState() {
         assetsList,
         activeCardTypeId,
         selectedImageId,
+        appearance,
       )
       updateCompositionWithHistory(result.composition)
     },
@@ -617,6 +723,7 @@ export function useCardStudioState() {
       activeFlagshipId,
       assetsList,
       selectedImageId,
+      appearance,
       updateCompositionWithHistory,
     ],
   )
@@ -634,6 +741,7 @@ export function useCardStudioState() {
         assetsList,
         activeCardTypeId,
         artworkId,
+        appearance,
       )
       updateCompositionWithHistory(result.composition)
     },
@@ -643,9 +751,66 @@ export function useCardStudioState() {
       activeProfile,
       assetsList,
       activeCardTypeId,
+      appearance,
       updateCompositionWithHistory,
     ],
   )
+
+  // ---------------------------------------------------------------------------
+  // Creative Levers (Appearance Customization) & Subject Unlink
+  // ---------------------------------------------------------------------------
+  const handleUpdateAppearance = useCallback(
+    (updates: Partial<StudioAppearanceState>) => {
+      const next = { ...appearance, ...updates }
+      setAppearance(next)
+      const result = compileFlagshipDesign(
+        activeFlagshipId,
+        currentContentStore,
+        activeProfile,
+        assetsList,
+        activeCardTypeId,
+        selectedImageId,
+        next,
+      )
+      updateCompositionWithHistory(result.composition)
+    },
+    [
+      appearance,
+      activeFlagshipId,
+      currentContentStore,
+      activeProfile,
+      assetsList,
+      activeCardTypeId,
+      selectedImageId,
+      updateCompositionWithHistory,
+    ],
+  )
+
+  const handleUnlinkSubject = useCallback(() => {
+    setActiveProfile(null)
+    setPublishSubjectName('')
+    setPublishSubjectBio('')
+    setFieldOverrides({})
+    setUnlinkedSlotIds(new Set())
+
+    const result = compileFlagshipDesign(
+      activeFlagshipId,
+      INITIAL_CONTENT_STORE,
+      null,
+      assetsList,
+      activeCardTypeId,
+      selectedImageId,
+      appearance,
+    )
+    updateCompositionWithHistory(result.composition)
+  }, [
+    activeFlagshipId,
+    assetsList,
+    activeCardTypeId,
+    selectedImageId,
+    appearance,
+    updateCompositionWithHistory,
+  ])
 
   const handlePickCustomImage = useCallback(async () => {
     try {
@@ -941,6 +1106,17 @@ export function useCardStudioState() {
     // Feedback Alerts
     conflictMessage,
     publishSuccessMsg,
+
+    // 3-Level Panel Navigation
+    panelLocation,
+    navigateTo,
+    navigateBack,
+    breadcrumbs,
+
+    // Appearance State & Levers
+    appearance,
+    handleUpdateAppearance,
+    handleUnlinkSubject,
 
     // Core Canvas Composition
     composition,

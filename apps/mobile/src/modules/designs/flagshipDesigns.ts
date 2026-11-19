@@ -1333,6 +1333,17 @@ export function getFlagshipDesignById(id: string): FlagshipDesign | undefined {
   return FLAGSHIP_DESIGNS.find((d) => d.id === id) || FLAGSHIP_DESIGNS[0]
 }
 
+export interface StudioAppearanceState {
+  backgroundColor?: string
+  accentColor?: string
+  borderColor?: string
+  textColor?: string
+  fontRole?: FontRole
+  borderWidth?: number
+  textureEffect?: 'none' | 'grain' | 'foil' | 'holo'
+  vignetteEffect?: boolean
+}
+
 /**
  * Compiles a Flagship Design with variable positional text inputs into an rdc-composition-v1 CardComposition.
  */
@@ -1343,10 +1354,18 @@ export function compileFlagshipDesign(
   assets?: Array<{ id: string; url: string; objectKey?: string }>,
   cardTypeId: string = 'profile',
   selectedImageId?: string,
+  appearance?: StudioAppearanceState,
 ): FlagshipCompilationResult {
   const design = getFlagshipDesignById(designId) || FLAGSHIP_DESIGNS[0]
   const cardType = getCardTypeById(cardTypeId)
-  const { palette, artwork, inputs: designInputs } = design
+  const palette = {
+    ...design.palette,
+    ...(appearance?.backgroundColor ? { background: appearance.backgroundColor } : {}),
+    ...(appearance?.accentColor ? { accent: appearance.accentColor } : {}),
+    ...(appearance?.borderColor ? { border: appearance.borderColor } : {}),
+    ...(appearance?.textColor ? { foreground: appearance.textColor } : {}),
+  }
+  const { artwork, inputs: designInputs } = design
 
   const fittedFontSizes: Record<string, number> = {}
   const isOverflow: Record<string, boolean> = {}
@@ -1425,7 +1444,7 @@ export function compileFlagshipDesign(
   })
 
   // 4. Artwork subject image
-  const borderWidth = artwork.borderWidth || 0
+  const borderWidth = appearance?.borderWidth !== undefined ? appearance.borderWidth : (artwork.borderWidth || 0)
   const effectiveImageAssetId = selectedImageId || assets?.[0]?.id || 'art-angelou'
   layers.push({
     id: 'artwork-subject-image',
@@ -1497,6 +1516,8 @@ export function compileFlagshipDesign(
       }
     }
 
+    const effectiveFontRole = appearance?.fontRole || inputDef.fontRole
+
     // Run text-fitting
     const fit = fitTextToSlot(cleanText, {
       width: slotBounds.width,
@@ -1504,7 +1525,7 @@ export function compileFlagshipDesign(
       preferredFontSize: inputDef.preferredFontSize,
       minFontSize: inputDef.minFontSize,
       maxLines: inputDef.maxLines,
-      fontRole: inputDef.fontRole,
+      fontRole: effectiveFontRole,
     })
 
     fittedFontSizes[inputDef.id] = fit.fontSize
@@ -1520,8 +1541,42 @@ export function compileFlagshipDesign(
       text: inputDef.allCaps ? cleanText.toUpperCase() : cleanText,
       fontSize: fit.fontSize,
       fill: inputDef.fill || palette.foreground,
-      fontRole: inputDef.fontRole,
+      fontRole: effectiveFontRole,
     } as any)
+  }
+
+  // 7. Optional custom appearance effect overlays
+  if (appearance?.vignetteEffect) {
+    layers.push({
+      id: 'effect-vignette-frame',
+      type: 'RECTANGLE',
+      x: 0,
+      y: 0,
+      width: 600,
+      height: 900,
+      fill: 'rgba(0, 0, 0, 0.18)',
+    })
+  }
+  if (appearance?.textureEffect === 'holo') {
+    layers.push({
+      id: 'effect-holo-sheen',
+      type: 'RECTANGLE',
+      x: 8,
+      y: 8,
+      width: 584,
+      height: 6,
+      fill: 'rgba(255, 255, 255, 0.5)',
+    })
+  } else if (appearance?.textureEffect === 'foil') {
+    layers.push({
+      id: 'effect-foil-sheen',
+      type: 'RECTANGLE',
+      x: 16,
+      y: 16,
+      width: 568,
+      height: 4,
+      fill: '#F59E0B',
+    })
   }
 
   // Preserve entire design-independent content store
@@ -1546,6 +1601,7 @@ export function compileFlagshipDesign(
         fittedFontSizes,
         isOverflow,
         profile: person || null,
+        appearance: appearance || null,
       },
     },
   }
