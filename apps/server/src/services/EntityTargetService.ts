@@ -23,7 +23,7 @@ export class EntityTargetService {
       case 'FEED_ITEM':
         return Boolean(await db.feedItem.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'ATHLETE_PROFILE':
-        return Boolean(await db.athleteProfile.findUnique({ where: { id: targetId }, select: { id: true } }))
+        return Boolean(await db.personProfile.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'GAME_STAT_LINE':
         return Boolean(await db.gameStatLine.findUnique({ where: { id: targetId }, select: { id: true } }))
       case 'GAME_EVENT':

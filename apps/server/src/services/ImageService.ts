@@ -8,10 +8,14 @@ const ALLOWED_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const MAX_IMAGE_BYTES = Number(process.env.IMAGE_UPLOAD_MAX_BYTES ?? 5 * 1024 * 1024)
 
 export class ImageService {
-  async list(targetType: EntityType, targetId: string, usage?: ImageAssetUsage) {
+  async list(targetType: EntityType, targetId: string, usage?: ImageAssetUsage, viewerId?: string, isAdmin = false) {
     await targetService.requireTarget(targetType, targetId)
+    if (targetType === 'CARD_TEMPLATE') {
+      const card = await db.cardTemplate.findUnique({ where: { id: targetId } })
+      if (!card || (!isAdmin && card.createdByUserId !== viewerId && !(card.status === 'PUBLISHED' && card.visibility === 'PUBLIC'))) throw { statusCode: 404, message: 'Not found' }
+    }
     return db.imageAsset.findMany({
-      where: { targetType, targetId, ...(usage ? { usage } : {}), deletedAt: null },
+      where: { targetType, targetId, ...(usage ? { usage } : {}), deletedAt: null, ...(isAdmin ? {} : { OR: [{ visibility: 'PUBLIC' }, ...(viewerId ? [{ uploadedByUserId: viewerId }] : [])] }) },
       orderBy: { createdAt: 'desc' },
     })
   }
@@ -34,7 +38,9 @@ export class ImageService {
     if (buffer.byteLength === 0) throw { statusCode: 400, message: 'Image payload is empty' }
     if (buffer.byteLength > MAX_IMAGE_BYTES) throw { statusCode: 413, message: 'Image is too large' }
 
+    const visibility = data.targetType === 'CARD_TEMPLATE' || (data.targetType === 'ATHLETE_PROFILE' && data.usage === 'GALLERY') ? 'PRIVATE' : 'PUBLIC'
     const stored = await storeImage({
+      private: visibility === 'PRIVATE',
       buffer,
       contentType: data.contentType,
       originalFilename: data.originalFilename,
@@ -45,6 +51,7 @@ export class ImageService {
 
     const image = await db.imageAsset.create({
       data: {
+        visibility,
         targetType: data.targetType,
         targetId: data.targetId,
         usage: data.usage,
@@ -60,10 +67,12 @@ export class ImageService {
       },
     })
 
+    if (data.usage === 'AVATAR' && data.targetType === 'ATHLETE_PROFILE') await db.personProfile.update({ where: { id: data.targetId }, data: { avatarUrl: image.url } })
+
     if (data.usage === 'AVATAR' && data.targetType === 'PLAYER') {
       const player = await db.player.findUnique({ where: { id: data.targetId } })
       if (player) {
-        await db.athleteProfile.update({
+        await db.personProfile.update({
           where: { id: player.athleteProfileId },
           data: { avatarUrl: image.url },
         })
@@ -89,6 +98,16 @@ export class ImageService {
     usage: ImageAssetUsage
   ) {
     if (isAdmin) return
+    if (targetType === 'CARD_TEMPLATE') {
+      const card = await db.cardTemplate.findUnique({ where: { id: targetId } })
+      if (!card || card.createdByUserId !== userId || card.publishedAt) throw { statusCode: 403, message: 'Forbidden' }
+      return
+    }
+    if (targetType === 'ATHLETE_PROFILE' && usage !== 'GALLERY') {
+      const person = await db.personProfile.findUnique({ where: { id: targetId } })
+      if (!person || (person.claimedByUserId !== userId && !(person.claimedByUserId === null && person.createdByUserId === userId))) throw { statusCode: 403, message: 'Forbidden' }
+      return
+    }
 
     if (usage === 'AVATAR' && targetType === 'PLAYER') {
       const player = await db.player.findUnique({ where: { id: targetId }, include: { athleteProfile: true } })

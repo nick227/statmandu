@@ -1,18 +1,24 @@
 PaginatedMeta:
   type: object
-  required: [hasMore, nextCursor]
+  required:
+    - hasMore
+    - nextCursor
   properties:
-    hasMore: { type: boolean }
+    hasMore:
+      type: boolean
     nextCursor:
-      type: ['string', 'null']
-
+      type:
+        - string
+        - 'null'
 ErrorResponse:
   type: object
-  required: [error]
+  required:
+    - error
   properties:
-    error: { type: string }
-    code: { type: string }
-
+    error:
+      type: string
+    code:
+      type: string
 SourceStatus:
   type: string
   enum:
@@ -25,7 +31,7 @@ SourceStatus:
     - ONLINE_SOURCE_IMPORTED
     - PUBLIC_SOURCE_SCRAPED
     - IN_DISPUTE
-
+    - SELF_REPORTED
 EntityType:
   type: string
   description: Shared polymorphic target vocabulary (mirrors the Prisma EntityType enum).

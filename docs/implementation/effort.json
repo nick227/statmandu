@@ -1,0 +1,36 @@
+{
+  "task": "MR1 security and identity; MR2 proof; RDC steering and checkpoint",
+  "timezone": "America/Chicago",
+  "measurement": "Observed execution windows, not human labour or billing. First-window end approximated from final original test completion.",
+  "windows": [
+    {
+      "startUtc": "2026-11-18T19:44:12Z",
+      "endUtc": "2026-11-18T19:59:53Z",
+      "scope": "Initial implementation and verification"
+    },
+    {
+      "startUtc": "2026-11-19T00:10:56Z",
+      "endUtc": "2026-11-19T00:17:39Z",
+      "scope": "RDC steering, documentation and final verification"
+    }
+  ],
+  "excludedGap": "User/idle interval between these windows; not charged as implementation effort",
+  "counterfactualRewriteMeasured": false,
+  "phaseLevelLabourMeasured": false,
+  "baselineCommit": "45072f7",
+  "baselineHadUserChanges": true,
+  "observedWindowSeconds": 1344.0,
+  "validation": {
+    "serverTests": 206,
+    "serverTestFiles": 24,
+    "targetedClientTests": 6,
+    "populatedMigration": "passed on statman_test",
+    "workspaceTypecheck": "passed",
+    "mobileBoundaries": "passed",
+    "openApiLint": "passed",
+    "sdkDrift": "passed",
+    "webExport": "passed",
+    "liveGenerationProvider": "not exercised",
+    "productionMigration": "not performed"
+  }
+}

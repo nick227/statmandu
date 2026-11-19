@@ -7,7 +7,7 @@ export async function seedVerificationAndAdmin(referenceDate: Date) {
   const athleteUser = await db.user.findUniqueOrThrow({ where: { email: 'athlete@statman.dev' } })
   const fan = await db.user.findUniqueOrThrow({ where: { email: 'fan1@statman.dev' } })
   const verifier = await db.user.findUniqueOrThrow({ where: { email: 'fan2@statman.dev' } })
-  const athletes = await db.athleteProfile.findMany({ orderBy: { slug: 'asc' }, take: 5 })
+  const athletes = await db.personProfile.findMany({ orderBy: { slug: 'asc' }, take: 5 })
   if (athletes.length < 5) throw new Error('Verification scenario requires demo athletes')
 
   await db.claim.upsert({

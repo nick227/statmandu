@@ -8,7 +8,7 @@ const app = buildTestApp()
 
 async function seedUnclaimedPlayer() {
   const sport = await db.sport.create({ data: { slug: 'basketball', name: 'Basketball' } })
-  const athleteProfile = await db.athleteProfile.create({
+  const athleteProfile = await db.personProfile.create({
     data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
   })
   const player = await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
@@ -62,7 +62,7 @@ describe('claimPlayer', () => {
 
   it('rejects claiming an already-claimed profile', async () => {
     const { athleteProfile, player } = await seedUnclaimedPlayer()
-    await db.athleteProfile.update({ where: { id: athleteProfile.id }, data: { claimedByUserId: testOtherUserId } })
+    await db.personProfile.update({ where: { id: athleteProfile.id }, data: { claimedByUserId: testOtherUserId } })
 
     const res = await app.inject({
       method: 'POST',
@@ -119,7 +119,7 @@ describe('reviewClaim', () => {
     expect(res.statusCode).toBe(200)
     await validateResponse('reviewClaim', 200, res.json())
 
-    const updatedProfile = await db.athleteProfile.findUnique({ where: { id: athleteProfile.id } })
+    const updatedProfile = await db.personProfile.findUnique({ where: { id: athleteProfile.id } })
     expect(updatedProfile?.claimedByUserId).toBe(testOtherUserId)
 
     const feedItems = await db.feedItem.findMany({ where: { targetType: 'ATHLETE_PROFILE', targetId: athleteProfile.id } })

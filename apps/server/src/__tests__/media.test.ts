@@ -32,7 +32,7 @@ function imageUploadBody(fields: Record<string, string>, file = Buffer.from('png
 
 async function seedPlayer() {
   const sport = await db.sport.create({ data: { slug: 'basketball', name: 'Basketball' } })
-  const athleteProfile = await db.athleteProfile.create({
+  const athleteProfile = await db.personProfile.create({
     data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
   })
   return db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
@@ -125,7 +125,7 @@ describe('images', () => {
 
   it('uploads an athlete avatar and updates the profile image', async () => {
     const player = await seedPlayer()
-    await db.athleteProfile.update({
+    await db.personProfile.update({
       where: { id: player.athleteProfileId },
       data: { claimedByUserId: testUserId },
     })
@@ -151,7 +151,7 @@ describe('images', () => {
     expect(res.json().data.storageProvider).toBe('LOCAL')
     expect(res.json().data.objectKey).toContain(`/avatar/`)
 
-    const profile = await db.athleteProfile.findUniqueOrThrow({ where: { id: player.athleteProfileId } })
+    const profile = await db.personProfile.findUniqueOrThrow({ where: { id: player.athleteProfileId } })
     expect(profile.avatarUrl).toBe(res.json().data.url)
   })
 

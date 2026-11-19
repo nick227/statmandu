@@ -8,12 +8,12 @@ async function seedFixtures() {
   const sport = await db.sport.create({ data: { slug: 'basketball', name: 'Basketball' } })
   const league = await db.league.create({ data: { sportId: sport.id, slug: 'demo-league', name: 'Demo League' } })
 
-  const lakersProfile = await db.athleteProfile.create({
+  const lakersProfile = await db.personProfile.create({
     data: { slug: 'jordan-lake', firstName: 'Jordan', lastName: 'Lake', sourceStatus: 'PLAYER_REPORTED' },
   })
   const lakersPlayer = await db.player.create({ data: { athleteProfileId: lakersProfile.id, sportId: sport.id, position: 'PG' } })
 
-  const otherProfile = await db.athleteProfile.create({
+  const otherProfile = await db.personProfile.create({
     data: { slug: 'alex-summit', firstName: 'Alex', lastName: 'Summit', sourceStatus: 'PLAYER_REPORTED' },
   })
   await db.player.create({ data: { athleteProfileId: otherProfile.id, sportId: sport.id, position: 'C' } })

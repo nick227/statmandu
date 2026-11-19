@@ -3,17 +3,13 @@ info:
   title: Statman API
   version: 0.0.1
   description: >
-    Sport-agnostic athlete profile platform API. OpenAPI owns durable REST
-    resources; realtime event contracts (live game rooms) are defined
-    separately and are not part of this spec.
-
+    Sport-agnostic athlete profile platform API. OpenAPI owns durable REST resources; realtime event contracts (live
+    game rooms) are defined separately and are not part of this spec.
 servers:
   - url: http://localhost:3001
     description: Local dev
-
 security:
   - bearerAuth: []
-
 tags:
   - name: auth
   - name: sports
@@ -34,377 +30,367 @@ tags:
   - name: admin
   - name: cards
   - name: search
-
 components:
   securitySchemes:
     bearerAuth:
-      $ref: './components/security/schemes.yaml#/bearerAuth'
+      $ref: ./components/security/schemes.yaml#/bearerAuth
     adminAuth:
-      $ref: './components/security/schemes.yaml#/adminAuth'
-
+      $ref: ./components/security/schemes.yaml#/adminAuth
   parameters:
     Cursor:
-      $ref: './components/parameters/common.yaml#/Cursor'
+      $ref: ./components/parameters/common.yaml#/Cursor
     Limit:
-      $ref: './components/parameters/common.yaml#/Limit'
+      $ref: ./components/parameters/common.yaml#/Limit
     SearchQuery:
-      $ref: './components/parameters/common.yaml#/SearchQuery'
-
+      $ref: ./components/parameters/common.yaml#/SearchQuery
   responses:
     Unauthorized:
-      $ref: './components/responses/common.yaml#/Unauthorized'
+      $ref: ./components/responses/common.yaml#/Unauthorized
     NotFound:
-      $ref: './components/responses/common.yaml#/NotFound'
-
+      $ref: ./components/responses/common.yaml#/NotFound
   schemas:
     PaginatedMeta:
-      $ref: './components/schemas/common.yaml#/PaginatedMeta'
+      $ref: ./components/schemas/common.yaml#/PaginatedMeta
     ErrorResponse:
-      $ref: './components/schemas/common.yaml#/ErrorResponse'
-
+      $ref: ./components/schemas/common.yaml#/ErrorResponse
     User:
-      $ref: './components/schemas/auth.yaml#/User'
+      $ref: ./components/schemas/auth.yaml#/User
     Profile:
-      $ref: './components/schemas/auth.yaml#/Profile'
+      $ref: ./components/schemas/auth.yaml#/Profile
     RegisterInput:
-      $ref: './components/schemas/auth.yaml#/RegisterInput'
+      $ref: ./components/schemas/auth.yaml#/RegisterInput
     LoginInput:
-      $ref: './components/schemas/auth.yaml#/LoginInput'
+      $ref: ./components/schemas/auth.yaml#/LoginInput
     AuthResponse:
-      $ref: './components/schemas/auth.yaml#/AuthResponse'
+      $ref: ./components/schemas/auth.yaml#/AuthResponse
     MeCapabilities:
-      $ref: './components/schemas/auth.yaml#/MeCapabilities'
+      $ref: ./components/schemas/auth.yaml#/MeCapabilities
     MeCapabilitiesResponse:
-      $ref: './components/schemas/auth.yaml#/MeCapabilitiesResponse'
-
+      $ref: ./components/schemas/auth.yaml#/MeCapabilitiesResponse
     Sport:
-      $ref: './components/schemas/sports.yaml#/Sport'
+      $ref: ./components/schemas/sports.yaml#/Sport
     League:
-      $ref: './components/schemas/sports.yaml#/League'
+      $ref: ./components/schemas/sports.yaml#/League
     Team:
-      $ref: './components/schemas/sports.yaml#/Team'
+      $ref: ./components/schemas/sports.yaml#/Team
     CreateTeamInput:
-      $ref: './components/schemas/sports.yaml#/CreateTeamInput'
-
+      $ref: ./components/schemas/sports.yaml#/CreateTeamInput
     AthleteProfile:
-      $ref: './components/schemas/players.yaml#/AthleteProfile'
+      $ref: ./components/schemas/players.yaml#/AthleteProfile
     Player:
-      $ref: './components/schemas/players.yaml#/Player'
+      $ref: ./components/schemas/players.yaml#/Player
     PaginatedPlayers:
-      $ref: './components/schemas/players.yaml#/PaginatedPlayers'
+      $ref: ./components/schemas/players.yaml#/PaginatedPlayers
     CreatePlayerInput:
-      $ref: './components/schemas/players.yaml#/CreatePlayerInput'
+      $ref: ./components/schemas/players.yaml#/CreatePlayerInput
     UpdatePlayerInput:
-      $ref: './components/schemas/players.yaml#/UpdatePlayerInput'
+      $ref: ./components/schemas/players.yaml#/UpdatePlayerInput
     RosterMembership:
-      $ref: './components/schemas/players.yaml#/RosterMembership'
+      $ref: ./components/schemas/players.yaml#/RosterMembership
     AddRosterMemberInput:
-      $ref: './components/schemas/players.yaml#/AddRosterMemberInput'
-
+      $ref: ./components/schemas/players.yaml#/AddRosterMemberInput
     Game:
-      $ref: './components/schemas/games.yaml#/Game'
+      $ref: ./components/schemas/games.yaml#/Game
     CreateGameInput:
-      $ref: './components/schemas/games.yaml#/CreateGameInput'
+      $ref: ./components/schemas/games.yaml#/CreateGameInput
     RecordGameScoreInput:
-      $ref: './components/schemas/games.yaml#/RecordGameScoreInput'
+      $ref: ./components/schemas/games.yaml#/RecordGameScoreInput
     GameReporter:
-      $ref: './components/schemas/games.yaml#/GameReporter'
+      $ref: ./components/schemas/games.yaml#/GameReporter
     JoinReporterInput:
-      $ref: './components/schemas/games.yaml#/JoinReporterInput'
+      $ref: ./components/schemas/games.yaml#/JoinReporterInput
     GameEvent:
-      $ref: './components/schemas/games.yaml#/GameEvent'
+      $ref: ./components/schemas/games.yaml#/GameEvent
     SubmitGameEventInput:
-      $ref: './components/schemas/games.yaml#/SubmitGameEventInput'
+      $ref: ./components/schemas/games.yaml#/SubmitGameEventInput
     GameSnapshot:
-      $ref: './components/schemas/games.yaml#/GameSnapshot'
+      $ref: ./components/schemas/games.yaml#/GameSnapshot
     GameStatLine:
-      $ref: './components/schemas/games.yaml#/GameStatLine'
+      $ref: ./components/schemas/games.yaml#/GameStatLine
     PlayerSeasonStat:
-      $ref: './components/schemas/games.yaml#/PlayerSeasonStat'
+      $ref: ./components/schemas/games.yaml#/PlayerSeasonStat
     TeamSeasonStat:
-      $ref: './components/schemas/games.yaml#/TeamSeasonStat'
+      $ref: ./components/schemas/games.yaml#/TeamSeasonStat
     PlayerLeaderboardEntry:
-      $ref: './components/schemas/games.yaml#/PlayerLeaderboardEntry'
+      $ref: ./components/schemas/games.yaml#/PlayerLeaderboardEntry
     TeamLeaderboardEntry:
-      $ref: './components/schemas/games.yaml#/TeamLeaderboardEntry'
-
+      $ref: ./components/schemas/games.yaml#/TeamLeaderboardEntry
     SearchResultType:
-      $ref: './components/schemas/search.yaml#/SearchResultType'
+      $ref: ./components/schemas/search.yaml#/SearchResultType
     SearchResultItem:
-      $ref: './components/schemas/search.yaml#/SearchResultItem'
+      $ref: ./components/schemas/search.yaml#/SearchResultItem
     PaginatedSearchResults:
-      $ref: './components/schemas/search.yaml#/PaginatedSearchResults'
-
+      $ref: ./components/schemas/search.yaml#/PaginatedSearchResults
     MediaAsset:
-      $ref: './components/schemas/social.yaml#/MediaAsset'
+      $ref: ./components/schemas/social.yaml#/MediaAsset
     ImageAsset:
-      $ref: './components/schemas/social.yaml#/ImageAsset'
+      $ref: ./components/schemas/social.yaml#/ImageAsset
     UploadImageInput:
-      $ref: './components/schemas/social.yaml#/UploadImageInput'
+      $ref: ./components/schemas/social.yaml#/UploadImageInput
     AttachYouTubeInput:
-      $ref: './components/schemas/social.yaml#/AttachYouTubeInput'
+      $ref: ./components/schemas/social.yaml#/AttachYouTubeInput
     Follow:
-      $ref: './components/schemas/social.yaml#/Follow'
+      $ref: ./components/schemas/social.yaml#/Follow
     CreateFollowInput:
-      $ref: './components/schemas/social.yaml#/CreateFollowInput'
+      $ref: ./components/schemas/social.yaml#/CreateFollowInput
     Reaction:
-      $ref: './components/schemas/social.yaml#/Reaction'
+      $ref: ./components/schemas/social.yaml#/Reaction
     CreateReactionInput:
-      $ref: './components/schemas/social.yaml#/CreateReactionInput'
+      $ref: ./components/schemas/social.yaml#/CreateReactionInput
     ReactionCounts:
-      $ref: './components/schemas/social.yaml#/ReactionCounts'
+      $ref: ./components/schemas/social.yaml#/ReactionCounts
     FeedItem:
-      $ref: './components/schemas/social.yaml#/FeedItem'
+      $ref: ./components/schemas/social.yaml#/FeedItem
     PaginatedFeed:
-      $ref: './components/schemas/social.yaml#/PaginatedFeed'
-
+      $ref: ./components/schemas/social.yaml#/PaginatedFeed
     SourceReference:
-      $ref: './components/schemas/verification.yaml#/SourceReference'
+      $ref: ./components/schemas/verification.yaml#/SourceReference
     CreateSourceReferenceInput:
-      $ref: './components/schemas/verification.yaml#/CreateSourceReferenceInput'
+      $ref: ./components/schemas/verification.yaml#/CreateSourceReferenceInput
     Dispute:
-      $ref: './components/schemas/verification.yaml#/Dispute'
+      $ref: ./components/schemas/verification.yaml#/Dispute
     OpenDisputeInput:
-      $ref: './components/schemas/verification.yaml#/OpenDisputeInput'
+      $ref: ./components/schemas/verification.yaml#/OpenDisputeInput
     ResolveDisputeInput:
-      $ref: './components/schemas/verification.yaml#/ResolveDisputeInput'
+      $ref: ./components/schemas/verification.yaml#/ResolveDisputeInput
     Claim:
-      $ref: './components/schemas/verification.yaml#/Claim'
+      $ref: ./components/schemas/verification.yaml#/Claim
     ClaimPlayerInput:
-      $ref: './components/schemas/verification.yaml#/ClaimPlayerInput'
+      $ref: ./components/schemas/verification.yaml#/ClaimPlayerInput
     ReviewClaimInput:
-      $ref: './components/schemas/verification.yaml#/ReviewClaimInput'
+      $ref: ./components/schemas/verification.yaml#/ReviewClaimInput
     VerifyPlayerInput:
-      $ref: './components/schemas/verification.yaml#/VerifyPlayerInput'
-
+      $ref: ./components/schemas/verification.yaml#/VerifyPlayerInput
     ArticleStatus:
-      $ref: './components/schemas/articles.yaml#/ArticleStatus'
+      $ref: ./components/schemas/articles.yaml#/ArticleStatus
     ArticleAuthorSummary:
-      $ref: './components/schemas/articles.yaml#/ArticleAuthorSummary'
+      $ref: ./components/schemas/articles.yaml#/ArticleAuthorSummary
     Article:
-      $ref: './components/schemas/articles.yaml#/Article'
+      $ref: ./components/schemas/articles.yaml#/Article
     PaginatedArticles:
-      $ref: './components/schemas/articles.yaml#/PaginatedArticles'
+      $ref: ./components/schemas/articles.yaml#/PaginatedArticles
     CreateArticleInput:
-      $ref: './components/schemas/articles.yaml#/CreateArticleInput'
+      $ref: ./components/schemas/articles.yaml#/CreateArticleInput
     UpdateArticleInput:
-      $ref: './components/schemas/articles.yaml#/UpdateArticleInput'
+      $ref: ./components/schemas/articles.yaml#/UpdateArticleInput
     ModerateArticleInput:
-      $ref: './components/schemas/articles.yaml#/ModerateArticleInput'
-
+      $ref: ./components/schemas/articles.yaml#/ModerateArticleInput
     AdminMetrics:
-      $ref: './components/schemas/admin.yaml#/AdminMetrics'
+      $ref: ./components/schemas/admin.yaml#/AdminMetrics
     BulkCreatePlayersInput:
-      $ref: './components/schemas/admin.yaml#/BulkCreatePlayersInput'
+      $ref: ./components/schemas/admin.yaml#/BulkCreatePlayersInput
     BulkCreatePlayersResult:
-      $ref: './components/schemas/admin.yaml#/BulkCreatePlayersResult'
+      $ref: ./components/schemas/admin.yaml#/BulkCreatePlayersResult
     BulkAddRosterMembersInput:
-      $ref: './components/schemas/admin.yaml#/BulkAddRosterMembersInput'
+      $ref: ./components/schemas/admin.yaml#/BulkAddRosterMembersInput
     BulkAddRosterMembersResult:
-      $ref: './components/schemas/admin.yaml#/BulkAddRosterMembersResult'
+      $ref: ./components/schemas/admin.yaml#/BulkAddRosterMembersResult
     CreateFeedItemInput:
-      $ref: './components/schemas/admin.yaml#/CreateFeedItemInput'
+      $ref: ./components/schemas/admin.yaml#/CreateFeedItemInput
     AdminAuditLogEntry:
-      $ref: './components/schemas/admin.yaml#/AdminAuditLogEntry'
+      $ref: ./components/schemas/admin.yaml#/AdminAuditLogEntry
     PaginatedAdminAuditLog:
-      $ref: './components/schemas/admin.yaml#/PaginatedAdminAuditLog'
-
+      $ref: ./components/schemas/admin.yaml#/PaginatedAdminAuditLog
     Card:
-      $ref: './components/schemas/cards.yaml#/Card'
+      $ref: ./components/schemas/cards.yaml#/Card
     CardIssue:
-      $ref: './components/schemas/cards.yaml#/CardIssue'
+      $ref: ./components/schemas/cards.yaml#/CardIssue
     CreateCardInput:
-      $ref: './components/schemas/cards.yaml#/CreateCardInput'
+      $ref: ./components/schemas/cards.yaml#/CreateCardInput
     UpdateCardInput:
-      $ref: './components/schemas/cards.yaml#/UpdateCardInput'
+      $ref: ./components/schemas/cards.yaml#/UpdateCardInput
     PublishCardInput:
-      $ref: './components/schemas/cards.yaml#/PublishCardInput'
+      $ref: ./components/schemas/cards.yaml#/PublishCardInput
     MyCard:
-      $ref: './components/schemas/cards.yaml#/MyCard'
+      $ref: ./components/schemas/cards.yaml#/MyCard
     MyCards:
-      $ref: './components/schemas/cards.yaml#/MyCards'
+      $ref: ./components/schemas/cards.yaml#/MyCards
     CardIssueDownload:
-      $ref: './components/schemas/cards.yaml#/CardIssueDownload'
-
+      $ref: ./components/schemas/cards.yaml#/CardIssueDownload
+    PersonProfile:
+      $ref: ./components/schemas/people.yaml#/PersonProfile
+    CreatePersonInput:
+      $ref: ./components/schemas/people.yaml#/CreatePersonInput
+    UpdatePersonInput:
+      $ref: ./components/schemas/people.yaml#/UpdatePersonInput
 paths:
   /auth/register:
-    $ref: './paths/auth.yaml#/register'
+    $ref: ./paths/auth.yaml#/register
   /auth/login:
-    $ref: './paths/auth.yaml#/login'
+    $ref: ./paths/auth.yaml#/login
   /auth/logout:
-    $ref: './paths/auth.yaml#/logout'
+    $ref: ./paths/auth.yaml#/logout
   /auth/me:
-    $ref: './paths/auth.yaml#/me'
+    $ref: ./paths/auth.yaml#/me
   /auth/me/capabilities:
-    $ref: './paths/auth.yaml#/capabilities'
-
+    $ref: ./paths/auth.yaml#/capabilities
   /sports:
-    $ref: './paths/sports.yaml#/list'
-
+    $ref: ./paths/sports.yaml#/list
   /leagues:
-    $ref: './paths/leagues.yaml#/list'
+    $ref: ./paths/leagues.yaml#/list
   /leagues/{leagueSlug}:
-    $ref: './paths/leagues.yaml#/get'
-
+    $ref: ./paths/leagues.yaml#/get
   /teams:
-    $ref: './paths/teams.yaml#/list'
+    $ref: ./paths/teams.yaml#/list
   /teams/{teamSlug}:
-    $ref: './paths/teams.yaml#/get'
+    $ref: ./paths/teams.yaml#/get
   /teams/{teamSlug}/roster:
-    $ref: './paths/teams.yaml#/roster'
+    $ref: ./paths/teams.yaml#/roster
   /teams/{teamSlug}/stats:
-    $ref: './paths/stats.yaml#/teamSeasonStats'
+    $ref: ./paths/stats.yaml#/teamSeasonStats
   /teams/{teamId}/roster/members:
-    $ref: './paths/teams.yaml#/addRosterMember'
-
+    $ref: ./paths/teams.yaml#/addRosterMember
   /players:
-    $ref: './paths/players.yaml#/collection'
+    $ref: ./paths/players.yaml#/collection
   /players/{playerId}:
-    $ref: './paths/players.yaml#/item'
+    $ref: ./paths/players.yaml#/item
   /players/{playerId}/games:
-    $ref: './paths/stats.yaml#/playerGames'
+    $ref: ./paths/stats.yaml#/playerGames
   /players/{playerId}/stats:
-    $ref: './paths/stats.yaml#/playerSeasonStats'
+    $ref: ./paths/stats.yaml#/playerSeasonStats
   /players/{playerId}/claim:
-    $ref: './paths/players.yaml#/claim'
+    $ref: ./paths/players.yaml#/claim
   /players/{playerId}/verify:
-    $ref: './paths/players.yaml#/verify'
-
+    $ref: ./paths/players.yaml#/verify
   /games:
-    $ref: './paths/games.yaml#/collection'
+    $ref: ./paths/games.yaml#/collection
   /games/{gameId}:
-    $ref: './paths/games.yaml#/item'
+    $ref: ./paths/games.yaml#/item
   /games/{gameId}/reporters:
-    $ref: './paths/live-games.yaml#/reporters'
+    $ref: ./paths/live-games.yaml#/reporters
   /games/{gameId}/reporters/invite:
-    $ref: './paths/live-games.yaml#/inviteReporter'
+    $ref: ./paths/live-games.yaml#/inviteReporter
   /games/{gameId}/reporters/{reporterId}:
-    $ref: './paths/live-games.yaml#/reporter'
+    $ref: ./paths/live-games.yaml#/reporter
   /games/{gameId}/start-live:
-    $ref: './paths/live-games.yaml#/startLive'
+    $ref: ./paths/live-games.yaml#/startLive
   /games/{gameId}/reactions:
-    $ref: './paths/live-games.yaml#/reactions'
+    $ref: ./paths/live-games.yaml#/reactions
   /games/{gameId}/events:
-    $ref: './paths/live-games.yaml#/events'
+    $ref: ./paths/live-games.yaml#/events
   /games/{gameId}/events/{eventId}:
-    $ref: './paths/live-games.yaml#/event'
+    $ref: ./paths/live-games.yaml#/event
   /games/{gameId}/snapshot:
-    $ref: './paths/live-games.yaml#/snapshot'
+    $ref: ./paths/live-games.yaml#/snapshot
   /games/{gameId}/finalize:
-    $ref: './paths/live-games.yaml#/finalize'
+    $ref: ./paths/live-games.yaml#/finalize
   /games/{gameId}/conflicts:
-    $ref: './paths/live-games.yaml#/conflicts'
+    $ref: ./paths/live-games.yaml#/conflicts
   /games/{gameId}/conflicts/{conflictId}/resolve:
-    $ref: './paths/live-games.yaml#/resolveConflict'
+    $ref: ./paths/live-games.yaml#/resolveConflict
   /games/{gameId}/conflicts/{conflictId}/mark-disputed:
-    $ref: './paths/live-games.yaml#/markConflictDisputed'
+    $ref: ./paths/live-games.yaml#/markConflictDisputed
   /games/{gameId}/stats:
-    $ref: './paths/stats.yaml#/gameStats'
-
+    $ref: ./paths/stats.yaml#/gameStats
   /leaderboards/players:
-    $ref: './paths/leaderboards.yaml#/players'
+    $ref: ./paths/leaderboards.yaml#/players
   /leaderboards/teams:
-    $ref: './paths/leaderboards.yaml#/teams'
-
+    $ref: ./paths/leaderboards.yaml#/teams
   /search:
-    $ref: './paths/search.yaml#/collection'
-
+    $ref: ./paths/search.yaml#/collection
   /media:
-    $ref: './paths/media.yaml#/collection'
+    $ref: ./paths/media.yaml#/collection
   /media/recent:
-    $ref: './paths/media.yaml#/recent'
+    $ref: ./paths/media.yaml#/recent
   /media/youtube:
-    $ref: './paths/media.yaml#/youtube'
+    $ref: ./paths/media.yaml#/youtube
   /images:
-    $ref: './paths/images.yaml#/collection'
+    $ref: ./paths/images.yaml#/collection
   /images/upload:
-    $ref: './paths/images.yaml#/upload'
-
+    $ref: ./paths/images.yaml#/upload
   /follows:
-    $ref: './paths/follows.yaml#/collection'
+    $ref: ./paths/follows.yaml#/collection
   /follows/{followId}:
-    $ref: './paths/follows.yaml#/item'
-
+    $ref: ./paths/follows.yaml#/item
   /reactions:
-    $ref: './paths/reactions.yaml#/collection'
+    $ref: ./paths/reactions.yaml#/collection
   /reactions/{reactionId}:
-    $ref: './paths/reactions.yaml#/item'
-
+    $ref: ./paths/reactions.yaml#/item
   /feed:
-    $ref: './paths/feed.yaml#/get'
-
+    $ref: ./paths/feed.yaml#/get
   /sources:
-    $ref: './paths/sources.yaml#/collection'
-
+    $ref: ./paths/sources.yaml#/collection
   /disputes:
-    $ref: './paths/disputes.yaml#/collection'
+    $ref: ./paths/disputes.yaml#/collection
   /disputes/{disputeId}:
-    $ref: './paths/disputes.yaml#/item'
-
+    $ref: ./paths/disputes.yaml#/item
   /claims:
-    $ref: './paths/claims.yaml#/collection'
+    $ref: ./paths/claims.yaml#/collection
   /claims/{claimId}:
-    $ref: './paths/claims.yaml#/item'
-
+    $ref: ./paths/claims.yaml#/item
   /articles:
-    $ref: './paths/articles.yaml#/collection'
+    $ref: ./paths/articles.yaml#/collection
   /articles/{articleId}:
-    $ref: './paths/articles.yaml#/item'
+    $ref: ./paths/articles.yaml#/item
   /articles/{articleId}/submit:
-    $ref: './paths/articles.yaml#/submit'
+    $ref: ./paths/articles.yaml#/submit
   /articles/review:
-    $ref: './paths/articles.yaml#/reviewQueue'
+    $ref: ./paths/articles.yaml#/reviewQueue
   /articles/{articleId}/review:
-    $ref: './paths/articles.yaml#/reviewItem'
-
+    $ref: ./paths/articles.yaml#/reviewItem
   /admin/metrics:
-    $ref: './paths/admin.yaml#/metrics'
+    $ref: ./paths/admin.yaml#/metrics
   /admin/players/bulk:
-    $ref: './paths/admin.yaml#/bulkCreatePlayers'
+    $ref: ./paths/admin.yaml#/bulkCreatePlayers
   /admin/teams/{teamId}/roster/bulk:
-    $ref: './paths/admin.yaml#/bulkAddRosterMembers'
+    $ref: ./paths/admin.yaml#/bulkAddRosterMembers
   /admin/disputes:
-    $ref: './paths/admin.yaml#/adminDisputes'
+    $ref: ./paths/admin.yaml#/adminDisputes
   /admin/feed-items:
-    $ref: './paths/admin.yaml#/createFeedItem'
+    $ref: ./paths/admin.yaml#/createFeedItem
   /admin/audit-log:
-    $ref: './paths/admin.yaml#/auditLog'
+    $ref: ./paths/admin.yaml#/auditLog
   /admin/import/providers:
-    $ref: './paths/admin.yaml#/importProviders'
+    $ref: ./paths/admin.yaml#/importProviders
   /admin/import/preview:
-    $ref: './paths/admin.yaml#/importPreview'
+    $ref: ./paths/admin.yaml#/importPreview
   /admin/import/runs/{runId}:
-    $ref: './paths/admin.yaml#/importRun'
+    $ref: ./paths/admin.yaml#/importRun
   /admin/import/runs/{runId}/execute:
-    $ref: './paths/admin.yaml#/importExecute'
+    $ref: ./paths/admin.yaml#/importExecute
   /admin/import/runs/{runId}/records/{recordId}:
-    $ref: './paths/admin.yaml#/importRecord'
-
+    $ref: ./paths/admin.yaml#/importRecord
   /cards:
-    $ref: './paths/cards.yaml#/collection'
+    $ref: ./paths/cards.yaml#/collection
   /cards/recent:
-    $ref: './paths/cards.yaml#/recent'
+    $ref: ./paths/cards.yaml#/recent
   /cards/{cardId}:
-    $ref: './paths/cards.yaml#/item'
+    $ref: ./paths/cards.yaml#/item
   /cards/{cardId}/generate:
-    $ref: './paths/cards.yaml#/generate'
+    $ref: ./paths/cards.yaml#/generate
   /cards/{cardId}/publish:
-    $ref: './paths/cards.yaml#/publish'
+    $ref: ./paths/cards.yaml#/publish
   /cards/{cardId}/claim:
-    $ref: './paths/cards.yaml#/claim'
+    $ref: ./paths/cards.yaml#/claim
   /athlete-profiles/{athleteProfileId}/cards:
-    $ref: './paths/cards.yaml#/athleteCards'
+    $ref: ./paths/cards.yaml#/athleteCards
   /athlete-profiles/{athleteProfileId}/cards/generate-batch:
-    $ref: './paths/cards.yaml#/generateBatch'
+    $ref: ./paths/cards.yaml#/generateBatch
   /athlete-profiles/{athleteProfileId}/cards/distribution:
-    $ref: './paths/cards.yaml#/distribution'
+    $ref: ./paths/cards.yaml#/distribution
   /me/cards:
-    $ref: './paths/cards.yaml#/mine'
+    $ref: ./paths/cards.yaml#/mine
   /me/card-saves:
-    $ref: './paths/card-saves.yaml#/mine'
+    $ref: ./paths/card-saves.yaml#/mine
   /card-saves:
-    $ref: './paths/card-saves.yaml#/collection'
+    $ref: ./paths/card-saves.yaml#/collection
   /card-saves/{saveId}:
-    $ref: './paths/card-saves.yaml#/item'
+    $ref: ./paths/card-saves.yaml#/item
   /card-issues/{issueId}/downloaded:
-    $ref: './paths/cards.yaml#/downloaded'
+    $ref: ./paths/cards.yaml#/downloaded
+  /discovery/home:
+    $ref: ./paths/discovery.yaml#/home
+  /discovery/explore:
+    $ref: ./paths/discovery.yaml#/explore
+  /players/{playerId}/aggregate:
+    $ref: ./paths/discovery.yaml#/playerAggregate
+  /games/{gameId}/spectator:
+    $ref: ./paths/discovery.yaml#/gameSpectator
+  /people:
+    $ref: ./paths/people.yaml#/collection
+  /people/{personId}:
+    $ref: ./paths/people.yaml#/item
+  /people/{personId}/cards:
+    $ref: ./paths/people.yaml#/cards
+  /people/{personId}/claim:
+    $ref: ./paths/people.yaml#/claim

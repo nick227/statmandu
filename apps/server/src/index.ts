@@ -1,3 +1,4 @@
+import { normalizePersonTarget } from './lib/personTarget'
 import Fastify from 'fastify'
 import cookie from '@fastify/cookie'
 import cors from '@fastify/cors'
@@ -16,6 +17,7 @@ import { cardGenerationExecutor } from './jobs/GenerationExecutor'
 import multipart from '@fastify/multipart'
 
 const server = Fastify({ logger: true })
+server.addHook('preValidation', normalizePersonTarget)
 
 const specPath = resolve(__dirname, '../../../packages/api-spec/openapi.yaml')
 const spec = load(readFileSync(specPath, 'utf-8')) as any

@@ -1,9 +1,10 @@
+import { personName } from './PersonService'
 import Fuse from 'fuse.js'
 import { db } from '@statman/db'
 import { normalizeLimit } from '../lib/pagination'
 import { decodeOffsetCursor, encodeOffsetCursor } from '../lib/searchCursor'
 
-export type SearchResultType = 'PLAYER' | 'TEAM' | 'GAME' | 'ARTICLE'
+export type SearchResultType = 'PERSON_PROFILE' | 'PLAYER' | 'TEAM' | 'GAME' | 'ARTICLE'
 
 type SearchResultItem = {
   type: SearchResultType
@@ -23,7 +24,7 @@ type SearchProvider = {
   toResult: (item: any) => Omit<SearchResultItem, 'type' | 'score'>
 }
 
-const ALL_TYPES: SearchResultType[] = ['PLAYER', 'TEAM', 'GAME', 'ARTICLE']
+const ALL_TYPES: SearchResultType[] = ['PERSON_PROFILE', 'PLAYER', 'TEAM', 'GAME', 'ARTICLE']
 
 // Small corpus (an MVP demo scale of dozens of rows per entity, not
 // millions) makes fetch-everything-then-fuzzy-match-in-process both
@@ -31,6 +32,14 @@ const ALL_TYPES: SearchResultType[] = ['PLAYER', 'TEAM', 'GAME', 'ARTICLE']
 // external search engine. Revisit with a real index (or a dedicated search
 // service) once any entity's row count stops being trivially small.
 const providers: Record<SearchResultType, SearchProvider> = {
+  PERSON_PROFILE: {
+    type: 'PERSON_PROFILE',
+    async fetchCandidates() {
+      const people = await db.personProfile.findMany({ where: { deletedAt: null } })
+      return people.map(person => ({ searchText: [personName(person), ...(Array.isArray(person.aliases) ? person.aliases : [])].join(' '), item: person }))
+    },
+    toResult(person) { return { id: person.id, title: personName(person), subtitle: person.bio, imageUrl: person.avatarUrl } },
+  },
   PLAYER: {
     type: 'PLAYER',
     async fetchCandidates() {

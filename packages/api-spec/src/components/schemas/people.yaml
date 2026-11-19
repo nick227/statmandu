@@ -1,0 +1,75 @@
+PersonProfile:
+  type: object
+  required:
+    - id
+    - slug
+    - displayName
+    - aliases
+  properties:
+    id:
+      type: string
+    slug:
+      type: string
+    displayName:
+      type: string
+    aliases:
+      type: array
+      items:
+        type: string
+    bio:
+      type:
+        - string
+        - 'null'
+    hometown:
+      type:
+        - string
+        - 'null'
+    avatarUrl:
+      type:
+        - string
+        - 'null'
+    claimedByUserId:
+      type:
+        - string
+        - 'null'
+    canonicalUrl:
+      type: string
+    shareTitle:
+      type: string
+    shareText:
+      type: string
+CreatePersonInput:
+  type: object
+  required:
+    - displayName
+  properties:
+    displayName:
+      type: string
+      minLength: 1
+      maxLength: 160
+    bio:
+      type: string
+      maxLength: 10000
+    aliases:
+      type: array
+      maxItems: 30
+      items:
+        type: string
+        maxLength: 160
+UpdatePersonInput:
+  type: object
+  required: []
+  properties:
+    displayName:
+      type: string
+      minLength: 1
+      maxLength: 160
+    bio:
+      type: string
+      maxLength: 10000
+    aliases:
+      type: array
+      maxItems: 30
+      items:
+        type: string
+        maxLength: 160

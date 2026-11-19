@@ -8,18 +8,15 @@ import { db } from '@statman/db'
 // (its original, single call site) the moment a second caller needed it —
 // keep reusing this instead of re-copying the lookup per handler file.
 export async function optionalUser(request: any) {
-  if (request.user) return request.user
+  if (request.user) return request.user.suspendedAt || request.user.deletedAt ? null : request.user
   const token =
     request.cookies?.token ??
     request.headers.authorization?.replace('Bearer ', '')
   if (!token) return null
 
-  const directUser = await db.user.findUnique({ where: { id: token }, include: { profile: true } }).catch(() => null)
-  if (directUser) return directUser
-
   const session = await db.session
     .findUnique({ where: { token }, include: { user: { include: { profile: true } } } })
     .catch(() => null)
-  if (!session || session.expiresAt < new Date() || session.user.suspendedAt) return null
+  if (!session || session.expiresAt < new Date() || session.user.suspendedAt || session.user.deletedAt) return null
   return session.user
 }

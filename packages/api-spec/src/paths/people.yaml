@@ -1,0 +1,186 @@
+collection:
+  get:
+    operationId: listPeople
+    summary: Find public people
+    security: []
+    parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../components/schemas/people.yaml#/PersonProfile
+      default:
+        description: Error
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/ErrorResponse
+  post:
+    operationId: createPerson
+    summary: Create an unclaimed public person
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/people.yaml#/CreatePersonInput
+    responses:
+      '201':
+        description: Success
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  $ref: ../components/schemas/people.yaml#/PersonProfile
+      default:
+        description: Error
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/ErrorResponse
+item:
+  get:
+    operationId: getPerson
+    summary: Get a public person
+    security: []
+    parameters:
+      - in: path
+        name: personId
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  $ref: ../components/schemas/people.yaml#/PersonProfile
+      default:
+        description: Error
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/ErrorResponse
+  patch:
+    operationId: updatePerson
+    summary: Update a person as its author or controller
+    parameters:
+      - in: path
+        name: personId
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/people.yaml#/UpdatePersonInput
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  $ref: ../components/schemas/people.yaml#/PersonProfile
+      default:
+        description: Error
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/ErrorResponse
+cards:
+  get:
+    operationId: listPersonCards
+    summary: List visible cards about a person
+    security: []
+    parameters:
+      - in: path
+        name: personId
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Success
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: ../components/schemas/cards.yaml#/Card
+      default:
+        description: Error
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/ErrorResponse
+claim:
+  post:
+    operationId: claimPerson
+    summary: Request verification of control of a person
+    parameters:
+      - in: path
+        name: personId
+        required: true
+        schema:
+          type: string
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              verificationNote:
+                type: string
+    responses:
+      '201':
+        description: Success
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  $ref: ../components/schemas/verification.yaml#/Claim
+      default:
+        description: Error
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/ErrorResponse

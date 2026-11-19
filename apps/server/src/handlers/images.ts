@@ -1,3 +1,4 @@
+import { personTargetType } from '../lib/personTarget'
 import { db } from '@statman/db'
 import { ImageService } from '../services/ImageService'
 import { contentTypeForObjectKey, readStoredImage } from '../lib/imageStorage'
@@ -6,7 +7,8 @@ import { optionalUser } from '../lib/optionalUser'
 const imageService = new ImageService()
 
 export async function listImages(request: any, reply: any) {
-  const images = await imageService.list(request.query.targetType, request.query.targetId, request.query.usage)
+  const user = await optionalUser(request)
+  const images = await imageService.list(request.query.targetType, request.query.targetId, request.query.usage, user?.id, user?.role === 'ADMIN')
   return reply.send({ data: images })
 }
 
@@ -23,7 +25,7 @@ export async function uploadImage(request: any, reply: any) {
   const fileBuffer = await fileField.toBuffer()
 
   const data = {
-    targetType: fieldValue('targetType'),
+    targetType: personTargetType(fieldValue('targetType')) as any,
     targetId: fieldValue('targetId'),
     usage: fieldValue('usage'),
     contentType: fieldValue('contentType'),
@@ -40,31 +42,24 @@ export async function uploadImage(request: any, reply: any) {
 export async function serveUploadedImage(request: any, reply: any) {
   const objectKey = request.params['*']
   await requireImageServeAccess(objectKey, request)
+  reply.header('Cache-Control', 'private, no-store')
+  reply.header('Vary', 'Cookie, Authorization')
   reply.type(contentTypeForObjectKey(objectKey))
   return reply.send(await readStoredImage(objectKey))
 }
 
-// Every other ImageAsset targetType (avatars, logos, gallery photos,
-// article thumbnails, dispute evidence) is intentionally public today —
-// this only restricts the one case that's actually supposed to be
-// private: a non-public card's own generated art. Local/Railway-volume
-// storage only — an R2-backed deployment serves images straight from R2's
-// own public bucket URL, bypassing this route entirely; securing that
-// needs a provider-specific fix (signed URLs) not attempted here since R2
-// isn't configured/active.
+// Storage proxies enforce source privacy and generated-card visibility for all providers.
 async function requireImageServeAccess(objectKey: string, request: any) {
-  const asset = await db.imageAsset.findFirst({ where: { objectKey }, select: { targetType: true, targetId: true } })
-  if (!asset || asset.targetType !== 'CARD_TEMPLATE') return
-
-  const card = await db.cardTemplate.findUnique({
-    where: { id: asset.targetId },
-    select: { visibility: true, createdByUserId: true, athleteProfile: { select: { claimedByUserId: true } } },
-  })
-  if (!card || card.visibility === 'PUBLIC') return
-
+  const asset = await db.imageAsset.findFirst({ where: { objectKey, deletedAt: null } })
+  if (!asset) throw { statusCode: 404, message: 'Not found' }
   const user = await optionalUser(request)
-  const isAuthorized = Boolean(
-    user && (user.role === 'ADMIN' || user.id === card.createdByUserId || user.id === card.athleteProfile?.claimedByUserId)
-  )
-  if (!isAuthorized) throw { statusCode: 404, message: 'Not found' }
+  if (asset.targetType === 'CARD_TEMPLATE') {
+    const card = await db.cardTemplate.findUnique({ where: { id: asset.targetId } })
+    if (!card) throw { statusCode: 404, message: 'Not found' }
+    if (card.visibility === 'PUBLIC' && card.status === 'PUBLISHED') return
+    if (user && (user.role === 'ADMIN' || user.id === card.createdByUserId)) return
+    throw { statusCode: 404, message: 'Not found' }
+  }
+  if (asset.visibility === 'PUBLIC' || (user && (user.role === 'ADMIN' || user.id === asset.uploadedByUserId))) return
+  throw { statusCode: 404, message: 'Not found' }
 }

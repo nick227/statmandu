@@ -102,7 +102,7 @@ export class PlayerService {
 
     const slug = await this._uniqueSlug(`${data.firstName}-${data.lastName}`)
 
-    const athleteProfile = await db.athleteProfile.create({
+    const athleteProfile = await db.personProfile.create({
       data: {
         slug,
         firstName: data.firstName,
@@ -110,7 +110,8 @@ export class PlayerService {
         bio: data.bio,
         hometown: data.hometown,
         avatarUrl: data.avatarUrl,
-        claimedByUserId: userId,
+        createdByUserId: userId,
+        displayName: `${data.firstName} ${data.lastName}`.trim(),
         players: {
           create: {
             sportId: sport.id,
@@ -131,14 +132,14 @@ export class PlayerService {
     const player = await db.player.findUnique({ where: { id: playerId }, include: { athleteProfile: true } })
     if (!player) throw { statusCode: 404, message: 'Player not found' }
 
-    if (player.athleteProfile.claimedByUserId !== userId && !isAdmin) {
+    if (player.athleteProfile.claimedByUserId !== userId && !isAdmin && !(player.athleteProfile.claimedByUserId === null && player.athleteProfile.createdByUserId === userId)) {
       throw { statusCode: 403, message: 'Forbidden' }
     }
 
     const { bio, hometown, avatarUrl, ...playerFields } = data as any
 
     if (bio !== undefined || hometown !== undefined || avatarUrl !== undefined) {
-      await db.athleteProfile.update({
+      await db.personProfile.update({
         where: { id: player.athleteProfileId },
         data: { bio, hometown, avatarUrl },
       })
@@ -160,7 +161,7 @@ export class PlayerService {
       .replace(/^-+|-+$/g, '')
     let candidate = slug
     let suffix = 1
-    while (await db.athleteProfile.findUnique({ where: { slug: candidate } })) {
+    while (await db.personProfile.findUnique({ where: { slug: candidate } })) {
       candidate = `${slug}-${++suffix}`
     }
     return candidate

@@ -1,12 +1,14 @@
 import { EntityType } from '@statman/db'
 
 export function buildShareMetadata(
-  type: 'player' | 'team' | 'game' | 'card',
+  type: 'person' | 'player' | 'team' | 'game' | 'card',
   id: string,
   data: any
 ) {
   const baseUrl = process.env.FRONTEND_URL || 'https://statman.app'
   
+  if (type === 'person') return { canonicalUrl: `${baseUrl}/people/${id}`, shareTitle: data.displayName, shareText: `Discover ${data.displayName}`, imageUrl: data.avatarUrl ?? null }
+
   if (type === 'player') {
     const name = `${data.athleteProfile?.firstName || ''} ${data.athleteProfile?.lastName || ''}`.trim()
     return {

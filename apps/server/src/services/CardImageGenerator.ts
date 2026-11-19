@@ -2,7 +2,7 @@ import { createHash } from 'crypto'
 import { GoogleGenAI } from '@google/genai'
 import sharp from 'sharp'
 import { db } from '@statman/db'
-import { storeImage } from '../lib/imageStorage'
+import { storeImage, readStoredImage } from '../lib/imageStorage'
 
 const GEMINI_MODEL = 'gemini-2.5-flash-image'
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
@@ -37,6 +37,7 @@ export type CardImageGenerationInput = {
   // The athlete's uploaded reference photo — when present, the generator
   // should use it to preserve likeness across pose variations rather than
   // generating a generic figure from text alone.
+  sourceImageAssetId?: string | null
   sourceImageUrl?: string | null
   // Set for batch/pose-driven generation (see packages/sports' cardPoses) —
   // describes the specific stance/action to render. Falls back to a
@@ -94,12 +95,12 @@ export class StubCardImageGenerator implements CardImageGenerator {
 
 function buildPrompt(input: CardImageGenerationInput): string {
   const subject = input.posePromptTemplate
-    ?? `Premium sports portrait artwork for ${input.athleteName}, in the "${input.stylePreset}" style, for a ${input.cardType} card titled "${input.title}". Photorealistic, dynamic composition, professional studio quality.`
+    ?? `Premium portrait artwork for ${input.athleteName}, in the "${input.stylePreset}" style, for a ${input.cardType} card titled "${input.title}". Photorealistic, dynamic composition, professional studio quality.`
 
   return [
     subject,
     'Create portrait artwork in an exact 5:7 aspect ratio, intended for a 1500 x 2100 pixel card.',
-    'Keep the athlete and all essential action inside the upper 78 percent so the artwork can sit inside a printed card photo window.',
+    'Keep the person and all essential details inside the upper 78 percent so the artwork can sit inside a printed card photo window.',
     'Artwork only: do not add a border, frame, nameplate, logo, text, badges, buttons, translucent panels, or other interface elements.',
   ].join(' ')
 }
@@ -129,7 +130,14 @@ export class GeminiCardImageGenerator implements CardImageGenerator {
     const prompt = buildPrompt(input)
     const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: prompt }]
 
-    if (input.sourceImageUrl) {
+    if (input.sourceImageAssetId) {
+      const asset = await db.imageAsset.findUniqueOrThrow({ where: { id: input.sourceImageAssetId } })
+      const stream = await readStoredImage(asset.objectKey)
+      const chunks: Buffer[] = []
+      let size = 0
+      for await (const chunk of stream as any) { const bytes = Buffer.from(chunk); size += bytes.length; if (size > MAX_IMAGE_BYTES) throw new Error('Reference image too large'); chunks.push(bytes) }
+      parts.push({ inlineData: { mimeType: asset.contentType, data: Buffer.concat(chunks).toString('base64') } })
+    } else if (input.sourceImageUrl) {
       const referencePhoto = await fetchImageAsInlineData(input.sourceImageUrl)
       if (referencePhoto) parts.push({ inlineData: referencePhoto })
     }

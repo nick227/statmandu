@@ -1,89 +1,174 @@
 User:
   type: object
-  required: [id, email, role, createdAt]
+  required:
+    - id
+    - email
+    - role
+    - createdAt
   properties:
-    id: { type: string }
-    email: { type: string }
-    role: { type: string, enum: [USER, ADMIN] }
-    createdAt: { type: string, format: date-time }
-    profile: { $ref: '#/Profile' }
-
+    id:
+      type: string
+    email:
+      type: string
+    role:
+      type: string
+      enum:
+        - USER
+        - ADMIN
+    createdAt:
+      type: string
+      format: date-time
+    profile:
+      $ref: '#/Profile'
 Profile:
   type: object
-  required: [id, userId, username, displayName]
+  required:
+    - id
+    - userId
+    - username
+    - displayName
   properties:
-    id: { type: string }
-    userId: { type: string }
-    username: { type: string }
-    displayName: { type: string }
-    bio: { type: ['string', 'null'] }
-    avatarUrl: { type: ['string', 'null'] }
-
+    id:
+      type: string
+    userId:
+      type: string
+    username:
+      type: string
+    displayName:
+      type: string
+    bio:
+      type:
+        - string
+        - 'null'
+    avatarUrl:
+      type:
+        - string
+        - 'null'
 RegisterInput:
   type: object
-  required: [email, password, username, displayName]
+  required:
+    - email
+    - password
+    - username
+    - displayName
   properties:
-    email: { type: string, format: email }
-    password: { type: string, minLength: 8 }
-    username: { type: string, minLength: 3, maxLength: 30 }
-    displayName: { type: string, minLength: 1, maxLength: 50 }
-
+    email:
+      type: string
+      format: email
+    password:
+      type: string
+      minLength: 8
+    username:
+      type: string
+      minLength: 3
+      maxLength: 30
+    displayName:
+      type: string
+      minLength: 1
+      maxLength: 50
 LoginInput:
   type: object
-  required: [email, password]
+  required:
+    - email
+    - password
   properties:
-    email: { type: string, format: email }
-    password: { type: string }
-
+    email:
+      type: string
+      format: email
+    password:
+      type: string
 AuthResponse:
   type: object
-  required: [data]
+  required:
+    - data
   properties:
-    data: { $ref: '#/User' }
-    # Present on register/login only. Web clients ignore it (they rely on the
-    # httpOnly Set-Cookie header); native clients have no cookie jar, so they
-    # read this, store it (e.g. SecureStore), and inject it as a Bearer header.
-    token: { type: string }
-
+    data:
+      $ref: '#/User'
+    token:
+      type: string
 MeAthleteProfileCapability:
   type: object
-  required: [athleteProfileId, playerId, name, sportSlug]
+  required:
+    - athleteProfileId
+    - playerId
+    - name
+    - sportSlug
   properties:
-    athleteProfileId: { type: string }
-    playerId: { type: string }
-    name: { type: string }
-    avatarUrl: { type: ['string', 'null'] }
-    sportSlug: { type: string }
-    currentTeamName: { type: ['string', 'null'] }
-
+    athleteProfileId:
+      type: string
+    playerId:
+      type: string
+    name:
+      type: string
+    avatarUrl:
+      type:
+        - string
+        - 'null'
+    sportSlug:
+      type: string
+    currentTeamName:
+      type:
+        - string
+        - 'null'
 MeReporterAssignment:
   type: object
-  required: [id, gameId, role, canManageGame, gameLabel, gameStatus, scheduledAt]
+  required:
+    - id
+    - gameId
+    - role
+    - canManageGame
+    - gameLabel
+    - gameStatus
+    - scheduledAt
   properties:
-    id: { type: string }
-    gameId: { type: string }
-    role: { $ref: './games.yaml#/GameReporterRole' }
-    teamId: { type: ['string', 'null'] }
-    teamName: { type: ['string', 'null'] }
-    gameLabel: { type: string }
-    gameStatus: { $ref: './games.yaml#/GameStatus' }
-    scheduledAt: { type: string, format: date-time }
-    canManageGame: { type: boolean }
-
+    id:
+      type: string
+    gameId:
+      type: string
+    role:
+      $ref: ./games.yaml#/GameReporterRole
+    teamId:
+      type:
+        - string
+        - 'null'
+    teamName:
+      type:
+        - string
+        - 'null'
+    gameLabel:
+      type: string
+    gameStatus:
+      $ref: ./games.yaml#/GameStatus
+    scheduledAt:
+      type: string
+      format: date-time
+    canManageGame:
+      type: boolean
 MeCapabilities:
   type: object
-  required: [athleteProfiles, reporterAssignments, canReviewClaims]
+  required:
+    - athleteProfiles
+    - reporterAssignments
+    - canReviewClaims
   properties:
     athleteProfiles:
       type: array
-      items: { $ref: '#/MeAthleteProfileCapability' }
+      items:
+        $ref: '#/MeAthleteProfileCapability'
     reporterAssignments:
       type: array
-      items: { $ref: '#/MeReporterAssignment' }
-    canReviewClaims: { type: boolean }
-
+      items:
+        $ref: '#/MeReporterAssignment'
+    canReviewClaims:
+      type: boolean
+    personProfile:
+      anyOf:
+        - $ref: ./people.yaml#/PersonProfile
+        - type: 'null'
 MeCapabilitiesResponse:
   type: object
-  required: [data]
+  required:
+    - data
   properties:
-    data: { $ref: '#/MeCapabilities' }
+    data:
+      $ref: '#/MeCapabilities'

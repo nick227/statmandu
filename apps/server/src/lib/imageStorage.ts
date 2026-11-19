@@ -1,8 +1,9 @@
+import { db } from '@statman/db'
 import { createReadStream } from 'fs'
 import { mkdir, stat, writeFile } from 'fs/promises'
-import { extname, join, resolve } from 'path'
+import { extname, join, resolve, sep } from 'path'
 import { randomUUID } from 'crypto'
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { PutObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
 
 export type StoredImage = {
   provider: 'LOCAL' | 'R2' | 'RAILWAY_VOLUME'
@@ -11,6 +12,7 @@ export type StoredImage = {
 }
 
 type StoreImageInput = {
+  private?: boolean
   buffer: Buffer
   contentType: string
   originalFilename?: string
@@ -49,6 +51,7 @@ function extensionFor(contentType: string, originalFilename?: string) {
 
 export async function storeImage(input: StoreImageInput): Promise<StoredImage> {
   const objectKey = [
+    ...(input.private || input.targetType === 'CARD_TEMPLATE' ? ['private'] : []),
     input.targetType.toLowerCase(),
     input.targetId,
     input.usage.toLowerCase(),
@@ -57,10 +60,12 @@ export async function storeImage(input: StoreImageInput): Promise<StoredImage> {
 
   const shouldUseR2 = process.env.IMAGE_STORAGE_DRIVER === 'r2' || Boolean(process.env.R2_BUCKET)
   const client = shouldUseR2 ? r2Client() : null
+  const isPrivate = input.private || input.targetType === 'CARD_TEMPLATE'
+  if (shouldUseR2 && isPrivate && (!client || !process.env.R2_PRIVATE_BUCKET || process.env.R2_PRIVATE_BUCKET === process.env.R2_BUCKET)) throw { statusCode: 503, message: 'Private image storage is not configured' }
   if (client && process.env.R2_BUCKET && R2_PUBLIC_BASE_URL) {
     try {
       await client.send(new PutObjectCommand({
-        Bucket: process.env.R2_BUCKET,
+        Bucket: isPrivate ? process.env.R2_PRIVATE_BUCKET : process.env.R2_BUCKET,
         Key: objectKey,
         Body: input.buffer,
         ContentType: input.contentType,
@@ -68,15 +73,16 @@ export async function storeImage(input: StoreImageInput): Promise<StoredImage> {
       return {
         provider: 'R2',
         objectKey,
-        url: `${R2_PUBLIC_BASE_URL}/uploads/images/${objectKey}`,
+        url: isPrivate ? `${PUBLIC_BASE_URL}/uploads/images/${objectKey}` : `${R2_PUBLIC_BASE_URL}/uploads/images/${objectKey}`,
       }
     } catch (error) {
+      if (isPrivate) throw error
       console.warn('R2 image upload failed; falling back to local volume storage', error)
     }
   }
 
   const imageRoot = localImageRoot()
-  await mkdir(join(imageRoot, input.targetType.toLowerCase(), input.targetId, input.usage.toLowerCase()), { recursive: true })
+  await mkdir(join(imageRoot, ...objectKey.split('/').slice(0, -1)), { recursive: true })
   await writeFile(join(imageRoot, objectKey), input.buffer)
 
   return {
@@ -87,9 +93,16 @@ export async function storeImage(input: StoreImageInput): Promise<StoredImage> {
 }
 
 export async function readStoredImage(objectKey: string) {
+  const asset = await db.imageAsset.findFirst({ where: { objectKey } })
+  if (asset?.storageProvider === 'R2') {
+    const client = r2Client()
+    if (!client || (objectKey.startsWith('private/') && !process.env.R2_PRIVATE_BUCKET)) throw { statusCode: 503, message: 'Private image storage is not configured' }
+    const result = await client.send(new GetObjectCommand({ Bucket: objectKey.startsWith('private/') ? process.env.R2_PRIVATE_BUCKET : process.env.R2_BUCKET, Key: objectKey }))
+    return result.Body as NodeJS.ReadableStream
+  }
   const imageRoot = localImageRoot()
   const path = resolve(imageRoot, objectKey)
-  if (!path.startsWith(imageRoot)) throw { statusCode: 400, message: 'Invalid image key' }
+  if (!path.startsWith(imageRoot + sep)) throw { statusCode: 400, message: 'Invalid image key' }
   await stat(path)
   return createReadStream(path)
 }

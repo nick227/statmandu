@@ -18,3 +18,5 @@ export * from './cards'
 export * from './search'
 export * from './admin'
 export * from './discovery'
+
+export * from './people'

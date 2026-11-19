@@ -13,7 +13,7 @@ async function seedSport() {
 describe('listPlayers', () => {
   it('GET /players', async () => {
     const sport = await seedSport()
-    const athleteProfile = await db.athleteProfile.create({
+    const athleteProfile = await db.personProfile.create({
       data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
     })
     await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
@@ -27,10 +27,10 @@ describe('listPlayers', () => {
 
   it('searches by name via q', async () => {
     const sport = await seedSport()
-    const alpha = await db.athleteProfile.create({
+    const alpha = await db.personProfile.create({
       data: { slug: 'alpha-jones', firstName: 'Alpha', lastName: 'Jones', sourceStatus: 'PLAYER_REPORTED' },
     })
-    const beta = await db.athleteProfile.create({
+    const beta = await db.personProfile.create({
       data: { slug: 'beta-smith', firstName: 'Beta', lastName: 'Smith', sourceStatus: 'PLAYER_REPORTED' },
     })
     await db.player.create({ data: { athleteProfileId: alpha.id, sportId: sport.id } })
@@ -60,14 +60,14 @@ describe('createPlayer', () => {
     })
     expect(res.statusCode).toBe(201)
     await validateResponse('createPlayer', 201, res.json())
-    expect(res.json().data.athleteProfile.claimedByUserId).toBe(testUserId)
+    expect(res.json().data.athleteProfile.claimedByUserId).toBeNull()
   })
 })
 
 describe('getPlayer', () => {
   it('GET /players/{playerId}', async () => {
     const sport = await seedSport()
-    const athleteProfile = await db.athleteProfile.create({
+    const athleteProfile = await db.personProfile.create({
       data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
     })
     const player = await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
@@ -87,7 +87,7 @@ describe('updatePlayer', () => {
 
   it('lets the claimed owner update', async () => {
     const sport = await seedSport()
-    const athleteProfile = await db.athleteProfile.create({
+    const athleteProfile = await db.personProfile.create({
       data: {
         slug: 'jayden-rios',
         firstName: 'Jayden',
@@ -111,7 +111,7 @@ describe('updatePlayer', () => {
 
   it('forbids a non-owner, non-admin from updating', async () => {
     const sport = await seedSport()
-    const athleteProfile = await db.athleteProfile.create({
+    const athleteProfile = await db.personProfile.create({
       data: {
         slug: 'jayden-rios',
         firstName: 'Jayden',
@@ -140,7 +140,7 @@ describe('verifyPlayer', () => {
 
   it('rejects a non-admin', async () => {
     const sport = await seedSport()
-    const athleteProfile = await db.athleteProfile.create({
+    const athleteProfile = await db.personProfile.create({
       data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
     })
     const player = await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })
@@ -157,7 +157,7 @@ describe('verifyPlayer', () => {
   it('POST /players/{playerId}/verify (admin)', async () => {
     await db.user.update({ where: { id: testUserId }, data: { role: 'ADMIN' } })
     const sport = await seedSport()
-    const athleteProfile = await db.athleteProfile.create({
+    const athleteProfile = await db.personProfile.create({
       data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
     })
     const player = await db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })

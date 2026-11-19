@@ -8,7 +8,7 @@ const app = buildTestApp()
 
 async function seedPlayer() {
   const sport = await db.sport.create({ data: { slug: 'basketball', name: 'Basketball' } })
-  const athleteProfile = await db.athleteProfile.create({
+  const athleteProfile = await db.personProfile.create({
     data: { slug: 'jayden-rios', firstName: 'Jayden', lastName: 'Rios', sourceStatus: 'PLAYER_REPORTED' },
   })
   return db.player.create({ data: { athleteProfileId: athleteProfile.id, sportId: sport.id } })

@@ -1,0 +1,77 @@
+home:
+  get:
+    operationId: getHomeDiscovery
+    summary: Home discovery content
+    security: []
+    tags: [feed]
+    responses:
+      '200':
+        description: Discovery sections
+        content:
+          application/json:
+            schema: &envelope
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  additionalProperties: true
+explore:
+  get:
+    operationId: getExploreDiscovery
+    summary: Explore athletes and teams
+    security: []
+    tags: [feed]
+    parameters:
+      - $ref: '../components/parameters/common.yaml#/Limit'
+      - $ref: '../components/parameters/common.yaml#/Cursor'
+      - name: query
+        in: query
+        schema: { type: string }
+      - name: sort
+        in: query
+        schema: { type: string, enum: [recent, popular, performance, featured] }
+    responses:
+      '200':
+        description: Explore sections
+        content:
+          application/json:
+            schema: *envelope
+playerAggregate:
+  get:
+    operationId: getPlayerAggregate
+    summary: Player profile and related content
+    security: []
+    tags: [players]
+    parameters:
+      - name: playerId
+        in: path
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Player aggregate
+        content:
+          application/json:
+            schema: *envelope
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'
+gameSpectator:
+  get:
+    operationId: getGameSpectator
+    summary: Game spectator content
+    security: []
+    tags: [games]
+    parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: Game spectator view
+        content:
+          application/json:
+            schema: *envelope
+      '404':
+        $ref: '../components/responses/common.yaml#/NotFound'

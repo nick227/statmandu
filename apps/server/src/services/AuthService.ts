@@ -1,3 +1,4 @@
+import { serializePerson } from './PersonService'
 import { db } from '@statman/db'
 import bcrypt from 'bcryptjs'
 import { randomUUID } from 'crypto'
@@ -107,6 +108,7 @@ export class AuthService {
     })
 
     return {
+      personProfile: user.claimedProfile ? serializePerson(user.claimedProfile) : null,
       athleteProfiles,
       reporterAssignments,
       canReviewClaims: user.role === 'ADMIN',

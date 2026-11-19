@@ -1,6 +1,6 @@
 SearchResultType:
   type: string
-  enum: [PLAYER, TEAM, GAME, ARTICLE]
+  enum: [PERSON_PROFILE, PLAYER, TEAM, GAME, ARTICLE]
 
 SearchResultItem:
   type: object

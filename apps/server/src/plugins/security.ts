@@ -17,7 +17,7 @@ export async function bearerAuth(request: any, _reply: any, _params: any) {
     throw { statusCode: 401, message: 'Session expired' }
   }
 
-  if (session.user.suspendedAt) {
+  if (session.user.suspendedAt || session.user.deletedAt) {
     throw { statusCode: 403, message: 'Account suspended' }
   }
 
@@ -29,7 +29,7 @@ export async function bearerAuth(request: any, _reply: any, _params: any) {
     if (actorUser.role !== 'ADMIN') throw { statusCode: 403, message: 'Forbidden' }
     if (typeof actAsUserId !== 'string') throw { statusCode: 400, message: 'Invalid X-Act-As-User-Id header' }
     const subjectUser = await db.user.findUnique({ where: { id: actAsUserId }, include: { profile: true } })
-    if (!subjectUser) throw { statusCode: 404, message: 'Act-as user not found' }
+    if (!subjectUser || subjectUser.suspendedAt || subjectUser.deletedAt) throw { statusCode: 404, message: 'Act-as user not found' }
     request.user = subjectUser
     request.subjectUser = subjectUser
   } else {

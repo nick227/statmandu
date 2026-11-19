@@ -120,7 +120,7 @@ describe('getMeCapabilities', () => {
     const league = await db.league.create({ data: { sportId: sport.id, slug: 'demo', name: 'Demo League' } })
     const home = await db.team.create({ data: { sportId: sport.id, leagueId: league.id, slug: 'home', name: 'Home' } })
     const away = await db.team.create({ data: { sportId: sport.id, leagueId: league.id, slug: 'away', name: 'Away' } })
-    const athleteProfile = await db.athleteProfile.create({
+    const athleteProfile = await db.personProfile.create({
       data: {
         slug: 'alice-athlete',
         firstName: 'Alice',

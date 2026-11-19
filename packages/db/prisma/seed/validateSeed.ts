@@ -20,7 +20,7 @@ export interface SeedCounts {
 export async function collectSeedCounts(): Promise<SeedCounts> {
   const seedUsers = await db.user.findMany({ where: { email: { in: seedUserEmails } }, select: { id: true } })
   const seedUserIds = seedUsers.map((user) => user.id)
-  const seedAthletes = await db.athleteProfile.findMany({ where: { slug: { in: [...seedPlayerSlugs] } }, select: { id: true } })
+  const seedAthletes = await db.personProfile.findMany({ where: { slug: { in: [...seedPlayerSlugs] } }, select: { id: true } })
   const seedAthleteIds = seedAthletes.map((athlete) => athlete.id)
   const seedCards = await db.cardTemplate.findMany({ where: { id: { startsWith: 'seed-' } }, select: { id: true } })
   const seedCardIds = seedCards.map((card) => card.id)
@@ -48,7 +48,7 @@ export async function validateSeed(scenario: SeedScenario) {
     assertSeed(counts.athletes >= 20, 'discovery requires at least 20 seeded athletes')
     assertSeed(counts.games >= 6, 'game discovery requires scheduled, live, final, and disputed fixtures')
 
-    const athletes = await db.athleteProfile.findMany({
+    const athletes = await db.personProfile.findMany({
       where: { slug: { in: [...seedPlayerSlugs] } },
       include: { players: { include: { sport: true, rosterMemberships: true } }, claimedByUser: true },
     })

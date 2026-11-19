@@ -15,7 +15,7 @@ async function resetSeedOwnedData() {
 
   const users = await db.user.findMany({ where: { email: { in: seedUserEmails } }, select: { id: true } })
   const userIds = users.map((user) => user.id)
-  const athletes = await db.athleteProfile.findMany({ where: { slug: { in: [...seedPlayerSlugs] } }, select: { id: true } })
+  const athletes = await db.personProfile.findMany({ where: { slug: { in: [...seedPlayerSlugs] } }, select: { id: true } })
   const athleteIds = athletes.map((athlete) => athlete.id)
   const players = await db.player.findMany({ where: { athleteProfileId: { in: athleteIds } }, select: { id: true } })
   const playerIds = players.map((player) => player.id)
@@ -53,7 +53,7 @@ async function resetSeedOwnedData() {
     await tx.playerSeasonStat.deleteMany({ where: { playerId: { in: playerIds } } })
     await tx.rosterMembership.deleteMany({ where: { playerId: { in: playerIds } } })
     await tx.player.deleteMany({ where: { id: { in: playerIds } } })
-    await tx.athleteProfile.deleteMany({ where: { id: { in: athleteIds } } })
+    await tx.personProfile.deleteMany({ where: { id: { in: athleteIds } } })
   })
 
   console.log('✓ Seed-owned domain data removed. Demo accounts and shared competition definitions were preserved intentionally.')

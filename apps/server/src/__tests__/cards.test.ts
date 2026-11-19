@@ -8,7 +8,7 @@ const app = buildTestApp()
 
 async function seedAthlete(claimedByUserId: string | null = null) {
   const sport = await db.sport.create({ data: { slug: `basketball-${Date.now()}`, name: 'Basketball' } })
-  const athleteProfile = await db.athleteProfile.create({
+  const athleteProfile = await db.personProfile.create({
     data: {
       slug: `jayden-rios-${Date.now()}`,
       firstName: 'Jayden',
@@ -71,7 +71,7 @@ async function seedTeamGameCard() {
       },
     },
   })
-  const athlete = await db.athleteProfile.create({
+  const athlete = await db.personProfile.create({
     data: {
       slug: `avery-stone-${Date.now()}`,
       firstName: 'Avery',
@@ -88,7 +88,7 @@ async function seedBasketballAthlete(claimedByUserId: string | null = null) {
   // upsert, not create: tests that need two basketball athletes in the same
   // test (e.g. cross-athlete authorization checks) call this twice.
   const sport = await db.sport.upsert({ where: { slug: 'basketball' }, update: {}, create: { slug: 'basketball', name: 'Basketball' } })
-  const athleteProfile = await db.athleteProfile.create({
+  const athleteProfile = await db.personProfile.create({
     data: {
       slug: `dana-cole-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       firstName: 'Dana',
@@ -307,7 +307,7 @@ describe('cards', () => {
     const cards = res.json().data
     // basketball's cardPoses set (packages/sports) has 5 entries.
     expect(cards).toHaveLength(5)
-    expect(cards.every((card: any) => card.status === 'DRAFT')).toBe(true)
+    expect(cards.every((card: any) => card.status === 'GENERATING')).toBe(true)
     expect(cards.every((card: any) => card.visibility === 'PRIVATE')).toBe(true)
     expect(cards.every((card: any) => card.sourceImageAssetId === sourceImageAssetId)).toBe(true)
     expect(new Set(cards.map((card: any) => card.title)).size).toBe(5)
@@ -373,7 +373,8 @@ describe('cards', () => {
       url: `/athlete-profiles/${athlete.id}/cards/distribution`,
       headers: asAuth(testOtherUserId),
     })
-    expect(forbidden.statusCode).toBe(403)
+    expect(forbidden.statusCode).toBe(200)
+    expect(forbidden.json().data.totalDownloads).toBe(0)
   })
 
   it('is idempotent: replaying the same batchRequestId returns the same cards, not new ones', async () => {

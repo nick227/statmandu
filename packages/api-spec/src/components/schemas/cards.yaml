@@ -1,90 +1,182 @@
 CardType:
   type: string
-  enum: [PROFILE, BIG_GAME, MILESTONE, SEASON, HIGHLIGHT]
-
+  enum:
+    - PROFILE
+    - BIG_GAME
+    - MILESTONE
+    - SEASON
+    - HIGHLIGHT
 CardTemplateStatus:
   type: string
-  enum: [DRAFT, GENERATING, READY, PUBLISHED, ARCHIVED, FAILED]
-
+  enum:
+    - DRAFT
+    - GENERATING
+    - READY
+    - PUBLISHED
+    - ARCHIVED
+    - FAILED
 CardVisibility:
   type: string
-  enum: [PRIVATE, PUBLIC]
-
+  enum:
+    - PRIVATE
+    - PUBLIC
 CardEditionMode:
   type: string
-  enum: [UNLIMITED, LIMITED, ONE_OF_ONE]
-
+  enum:
+    - UNLIMITED
+    - LIMITED
+    - ONE_OF_ONE
 CardIssueStatus:
   type: string
-  enum: [CLAIMED, DOWNLOADED, REVOKED]
-
+  enum:
+    - CLAIMED
+    - DOWNLOADED
+    - REVOKED
 CardAthleteSummary:
   type: object
-  required: [athleteProfileId, playerId, displayName, teamName, avatarUrl]
+  required:
+    - athleteProfileId
+    - playerId
+    - displayName
+    - teamName
+    - avatarUrl
   properties:
-    athleteProfileId: { type: string }
-    playerId: { type: ['string', 'null'] }
-    displayName: { type: string }
-    teamName: { type: ['string', 'null'] }
-    avatarUrl: { type: ['string', 'null'] }
-
+    athleteProfileId:
+      type: string
+    playerId:
+      type:
+        - string
+        - 'null'
+    displayName:
+      type: string
+    teamName:
+      type:
+        - string
+        - 'null'
+    avatarUrl:
+      type:
+        - string
+        - 'null'
 CardTeamSummary:
   type: object
-  required: [id, slug, name]
+  required:
+    - id
+    - slug
+    - name
   properties:
-    id: { type: string }
-    slug: { type: string }
-    name: { type: string }
-    logoUrl: { type: ['string', 'null'] }
-
+    id:
+      type: string
+    slug:
+      type: string
+    name:
+      type: string
+    logoUrl:
+      type:
+        - string
+        - 'null'
 CardGameTeamSummary:
   allOf:
     - $ref: '#/CardTeamSummary'
     - type: object
-      required: [isHome]
+      required:
+        - isHome
       properties:
-        isHome: { type: boolean }
-        finalScore: { type: ['integer', 'null'] }
-
+        isHome:
+          type: boolean
+        finalScore:
+          type:
+            - integer
+            - 'null'
 CardGameSummary:
   type: object
-  required: [id, scheduledAt, status, teams, seasonName]
+  required:
+    - id
+    - scheduledAt
+    - status
+    - teams
+    - seasonName
   properties:
-    id: { type: string }
-    scheduledAt: { type: string, format: date-time }
-    status: { type: string }
+    id:
+      type: string
+    scheduledAt:
+      type: string
+      format: date-time
+    status:
+      type: string
     teams:
       type: array
-      items: { $ref: '#/CardGameTeamSummary' }
-    seasonName: { type: ['string', 'null'] }
-
+      items:
+        $ref: '#/CardGameTeamSummary'
+    seasonName:
+      type:
+        - string
+        - 'null'
 CardImageSummary:
   type: object
-  required: [id, url]
+  required:
+    - id
+    - url
   properties:
-    id: { type: string }
-    url: { type: string }
-    thumbUrl: { type: string }
-
+    id:
+      type: string
+    url:
+      type: string
+    thumbUrl:
+      type: string
 CardIssue:
   type: object
-  required: [id, cardTemplateId, issueHash, status, createdAt]
+  required:
+    - id
+    - cardTemplateId
+    - issueHash
+    - status
+    - createdAt
   properties:
-    id: { type: string }
-    cardTemplateId: { type: string }
-    issueNumber: { type: ['integer', 'null'] }
-    ownerUserId: { type: ['string', 'null'] }
-    claimedByUserId: { type: ['string', 'null'] }
-    claimedAt: { type: ['string', 'null'], format: date-time }
-    downloadedAt: { type: ['string', 'null'], format: date-time }
-    issueHash: { type: string }
-    status: { $ref: '#/CardIssueStatus' }
-    createdAt: { type: string, format: date-time }
-    editionMode: { $ref: '#/CardEditionMode' }
-    editionSize: { type: ['integer', 'null'] }
-    issuedCount: { type: integer }
-    originHash: { type: ['string', 'null'] }
-
+    id:
+      type: string
+    cardTemplateId:
+      type: string
+    issueNumber:
+      type:
+        - integer
+        - 'null'
+    ownerUserId:
+      type:
+        - string
+        - 'null'
+    claimedByUserId:
+      type:
+        - string
+        - 'null'
+    claimedAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
+    downloadedAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
+    issueHash:
+      type: string
+    status:
+      $ref: '#/CardIssueStatus'
+    createdAt:
+      type: string
+      format: date-time
+    editionMode:
+      $ref: '#/CardEditionMode'
+    editionSize:
+      type:
+        - integer
+        - 'null'
+    issuedCount:
+      type: integer
+    originHash:
+      type:
+        - string
+        - 'null'
 Card:
   type: object
   required:
@@ -103,26 +195,62 @@ Card:
     - updatedAt
     - currentUserHasClaimed
   properties:
-    id: { type: string }
-    athleteProfileId: { type: string }
-    teamId: { type: ['string', 'null'] }
-    gameId: { type: ['string', 'null'] }
-    createdByUserId: { type: string }
-    title: { type: string }
-    cardType: { $ref: '#/CardType' }
-    stylePreset: { type: string }
-    status: { $ref: '#/CardTemplateStatus' }
-    visibility: { $ref: '#/CardVisibility' }
-    editionMode: { $ref: '#/CardEditionMode' }
-    editionSize: { type: ['integer', 'null'] }
-    issuedCount: { type: integer }
-    frontImageAssetId: { type: ['string', 'null'] }
-    sourceImageAssetId: { type: ['string', 'null'] }
+    id:
+      type: string
+    athleteProfileId:
+      type: string
+    teamId:
+      type:
+        - string
+        - 'null'
+    gameId:
+      type:
+        - string
+        - 'null'
+    createdByUserId:
+      type: string
+    title:
+      type: string
+    cardType:
+      $ref: '#/CardType'
+    stylePreset:
+      type: string
+    status:
+      $ref: '#/CardTemplateStatus'
+    visibility:
+      $ref: '#/CardVisibility'
+    editionMode:
+      $ref: '#/CardEditionMode'
+    editionSize:
+      type:
+        - integer
+        - 'null'
+    issuedCount:
+      type: integer
+    frontImageAssetId:
+      type:
+        - string
+        - 'null'
+    sourceImageAssetId:
+      type:
+        - string
+        - 'null'
     statsSnapshotJson: true
-    originHash: { type: ['string', 'null'] }
-    createdAt: { type: string, format: date-time }
-    updatedAt: { type: string, format: date-time }
-    publishedAt: { type: ['string', 'null'], format: date-time }
+    originHash:
+      type:
+        - string
+        - 'null'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+    publishedAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
     athlete:
       oneOf:
         - $ref: '#/CardAthleteSummary'
@@ -143,169 +271,326 @@ Card:
       oneOf:
         - $ref: '#/CardImageSummary'
         - type: 'null'
-    currentUserHasClaimed: { type: boolean }
+    currentUserHasClaimed:
+      type: boolean
     currentUserIssue:
       oneOf:
         - $ref: '#/CardIssue'
         - type: 'null'
-
+    personProfileId:
+      type: string
+    person:
+      $ref: ./people.yaml#/PersonProfile
+    publicationType:
+      type: string
+      enum:
+        - COMMUNITY
+        - OFFICIAL
+    publishedByUserId:
+      type:
+        - string
+        - 'null'
+    contentSnapshotJson: true
 CreateCardInput:
   type: object
-  required: [athleteProfileId, title, cardType, stylePreset]
+  required:
+    - title
+    - cardType
+    - stylePreset
   properties:
-    athleteProfileId: { type: string }
-    teamId: { type: ['string', 'null'] }
-    gameId: { type: ['string', 'null'] }
-    title: { type: string, minLength: 1, maxLength: 160 }
-    cardType: { $ref: '#/CardType' }
-    stylePreset: { type: string, minLength: 1, maxLength: 80 }
-    editionMode: { $ref: '#/CardEditionMode' }
-    editionSize: { type: ['integer', 'null'], minimum: 1 }
-    sourceImageAssetId: { type: ['string', 'null'] }
+    athleteProfileId:
+      type: string
+    teamId:
+      type:
+        - string
+        - 'null'
+    gameId:
+      type:
+        - string
+        - 'null'
+    title:
+      type: string
+      minLength: 1
+      maxLength: 160
+    cardType:
+      $ref: '#/CardType'
+    stylePreset:
+      type: string
+      minLength: 1
+      maxLength: 80
+    editionMode:
+      $ref: '#/CardEditionMode'
+    editionSize:
+      type:
+        - integer
+        - 'null'
+      minimum: 1
+    sourceImageAssetId:
+      type:
+        - string
+        - 'null'
     statsSnapshotJson: true
-
+    personProfileId:
+      type: string
+  anyOf:
+    - required:
+        - personProfileId
+    - required:
+        - athleteProfileId
 UpdateCardInput:
   type: object
   properties:
-    athleteProfileId: { type: string }
-    teamId: { type: ['string', 'null'] }
-    gameId: { type: ['string', 'null'] }
-    title: { type: string, minLength: 1, maxLength: 160 }
-    cardType: { $ref: '#/CardType' }
-    stylePreset: { type: string, minLength: 1, maxLength: 80 }
-    status: { $ref: '#/CardTemplateStatus' }
-    visibility: { $ref: '#/CardVisibility' }
-    editionMode: { $ref: '#/CardEditionMode' }
-    editionSize: { type: ['integer', 'null'], minimum: 1 }
-    sourceImageAssetId: { type: ['string', 'null'] }
+    athleteProfileId:
+      type: string
+    teamId:
+      type:
+        - string
+        - 'null'
+    gameId:
+      type:
+        - string
+        - 'null'
+    title:
+      type: string
+      minLength: 1
+      maxLength: 160
+    cardType:
+      $ref: '#/CardType'
+    stylePreset:
+      type: string
+      minLength: 1
+      maxLength: 80
+    status:
+      $ref: '#/CardTemplateStatus'
+    visibility:
+      $ref: '#/CardVisibility'
+    editionMode:
+      $ref: '#/CardEditionMode'
+    editionSize:
+      type:
+        - integer
+        - 'null'
+      minimum: 1
+    sourceImageAssetId:
+      type:
+        - string
+        - 'null'
     statsSnapshotJson: true
-
+    personProfileId:
+      type: string
 PublishCardInput:
   type: object
   properties:
-    visibility: { $ref: '#/CardVisibility' }
-    editionMode: { $ref: '#/CardEditionMode' }
-    editionSize: { type: ['integer', 'null'], minimum: 1 }
-
+    visibility:
+      $ref: '#/CardVisibility'
+    editionMode:
+      $ref: '#/CardEditionMode'
+    editionSize:
+      type:
+        - integer
+        - 'null'
+      minimum: 1
+    publicationType:
+      type: string
+      enum:
+        - COMMUNITY
 MyCard:
   type: object
-  required: [issue, card]
+  required:
+    - issue
+    - card
   properties:
-    issue: { $ref: '#/CardIssue' }
-    card: { $ref: '#/Card' }
-
+    issue:
+      $ref: '#/CardIssue'
+    card:
+      $ref: '#/Card'
 MyCards:
   type: object
-  required: [created, claimed]
+  required:
+    - created
+    - claimed
   properties:
     created:
       type: array
-      items: { $ref: '#/Card' }
+      items:
+        $ref: '#/Card'
     claimed:
       type: array
-      items: { $ref: '#/MyCard' }
-
+      items:
+        $ref: '#/MyCard'
 CardAuthenticityJson:
   type: object
-  required: [schema, cardTemplateId, issueHash]
+  required:
+    - schema
+    - cardTemplateId
+    - issueHash
   properties:
-    schema: { type: string, enum: [statman.card.authenticity.v1] }
-    cardTemplateId: { type: string }
-    cardTitle: { type: ['string', 'null'] }
-    athleteProfileId: { type: ['string', 'null'] }
-    athleteName: { type: ['string', 'null'] }
+    schema:
+      type: string
+      enum:
+        - statman.card.authenticity.v1
+    cardTemplateId:
+      type: string
+    cardTitle:
+      type:
+        - string
+        - 'null'
+    athleteProfileId:
+      type:
+        - string
+        - 'null'
+    athleteName:
+      type:
+        - string
+        - 'null'
     editionMode:
       oneOf:
         - $ref: '#/CardEditionMode'
         - type: 'null'
-    editionSize: { type: ['integer', 'null'] }
-    issuedCount: { type: ['integer', 'null'] }
-    issueNumber: { type: ['integer', 'null'] }
-    originHash: { type: ['string', 'null'] }
-    issueHash: { type: string }
-    claimedByUserId: { type: ['string', 'null'] }
-    claimedAt: { type: ['string', 'null'], format: date-time }
-    downloadedAt: { type: ['string', 'null'], format: date-time }
-
+    editionSize:
+      type:
+        - integer
+        - 'null'
+    issuedCount:
+      type:
+        - integer
+        - 'null'
+    issueNumber:
+      type:
+        - integer
+        - 'null'
+    originHash:
+      type:
+        - string
+        - 'null'
+    issueHash:
+      type: string
+    claimedByUserId:
+      type:
+        - string
+        - 'null'
+    claimedAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
+    downloadedAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
 CardAuthenticityPayload:
   type: object
-  required: [json, text]
+  required:
+    - json
+    - text
   properties:
-    json: { $ref: '#/CardAuthenticityJson' }
-    text: { type: string }
-
+    json:
+      $ref: '#/CardAuthenticityJson'
+    text:
+      type: string
 CardIssueDownload:
   type: object
-  required: [issue, authenticity]
+  required:
+    - issue
+    - authenticity
   properties:
-    issue: { $ref: '#/CardIssue' }
-    authenticity: { $ref: '#/CardAuthenticityPayload' }
-
+    issue:
+      $ref: '#/CardIssue'
+    authenticity:
+      $ref: '#/CardAuthenticityPayload'
 GenerateCardBatchInput:
   type: object
-  required: [sourceImageAssetId]
+  required:
+    - sourceImageAssetId
   properties:
-    sourceImageAssetId: { type: string }
-    # Omit to generate the athlete's full sport-standard pose set.
+    sourceImageAssetId:
+      type: string
     poseIds:
       type: array
-      items: { type: string }
-    # Client-generated idempotency key — a retried/double-tapped request
-    # with the same key returns the existing batch instead of creating a
-    # second one.
-    batchRequestId: { type: string }
-
+      items:
+        type: string
+    batchRequestId:
+      type: string
 CardDownloadContext:
   type: string
-  enum: [PROFILE, HOME, EXPLORE, CARD_STUDIO, SHARED_LINK, DIRECT]
-
+  enum:
+    - PROFILE
+    - HOME
+    - EXPLORE
+    - CARD_STUDIO
+    - SHARED_LINK
+    - DIRECT
 MarkCardDownloadedInput:
   type: object
   properties:
-    context: { $ref: '#/CardDownloadContext' }
-
+    context:
+      $ref: '#/CardDownloadContext'
 CardDistributionContextCount:
   type: object
-  required: [context, count]
+  required:
+    - context
+    - count
   properties:
-    context: { $ref: '#/CardDownloadContext' }
-    count: { type: integer }
-
+    context:
+      $ref: '#/CardDownloadContext'
+    count:
+      type: integer
 CardDistributionCardCount:
   type: object
-  required: [card, count]
+  required:
+    - card
+    - count
   properties:
-    card: { $ref: '#/Card' }
-    count: { type: integer }
-
+    card:
+      $ref: '#/Card'
+    count:
+      type: integer
 CardDistribution:
   type: object
-  required: [totalDownloads, uniqueDownloaders, byContext, byCard]
+  required:
+    - totalDownloads
+    - uniqueDownloaders
+    - byContext
+    - byCard
   properties:
-    totalDownloads: { type: integer }
-    uniqueDownloaders: { type: integer }
+    totalDownloads:
+      type: integer
+    uniqueDownloaders:
+      type: integer
     byContext:
       type: array
-      items: { $ref: '#/CardDistributionContextCount' }
+      items:
+        $ref: '#/CardDistributionContextCount'
     byCard:
       type: array
-      items: { $ref: '#/CardDistributionCardCount' }
-
+      items:
+        $ref: '#/CardDistributionCardCount'
 CardSave:
   type: object
-  required: [id, userId, cardTemplateId, createdAt]
+  required:
+    - id
+    - userId
+    - cardTemplateId
+    - createdAt
   properties:
-    id: { type: string }
-    userId: { type: string }
-    cardTemplateId: { type: string }
-    createdAt: { type: string, format: date-time }
+    id:
+      type: string
+    userId:
+      type: string
+    cardTemplateId:
+      type: string
+    createdAt:
+      type: string
+      format: date-time
     card:
       oneOf:
         - $ref: '#/Card'
         - type: 'null'
-
 CreateCardSaveInput:
   type: object
-  required: [cardTemplateId]
+  required:
+    - cardTemplateId
   properties:
-    cardTemplateId: { type: string }
+    cardTemplateId:
+      type: string

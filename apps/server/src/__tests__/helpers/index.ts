@@ -1,3 +1,4 @@
+import { normalizePersonTarget } from '../../lib/personTarget'
 import { beforeAll, beforeEach, afterAll } from 'vitest'
 import Fastify, { type FastifyInstance } from 'fastify'
 import cookie from '@fastify/cookie'
@@ -49,8 +50,14 @@ async function seedTestUsers() {
 
 export function buildTestApp() {
   const app: FastifyInstance = Fastify()
+  app.addHook('preValidation', normalizePersonTarget)
 
   beforeAll(async () => {
+    // Test-only direct-user auth for optional/public routes. Production always requires sessions.
+    app.addHook('onRequest', async (request: any) => {
+      const id = request.headers.authorization?.replace('Bearer ', '')
+      if (id) request.user = await db.user.findUnique({ where: { id }, include: { profile: true } })
+    })
     await app.register(cookie, {
       secret: process.env.COOKIE_SECRET ?? 'test-cookie-secret-at-least-32-characters',
     })

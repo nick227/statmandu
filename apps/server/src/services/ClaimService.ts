@@ -6,27 +6,17 @@ export class ClaimService {
     const player = await db.player.findUnique({ where: { id: playerId }, include: { athleteProfile: true } })
     if (!player) throw { statusCode: 404, message: 'Player not found' }
 
-    if (player.athleteProfile.claimedByUserId) {
-      throw { statusCode: 409, message: 'This profile has already been claimed' }
-    }
+    return this.claimPerson(player.athleteProfileId, userId, verificationNote)
+  }
 
-    const existingPending = await db.claim.findFirst({
-      where: {
-        athleteProfileId: player.athleteProfileId,
-        requestedByUserId: userId,
-        status: 'PENDING',
-      },
-    })
-    if (existingPending) return existingPending
-
-    return db.claim.create({
-      data: {
-        athleteProfileId: player.athleteProfileId,
-        requestedByUserId: userId,
-        verificationNote,
-        status: 'PENDING',
-      },
-    })
+  async claimPerson(personId: string, userId: string, verificationNote?: string) {
+    const person = await db.personProfile.findFirst({ where: { id: personId, deletedAt: null } })
+    if (!person) throw { statusCode: 404, message: 'Person not found' }
+    if (person.claimedByUserId && person.claimedByUserId !== userId) throw { statusCode: 409, message: 'Profile is already claimed' }
+    const approved = await db.claim.findFirst({ where: { athleteProfileId: personId, requestedByUserId: userId, status: 'APPROVED' } })
+    if (approved) throw { statusCode: 409, message: 'Profile is already verified' }
+    const pending = await db.claim.findFirst({ where: { athleteProfileId: personId, requestedByUserId: userId, status: 'PENDING' } })
+    return pending ?? db.claim.create({ data: { athleteProfileId: personId, requestedByUserId: userId, verificationNote } })
   }
 
   listClaims(status?: string) {
@@ -51,6 +41,8 @@ export class ClaimService {
     }
 
     return db.$transaction(async (tx) => {
+      const transition = await tx.claim.updateMany({ where: { id: claimId, status: 'PENDING' }, data: { status: data.status } })
+      if (transition.count !== 1) throw { statusCode: 409, message: 'Claim already reviewed' }
       const updated = await tx.claim.update({
         where: { id: claimId },
         data: {
@@ -62,14 +54,14 @@ export class ClaimService {
       })
 
       if (data.status === 'APPROVED') {
-        const profileUpdate = await tx.athleteProfile.updateMany({
-          where: { id: claim.athleteProfileId, claimedByUserId: null },
+        const profileUpdate = await tx.personProfile.updateMany({
+          where: { id: claim.athleteProfileId, OR: [{ claimedByUserId: null }, { claimedByUserId: claim.requestedByUserId }] },
           data: { claimedByUserId: claim.requestedByUserId },
         })
         if (profileUpdate.count !== 1) {
           throw { statusCode: 409, message: 'This profile has already been claimed by another user' }
         }
-        const profile = await tx.athleteProfile.findUniqueOrThrow({ where: { id: claim.athleteProfileId } })
+        const profile = await tx.personProfile.findUniqueOrThrow({ where: { id: claim.athleteProfileId } })
 
         await tx.claim.updateMany({
           where: {

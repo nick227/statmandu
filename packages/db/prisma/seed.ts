@@ -277,13 +277,13 @@ export async function seedDemo(config: Pick<SeedConfig, 'referenceDate'>) {
     const claimedByUserId = i === 0 ? athleteUser.id : undefined
 
     if (claimedByUserId) {
-      await db.athleteProfile.updateMany({
+      await db.personProfile.updateMany({
         where: { claimedByUserId, slug: { not: slug } },
         data: { claimedByUserId: null },
       })
     }
 
-    const athleteProfile = await db.athleteProfile.upsert({
+    const athleteProfile = await db.personProfile.upsert({
       where: { slug },
       update: {
         firstName,

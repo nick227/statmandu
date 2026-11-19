@@ -1412,6 +1412,144 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/discovery/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Home discovery content */
+        get: operations["getHomeDiscovery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/discovery/explore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Explore athletes and teams */
+        get: operations["getExploreDiscovery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/players/{playerId}/aggregate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Player profile and related content */
+        get: operations["getPlayerAggregate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/games/{gameId}/spectator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Game spectator content */
+        get: operations["getGameSpectator"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find public people */
+        get: operations["listPeople"];
+        put?: never;
+        /** Create an unclaimed public person */
+        post: operations["createPerson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/people/{personId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a public person */
+        get: operations["getPerson"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a person as its author or controller */
+        patch: operations["updatePerson"];
+        trace?: never;
+    };
+    "/people/{personId}/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List visible cards about a person */
+        get: operations["listPersonCards"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/people/{personId}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request verification of control of a person */
+        post: operations["claimPerson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1461,6 +1599,7 @@ export interface components {
             athleteProfiles: components["schemas"]["MeAthleteProfileCapability"][];
             reporterAssignments: components["schemas"]["MeReporterAssignment"][];
             canReviewClaims: boolean;
+            personProfile?: components["schemas"]["PersonProfile"] | null;
         };
         MeCapabilitiesResponse: {
             data: components["schemas"]["MeCapabilities"];
@@ -1717,7 +1856,7 @@ export interface components {
             seasonStat: components["schemas"]["TeamSeasonStat"];
         };
         /** @enum {string} */
-        SearchResultType: "PLAYER" | "TEAM" | "GAME" | "ARTICLE";
+        SearchResultType: "PERSON_PROFILE" | "PLAYER" | "TEAM" | "GAME" | "ARTICLE";
         SearchResultItem: {
             type: components["schemas"]["SearchResultType"];
             id: string;
@@ -2017,6 +2156,12 @@ export interface components {
             sourceImage?: components["schemas"]["CardImageSummary"] | null;
             currentUserHasClaimed: boolean;
             currentUserIssue?: components["schemas"]["CardIssue"] | null;
+            personProfileId?: string;
+            person?: components["schemas"]["PersonProfile"];
+            /** @enum {string} */
+            publicationType?: "COMMUNITY" | "OFFICIAL";
+            publishedByUserId?: string | null;
+            contentSnapshotJson?: unknown;
         };
         CardIssue: {
             id: string;
@@ -2038,7 +2183,7 @@ export interface components {
             originHash?: string | null;
         };
         CreateCardInput: {
-            athleteProfileId: string;
+            athleteProfileId?: string;
             teamId?: string | null;
             gameId?: string | null;
             title: string;
@@ -2048,7 +2193,8 @@ export interface components {
             editionSize?: number | null;
             sourceImageAssetId?: string | null;
             statsSnapshotJson?: unknown;
-        };
+            personProfileId?: string;
+        } | unknown | unknown;
         UpdateCardInput: {
             athleteProfileId?: string;
             teamId?: string | null;
@@ -2062,11 +2208,14 @@ export interface components {
             editionSize?: number | null;
             sourceImageAssetId?: string | null;
             statsSnapshotJson?: unknown;
+            personProfileId?: string;
         };
         PublishCardInput: {
             visibility?: components["schemas"]["CardVisibility"];
             editionMode?: components["schemas"]["CardEditionMode"];
             editionSize?: number | null;
+            /** @enum {string} */
+            publicationType?: "COMMUNITY";
         };
         MyCard: {
             issue: components["schemas"]["CardIssue"];
@@ -2079,6 +2228,29 @@ export interface components {
         CardIssueDownload: {
             issue: components["schemas"]["CardIssue"];
             authenticity: components["schemas"]["CardAuthenticityPayload"];
+        };
+        PersonProfile: {
+            id: string;
+            slug: string;
+            displayName: string;
+            aliases: string[];
+            bio?: string | null;
+            hometown?: string | null;
+            avatarUrl?: string | null;
+            claimedByUserId?: string | null;
+            canonicalUrl?: string;
+            shareTitle?: string;
+            shareText?: string;
+        };
+        CreatePersonInput: {
+            displayName: string;
+            bio?: string;
+            aliases?: string[];
+        };
+        UpdatePersonInput: {
+            displayName?: string;
+            bio?: string;
+            aliases?: string[];
         };
         MeAthleteProfileCapability: {
             athleteProfileId: string;
@@ -2109,7 +2281,7 @@ export interface components {
         /** @enum {string} */
         PlayerStatus: "ACTIVE" | "INACTIVE" | "GRADUATED";
         /** @enum {string} */
-        SourceStatus: "PLAYER_REPORTED" | "SPECTATOR_REPORTED" | "MULTI_SPECTATOR_CONFIRMED" | "TEAM_MANAGER_ENTERED" | "OFFICIAL_SCORER_RECORDED" | "VERIFIED_TEAM_ACCOUNT" | "ONLINE_SOURCE_IMPORTED" | "PUBLIC_SOURCE_SCRAPED" | "IN_DISPUTE";
+        SourceStatus: "PLAYER_REPORTED" | "SPECTATOR_REPORTED" | "MULTI_SPECTATOR_CONFIRMED" | "TEAM_MANAGER_ENTERED" | "OFFICIAL_SCORER_RECORDED" | "VERIFIED_TEAM_ACCOUNT" | "ONLINE_SOURCE_IMPORTED" | "PUBLIC_SOURCE_SCRAPED" | "IN_DISPUTE" | "SELF_REPORTED";
         RosterTeamSummary: {
             id: string;
             slug: string;
@@ -5471,6 +5643,324 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getHomeDiscovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discovery sections */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getExploreDiscovery: {
+        parameters: {
+            query?: {
+                limit?: components["parameters"]["Limit"];
+                /** @description Opaque cursor returned by the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                query?: string;
+                sort?: "recent" | "popular" | "performance" | "featured";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Explore sections */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getPlayerAggregate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Player aggregate */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getGameSpectator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Game spectator view */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listPeople: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PersonProfile"][];
+                    };
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createPerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePersonInput"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PersonProfile"];
+                    };
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getPerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PersonProfile"];
+                    };
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updatePerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePersonInput"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PersonProfile"];
+                    };
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listPersonCards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Card"][];
+                    };
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    claimPerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    verificationNote?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Claim"];
+                    };
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
 }

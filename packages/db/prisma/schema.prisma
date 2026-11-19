@@ -10,7 +10,7 @@ datasource db {
 // ─────────────────────────────────────────────────────────────────────────
 // Auth / account identity
 // User = login/identity. Profile = public app identity (username, avatar).
-// AthleteProfile (below) is a separate, claimable, sport-agnostic public
+// PersonProfile (below) is a separate, claimable, sport-agnostic public
 // entity — a User does not get one automatically at registration.
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -31,7 +31,8 @@ model User {
 
   profile           Profile?
   sessions          Session[]
-  claimedProfile    AthleteProfile? @relation("ClaimedProfile")
+  createdPeople     PersonProfile[] @relation("CreatedPeople")
+  claimedProfile    PersonProfile? @relation("ClaimedProfile")
   gameReporters     GameReporter[]
   follows           Follow[]
   reactions         Reaction[]
@@ -43,6 +44,7 @@ model User {
   articlesReviewed  Article[]       @relation("ArticleReviewer")
   mediaAssets       MediaAsset[]
   imageAssets       ImageAsset[]
+  publishedCards    CardTemplate[]  @relation("PublishedCards")
   cardTemplates     CardTemplate[]  @relation("CreatedCardTemplates")
   cardSaves         CardSave[]
   ownedCardIssues   CardIssue[]     @relation("OwnedCardIssues")
@@ -88,6 +90,7 @@ model Session {
 // Provenance ladder for any stat, profile field, or record. Drives the
 // verification badge shown on public entity pages.
 enum SourceStatus {
+  SELF_REPORTED
   PLAYER_REPORTED
   SPECTATOR_REPORTED
   MULTI_SPECTATOR_CONFIRMED
@@ -212,20 +215,26 @@ model Team {
 
 // ─────────────────────────────────────────────────────────────────────────
 // Athlete identity — public, claimable, sport-agnostic.
-// A Player row is the sport-specific attachment of an AthleteProfile
+// A Player row is the sport-specific attachment of an PersonProfile
 // (position, class year, jersey). One profile can have a Player row per
 // sport in the future; MVP only ever creates one (basketball).
 // ─────────────────────────────────────────────────────────────────────────
 
-model AthleteProfile {
+model PersonProfile {
+  displayName     String       @default("")
+  aliases         Json?
+  createdByUserId String?
+  createdByUser User? @relation("CreatedPeople", fields: [createdByUserId], references: [id])
+  @@index([createdByUserId])
+  @@map("AthleteProfile")
   id              String       @id @default(cuid())
   slug            String       @unique
-  firstName       String
-  lastName        String
+  firstName       String       @default("")
+  lastName        String       @default("")
   bio             String?
   hometown        String?
   avatarUrl       String?
-  sourceStatus    SourceStatus @default(PLAYER_REPORTED)
+  sourceStatus    SourceStatus @default(SELF_REPORTED)
   claimedByUserId String?      @unique
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -282,7 +291,7 @@ model Player {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
-  athleteProfile    AthleteProfile     @relation(fields: [athleteProfileId], references: [id])
+  athleteProfile    PersonProfile     @relation(fields: [athleteProfileId], references: [id])
   sport             Sport              @relation(fields: [sportId], references: [id])
   rosterMemberships RosterMembership[]
   seasonStats       PlayerSeasonStat[]
@@ -778,6 +787,7 @@ model MediaAsset {
 }
 
 model ImageAsset {
+  visibility       CardVisibility @default(PUBLIC)
   id               String               @id @default(cuid())
   targetType       EntityType
   targetId         String
@@ -867,7 +877,17 @@ enum CardDownloadContext {
   DIRECT
 }
 
+enum CardPublicationType {
+  COMMUNITY
+  OFFICIAL
+}
+
 model CardTemplate {
+  publicationType CardPublicationType @default(COMMUNITY)
+  publishedByUserId String?
+  publishedByUser User? @relation("PublishedCards", fields: [publishedByUserId], references: [id])
+  contentSnapshotJson Json?
+  @@index([publishedByUserId])
   id                 String             @id @default(cuid())
   athleteProfileId   String
   teamId             String?
@@ -894,7 +914,7 @@ model CardTemplate {
   updatedAt          DateTime           @updatedAt
   publishedAt        DateTime?
 
-  athleteProfile   AthleteProfile      @relation(fields: [athleteProfileId], references: [id])
+  athleteProfile   PersonProfile      @relation(fields: [athleteProfileId], references: [id])
   team             Team?               @relation(fields: [teamId], references: [id])
   game             Game?               @relation(fields: [gameId], references: [id])
   createdByUser    User                @relation("CreatedCardTemplates", fields: [createdByUserId], references: [id])
@@ -909,6 +929,7 @@ model CardTemplate {
   @@index([visibility, status, publishedAt])
   @@index([createdByUserId])
   @@index([athleteProfileId, batchRequestId])
+  generationKey String? @unique
 }
 
 model CardIssue {
@@ -1070,7 +1091,7 @@ model Claim {
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
-  athleteProfile  AthleteProfile @relation(fields: [athleteProfileId], references: [id])
+  athleteProfile  PersonProfile @relation(fields: [athleteProfileId], references: [id])
   requestedByUser User           @relation("ClaimRequester", fields: [requestedByUserId], references: [id])
   reviewedByUser  User?          @relation("ClaimReviewer", fields: [reviewedByUserId], references: [id])
 

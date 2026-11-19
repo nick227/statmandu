@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
@@ -55,6 +56,7 @@ try {
     INSERT INTO CardGenerationJob (id,cardTemplateId,status,inputJson,updatedAt) VALUES ('j1','c1','READY',JSON_OBJECT(),NOW(3));
   `)
 
+  mysql("UPDATE CardTemplate SET status='PUBLISHED', publishedAt=NOW(3), originHash='legacy-origin' WHERE id='c1';")
   prisma(['migrate', 'resolve', '--applied', '20260712000000_baseline'])
   prisma(['migrate', 'deploy'])
 
@@ -70,5 +72,12 @@ try {
     SELECT COUNT(*) AS downloads FROM CardDownloadEvent;
     SELECT COUNT(*) AS media FROM MediaAsset;
   `)
-  console.log('Populated baseline migration verification passed')
+  assert.equal(mysqlOutput("SELECT displayName FROM AthleteProfile WHERE id='a1'"), 'Migration Athlete')
+  assert.equal(mysqlOutput("SELECT claimedByUserId FROM AthleteProfile WHERE id='a1'"), 'u1')
+  assert.equal(mysqlOutput("SELECT CONCAT(originHash, ':', publicationType, ':', IFNULL(publishedByUserId,'NULL')) FROM CardTemplate WHERE id='c1'"), 'legacy-origin:COMMUNITY:NULL')
+  assert.equal(mysqlOutput("SELECT JSON_UNQUOTE(JSON_EXTRACT(contentSnapshotJson, '$.person.displayName')) FROM CardTemplate WHERE id='c1'"), 'Migration Athlete')
+  assert.equal(mysqlOutput("SELECT issueHash FROM CardIssue WHERE id='ci1'"), 'migration-hash')
+  assert.equal(mysqlOutput("SELECT CONCAT(athleteProfileId, ':', sportId) FROM Player WHERE id='p1'"), 'a1:s1')
+  assert.equal(mysqlOutput("SELECT COUNT(*) FROM CardTemplate WHERE id='c1' AND teamId='t1' AND gameId='g1'"), '1')
+  console.log('Populated baseline migration verification passed, including person/card preservation assertions')
 } finally {}

@@ -85,7 +85,7 @@ export class VerificationService {
     const player = await db.player.findUnique({ where: { id: playerId } })
     if (!player) throw { statusCode: 404, message: 'Player not found' }
 
-    await db.athleteProfile.update({
+    await db.personProfile.update({
       where: { id: player.athleteProfileId },
       data: { sourceStatus },
     })

@@ -44,7 +44,7 @@ async function resetAdminTestDatabase() {
   await db.game.deleteMany()
   await db.rosterMembership.deleteMany()
   await db.player.deleteMany()
-  await db.athleteProfile.deleteMany()
+  await db.personProfile.deleteMany()
   await db.team.deleteMany()
   await db.season.deleteMany()
   await db.school.deleteMany()
@@ -250,12 +250,11 @@ describe('impersonation header', () => {
 
     const playerId = res.json().data.id as string
     const player = await db.player.findUniqueOrThrow({ where: { id: playerId }, include: { athleteProfile: true } })
-    expect(player.athleteProfile.claimedByUserId).toBe(testOtherUserId)
+    expect(player.athleteProfile.claimedByUserId).toBeNull()
+    expect(player.athleteProfile.createdByUserId).toBe(testOtherUserId)
 
-    const audit = await db.adminAuditLog.findFirst({
-      where: { actorUserId: testUserId, subjectUserId: testOtherUserId, method: 'POST', path: '/players' },
-      orderBy: { createdAt: 'desc' },
-    })
+    await expect.poll(async () => db.adminAuditLog.count({ where: { actorUserId: testUserId, subjectUserId: testOtherUserId, method: 'POST', path: '/players' } })).toBe(1)
+    const audit = await db.adminAuditLog.findFirst({ where: { actorUserId: testUserId, subjectUserId: testOtherUserId, method: 'POST', path: '/players' } })
     expect(audit).toBeTruthy()
     expect(audit?.note).toBe('onboard athlete as Bob')
   })
@@ -309,7 +308,7 @@ describe('admin endpoints: bulk + audit', () => {
     expect(nonAdmin.statusCode).toBe(403)
 
     await makeAdmin(testUserId)
-    const profile = await db.athleteProfile.create({
+    const profile = await db.personProfile.create({
       data: { slug: 'taylor-james', firstName: 'Taylor', lastName: 'James', sourceStatus: 'PLAYER_REPORTED' },
     })
 

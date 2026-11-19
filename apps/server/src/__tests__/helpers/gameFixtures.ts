@@ -7,12 +7,12 @@ export async function seedGameFixture() {
   const homeTeam = await db.team.create({ data: { sportId: sport.id, leagueId: league.id, slug: 'home-team', name: 'Home Team' } })
   const awayTeam = await db.team.create({ data: { sportId: sport.id, leagueId: league.id, slug: 'away-team', name: 'Away Team' } })
 
-  const homeProfile = await db.athleteProfile.create({
+  const homeProfile = await db.personProfile.create({
     data: { slug: 'home-player', firstName: 'Home', lastName: 'Player', sourceStatus: 'PLAYER_REPORTED' },
   })
   const homePlayer = await db.player.create({ data: { athleteProfileId: homeProfile.id, sportId: sport.id } })
 
-  const awayProfile = await db.athleteProfile.create({
+  const awayProfile = await db.personProfile.create({
     data: { slug: 'away-player', firstName: 'Away', lastName: 'Player', sourceStatus: 'PLAYER_REPORTED' },
   })
   const awayPlayer = await db.player.create({ data: { athleteProfileId: awayProfile.id, sportId: sport.id } })

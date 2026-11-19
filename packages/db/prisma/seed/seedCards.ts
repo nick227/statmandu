@@ -7,7 +7,7 @@ const CARD_TYPES = ['PROFILE', 'BIG_GAME', 'MILESTONE', 'SEASON', 'HIGHLIGHT'] a
 
 export async function seedCards(referenceDate: Date) {
   const clock = new SeedClock(referenceDate)
-  const athletes = await db.athleteProfile.findMany({
+  const athletes = await db.personProfile.findMany({
     where: { players: { some: { sport: { slug: 'basketball' } } } },
     orderBy: { slug: 'asc' },
     take: 20,

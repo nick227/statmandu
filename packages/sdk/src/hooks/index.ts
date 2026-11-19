@@ -18,3 +18,5 @@ export * from './useSearch'
 export * from './useAdmin'
 export * from './useCards'
 export * from './useDiscovery'
+
+export * from "./usePeople"

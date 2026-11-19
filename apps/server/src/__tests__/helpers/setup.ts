@@ -46,7 +46,7 @@ export async function resetTestDatabase() {
   await db.game.deleteMany()
   await db.rosterMembership.deleteMany()
   await db.player.deleteMany()
-  await db.athleteProfile.deleteMany()
+  await db.personProfile.deleteMany()
   await db.team.deleteMany()
   await db.season.deleteMany()
   await db.school.deleteMany()
