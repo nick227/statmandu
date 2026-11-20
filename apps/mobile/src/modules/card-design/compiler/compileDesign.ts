@@ -28,31 +28,6 @@ export function compileAuthoredDesign(
   const frontLayers: CardCompositionLayer[] = design.composeFront(fullContext)
   const backLayers: CardCompositionLayer[] = design.composeBack(fullContext)
 
-  const composition: CardComposition = {
-    schemaVersion: 1,
-    canvas: { width: 600, height: 900 },
-    layers: frontLayers,
-    metadata: {
-      rendererVersion: 'rdc-composition-v1',
-      flagship: {
-        id: design.id,
-        name: design.name,
-        family: design.family,
-        visualTradition: design.visualTradition,
-        contentStore: fullContext.content,
-        profile: fullContext.person,
-        appearance: {
-          finishEffect: design.materials.finish,
-          fontRole: design.typography.headlineFont,
-          backgroundColor: design.palette.background,
-          accentColor: design.palette.accent,
-          borderColor: design.palette.border,
-          textColor: design.palette.foreground,
-        },
-      },
-    },
-  }
-
   const backComposition: CardComposition = {
     schemaVersion: 1,
     canvas: { width: 600, height: 900 },
@@ -64,6 +39,34 @@ export function compileAuthoredDesign(
         parentDesignId: design.id,
         face: 'back',
         contentStore: fullContext.content,
+      },
+    },
+  }
+
+  const composition: CardComposition = {
+    schemaVersion: 1,
+    canvas: { width: 600, height: 900 },
+    layers: frontLayers,
+    backComposition,
+    metadata: {
+      rendererVersion: 'rdc-composition-v1',
+      flagship: {
+        id: design.id,
+        name: design.name,
+        family: design.family,
+        visualTradition: design.visualTradition,
+        inputs: fullContext.content,
+        contentStore: fullContext.content,
+        profile: fullContext.person,
+        appearance: {
+          finishEffect: design.materials.finish,
+          fontRole: design.typography.headlineFont,
+          backgroundColor: design.palette.background,
+          accentColor: design.palette.accent,
+          borderColor: design.palette.border,
+          textColor: design.palette.foreground,
+        },
+        backComposition,
       },
     },
   }

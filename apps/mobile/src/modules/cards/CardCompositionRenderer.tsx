@@ -12,8 +12,8 @@ export interface GradientSpec {
   type?: 'linear' | 'radial'
   colors: string[]
   locations?: number[]
-  start?: { x: number; y: number }
-  end?: { x: number; y: number }
+  start?: { x?: number; y?: number }
+  end?: { x?: number; y?: number }
   angle?: number
 }
 
@@ -40,9 +40,9 @@ export type CardComposition = Omit<components['schemas']['CardComposition'], 'la
   }
 }
 
-export type CardCompositionLayer = Omit<components['schemas']['CardCompositionLayer'], 'type'> & {
+export type CardCompositionLayer = Omit<components['schemas']['CardCompositionLayer'], 'type' | 'fontRole'> & {
   type: CardLayerType
-  fontRole?: FontRole
+  fontRole?: FontRole | string
   allCaps?: boolean
   bold?: boolean
   italic?: boolean
@@ -233,8 +233,19 @@ export function CardCompositionRenderer({
           baseLayerStyle.boxShadow = `${(shadow.offsetX ?? 0) * scale}px ${(shadow.offsetY ?? 2) * scale}px ${(shadow.blur ?? 4) * scale}px ${shadow.color || 'rgba(0,0,0,0.45)'}`
         }
 
+        const borderTopLeftRadius = (layerAny.borderTopLeftRadius ?? layerAny.mask?.borderTopLeftRadius ?? layerAny.borderRadius ?? 0) * scale
+        const borderTopRightRadius = (layerAny.borderTopRightRadius ?? layerAny.mask?.borderTopRightRadius ?? layerAny.borderRadius ?? 0) * scale
+        const borderBottomLeftRadius = (layerAny.borderBottomLeftRadius ?? layerAny.mask?.borderBottomLeftRadius ?? layerAny.borderRadius ?? 0) * scale
+        const borderBottomRightRadius = (layerAny.borderBottomRightRadius ?? layerAny.mask?.borderBottomRightRadius ?? layerAny.borderRadius ?? 0) * scale
+        const hasCustomRadii = Boolean(borderTopLeftRadius || borderTopRightRadius || borderBottomLeftRadius || borderBottomRightRadius)
+        const cornerStyles = hasCustomRadii ? {
+          borderTopLeftRadius,
+          borderTopRightRadius,
+          borderBottomLeftRadius,
+          borderBottomRightRadius,
+        } : {}
+
         if (layer.type === 'RECTANGLE') {
-          const borderRadius = layerAny.borderRadius ? layerAny.borderRadius * scale : undefined
           const borderWidth = layerAny.borderWidth ? layerAny.borderWidth * scale : undefined
           const borderColor = layerAny.borderColor || undefined
 
@@ -244,11 +255,11 @@ export function CardCompositionRenderer({
               testID={`layer-rect-${layer.id || index}`}
               style={[
                 baseLayerStyle,
+                cornerStyles,
                 {
-                  borderRadius,
                   borderWidth,
                   borderColor,
-                  overflow: gradient ? 'hidden' : undefined,
+                  overflow: (gradient || hasCustomRadii) ? 'hidden' : undefined,
                   backgroundColor: gradient ? undefined : (layer.fill || '#18181b'),
                 },
               ]}
@@ -259,7 +270,7 @@ export function CardCompositionRenderer({
                   locations={gradient.locations}
                   start={gradient.start || { x: 0, y: 0 }}
                   end={gradient.end || { x: 1, y: 1 }}
-                  style={[StyleSheet.absoluteFill, { borderRadius }]}
+                  style={[StyleSheet.absoluteFill, cornerStyles]}
                 />
               )}
             </View>
@@ -274,9 +285,9 @@ export function CardCompositionRenderer({
               testID={`layer-img-${layer.id || index}`}
               style={[
                 baseLayerStyle,
+                cornerStyles,
                 {
                   overflow: 'hidden',
-                  borderRadius: layerAny.borderRadius ? layerAny.borderRadius * scale : undefined,
                   borderWidth: layerAny.borderWidth ? layerAny.borderWidth * scale : undefined,
                   borderColor: layerAny.borderColor || undefined,
                 },
@@ -344,7 +355,7 @@ export function CardCompositionRenderer({
                   color,
                   fontWeight: layerAny.bold ? '700' : '600',
                   fontStyle: layerAny.italic ? 'italic' : 'normal',
-                  lineHeight: fontSize * 1.25,
+                  lineHeight: layerAny.lineHeight ? layerAny.lineHeight * scale : fontSize * 1.25,
                   textTransform: layerAny.allCaps ? 'uppercase' : undefined,
                   letterSpacing: layerAny.tracking ? layerAny.tracking * scale : layerAny.allCaps ? 1.2 * scale : undefined,
                   textAlign: layerAny.textAlign || layerAny.align || undefined,

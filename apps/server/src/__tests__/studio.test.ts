@@ -118,4 +118,141 @@ describe('Reusable designs, immutable releases and creator catalogs', () => {
     expect(results[0].json().data.id).toBe(results[1].json().data.id)
     expect(await db.cardRelease.count()).toBe(1)
   })
+
+  it('persists and publishes rich authored two-sided compositions with gradients, SVG paths, shadows, and back faces without data loss', async () => {
+    const person = await db.personProfile.create({
+      data: { slug: 'author-hero', displayName: 'Miles Dewey Davis III', firstName: 'Miles', lastName: 'Davis', createdByUserId: testUserId },
+    })
+
+    const richTwoSidedComposition = {
+      schemaVersion: 1,
+      canvas: { width: 600, height: 900 },
+      layers: [
+        {
+          id: 'gold-frame',
+          type: 'RECTANGLE',
+          x: 10,
+          y: 10,
+          width: 580,
+          height: 880,
+          gradient: {
+            type: 'linear',
+            colors: ['#D4AF37', '#FFF4D0', '#AA7C11'],
+            locations: [0, 0.5, 1],
+          },
+          shadow: {
+            color: 'rgba(0,0,0,0.6)',
+            offsetX: 0,
+            offsetY: 4,
+            blur: 12,
+          },
+        },
+        {
+          id: 'filigree-corner',
+          type: 'SVG',
+          x: 14,
+          y: 14,
+          width: 60,
+          height: 60,
+          pathData: 'M0,0 C20,10 50,40 60,60 C40,50 10,20 0,0 Z',
+          fill: '#AA7C11',
+          stroke: '#FFF4D0',
+          strokeWidth: 1.5,
+        },
+        {
+          id: 'nameplate',
+          type: 'TEXT',
+          x: 40,
+          y: 700,
+          width: 520,
+          height: 60,
+          personField: 'displayName',
+          fontRole: 'serif',
+          allCaps: true,
+          fill: '#0F172A',
+          fontSize: 28,
+        },
+      ],
+      backComposition: {
+        schemaVersion: 1,
+        canvas: { width: 600, height: 900 },
+        layers: [
+          {
+            id: 'back-mat',
+            type: 'RECTANGLE',
+            x: 0,
+            y: 0,
+            width: 600,
+            height: 900,
+            fill: '#050505',
+          },
+          {
+            id: 'back-subject',
+            type: 'TEXT',
+            x: 50,
+            y: 100,
+            width: 500,
+            height: 40,
+            personField: 'displayName',
+            fontSize: 22,
+            fill: '#E2E8F0',
+          },
+        ],
+      },
+      metadata: {
+        rendererVersion: 'rdc-composition-v1',
+        designId: 'prestige-gold',
+      },
+    }
+
+    const createdDesign = await app.inject({
+      method: 'POST',
+      url: '/card-designs',
+      headers: asAuth(testUserId),
+      payload: {
+        title: 'Authored Prestige Gold',
+        composition: richTwoSidedComposition,
+      },
+    })
+
+    expect(createdDesign.statusCode, createdDesign.body).toBe(201)
+    await validateResponse('createCardDesign', 201, createdDesign.json())
+    const design = createdDesign.json().data
+
+    // Verify front and back layers saved accurately
+    expect(design.composition.layers).toHaveLength(3)
+    expect(design.composition.layers[0].gradient.colors).toHaveLength(3)
+    expect(design.composition.layers[1].type).toBe('SVG')
+    expect(design.composition.backComposition.layers).toHaveLength(2)
+
+    // Now issue and publish the release
+    const releaseRes = await create({
+      templateId: design.id,
+      expectedRevision: 1,
+      personProfileId: person.id,
+      title: 'Authored Release Proof',
+      editionMode: 'LIMITED',
+      editionSize: 1,
+      requestId: 'rich-proof-req-1',
+    })
+    expect(releaseRes.statusCode, releaseRes.body).toBe(201)
+    const release = releaseRes.json().data
+
+    const genRes = await app.inject({
+      method: 'POST',
+      url: `/releases/${release.id}/generate`,
+      headers: asAuth(testUserId),
+    })
+    expect(genRes.statusCode, genRes.body).toBe(200)
+
+    const pubRes = await publish(release.id)
+    expect(pubRes.statusCode, pubRes.body).toBe(200)
+    await validateResponse('getRelease', 200, pubRes.json())
+
+    // Verify published release snapshot resolved person displayName on BOTH front and back
+    const pubData = pubRes.json().data
+    const snapshotComp = pubData.templateSnapshot.composition
+    expect(snapshotComp.layers.find((l: any) => l.id === 'nameplate').text).toBe('Miles Dewey Davis III')
+    expect(snapshotComp.backComposition.layers.find((l: any) => l.id === 'back-subject').text).toBe('Miles Dewey Davis III')
+  })
 })

@@ -1169,7 +1169,7 @@ export function useCardStudioState() {
     // Two-Sided Collectible Face
     activeCardFace,
     handleToggleCardFace,
-    backComposition: currentFlagshipResult.backComposition,
+    backComposition: currentFlagshipResult.backComposition || composition.backComposition,
 
     // Core Canvas Composition
     composition,

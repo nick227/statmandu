@@ -19,7 +19,10 @@ export function composePrestigeGoldBack(ctx: RenderContext): CardCompositionLaye
     'Renowned for generational mastery and cultural impact, defining an era of artistic excellence.'
   const milestone1 = ctx.content.input4 || 'Hall of Fame Induction · Landmark Achievement'
   const milestone2 = ctx.content.input5 || 'Special Edition Ultra Legacy Archive'
-  const ratingOrStat = ctx.content.input6 || 'ARCHIVE 1-OF-1 · MINT 10'
+  const editionText = ctx.issue?.issueNumber
+    ? `OFFICIAL ISSUE #${ctx.issue.issueNumber} / ${ctx.issue.editionSize ?? '1'}`
+    : 'ORIGINAL PROTOTYPE'
+  const ratingOrStat = ctx.content.input6 || 'AUTHENTIC MASTER SPECIFICATION'
 
   const layers: CardCompositionLayer[] = [
     // 1. Base Substrate (Obsidian Velvet)
@@ -268,7 +271,7 @@ export function composePrestigeGoldBack(ctx: RenderContext): CardCompositionLaye
       y: 662,
       width: 226,
       height: 18,
-      text: 'ARCHIVAL GRADE',
+      text: 'ARCHIVAL SPECIFICATION',
       fontSize: 10,
       fill: '#F59E0B',
       fontRole: 'mono',
@@ -283,7 +286,7 @@ export function composePrestigeGoldBack(ctx: RenderContext): CardCompositionLaye
       width: 226,
       height: 36,
       text: ratingOrStat,
-      fontSize: 13,
+      fontSize: 12,
       fill: '#FEF08A',
       fontRole: 'mono',
       bold: true,
@@ -332,8 +335,8 @@ export function composePrestigeGoldBack(ctx: RenderContext): CardCompositionLaye
       y: 686,
       width: 226,
       height: 36,
-      text: 'VERIFIED 1-OF-1 · RARE',
-      fontSize: 13,
+      text: editionText,
+      fontSize: 12,
       fill: '#FEF08A',
       fontRole: 'mono',
       bold: true,

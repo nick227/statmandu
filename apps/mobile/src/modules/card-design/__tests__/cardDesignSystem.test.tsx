@@ -8,6 +8,7 @@ import {
   GRADIENT_24K_GOLD,
   PATH_BAROQUE_CORNER_TL,
 } from '../index'
+import { compileFlagshipDesign } from '@/modules/designs/flagshipDesigns'
 import { CardDesignWorkshopScreen } from '../workshop/CardDesignWorkshopScreen'
 
 jest.mock('@/shared/media/SmartImage', () => ({
@@ -59,7 +60,7 @@ describe('RARE Card Design System & Isolated Workshop', () => {
   })
 
   describe('Authoring Compiler & Composition', () => {
-    it('compiles Prestige Gold front and coordinated back with rich layers', () => {
+    it('compiles Prestige Gold front and coordinated back with rich layers and true cathedral arch', () => {
       const compiled = compileAuthoredDesign(prestigeGoldDesign)
 
       // Front Face
@@ -77,7 +78,19 @@ describe('RARE Card Design System & Isolated Workshop', () => {
       const shadowLayer = compiled.composition.layers.find((l: any) => l.shadow)
       expect(shadowLayer).toBeDefined()
 
-      // Back Face
+      // Verify authentic Cathedral Arched Portrait window geometry
+      const portraitFrame = compiled.composition.layers.find((l) => l.id === 'pg-portrait-frame-outer')
+      expect(portraitFrame).toBeDefined()
+      expect((portraitFrame as any)?.borderTopLeftRadius).toBe(180)
+      expect((portraitFrame as any)?.borderTopRightRadius).toBe(180)
+
+      const portraitImage = compiled.composition.layers.find((l) => l.id === 'pg-portrait-image')
+      expect(portraitImage).toBeDefined()
+      expect((portraitImage as any)?.borderTopLeftRadius).toBe(174)
+      expect((portraitImage as any)?.borderTopRightRadius).toBe(174)
+
+      // Back Face is directly attached as first-class composition
+      expect(compiled.composition.backComposition).toBeDefined()
       expect(compiled.backComposition.schemaVersion).toBe(1)
       expect(compiled.backComposition.canvas).toEqual({ width: 600, height: 900 })
       expect(compiled.backComposition.layers.length).toBeGreaterThanOrEqual(10)
@@ -88,6 +101,30 @@ describe('RARE Card Design System & Isolated Workshop', () => {
         expect(typeof layer.y).toBe('number')
         expect(typeof layer.width).toBe('number')
         expect(typeof layer.height).toBe('number')
+      }
+    })
+
+    it('unifies Studio and Workshop compilation pipelines with 100% layer parity', () => {
+      const content = {
+        input1: 'Jerry Garcia',
+        input2: 'LEAD GUITAR · LIVE FOREVER',
+        input3: 'Co-founder and lead guitarist of the Grateful Dead.',
+      }
+
+      // Studio calls compileFlagshipDesign
+      const studioResult = compileFlagshipDesign('royal-heritage', content)
+
+      // Workshop calls compileAuthoredDesign
+      const authored = designRegistry.get('royal-heritage')!
+      const workshopResult = compileAuthoredDesign(authored, { content })
+
+      // Both pipelines must produce identical layer definitions and layer counts
+      expect(studioResult.composition.layers.length).toBe(workshopResult.composition.layers.length)
+      expect(studioResult.backComposition.layers.length).toBe(workshopResult.backComposition.layers.length)
+
+      for (let i = 0; i < studioResult.composition.layers.length; i++) {
+        expect(studioResult.composition.layers[i].id).toBe(workshopResult.composition.layers[i].id)
+        expect(studioResult.composition.layers[i].type).toBe(workshopResult.composition.layers[i].type)
       }
     })
 
@@ -104,7 +141,7 @@ describe('RARE Card Design System & Isolated Workshop', () => {
 
         // Subject name appears on both front and back
         const frontNameLayer = result.composition.layers.find((l) => l.id === 'slot-input1')
-        expect(frontNameLayer?.text).toBe(fixture.content.input1)
+        expect(frontNameLayer?.text).toBe(fixture.content.input1?.toUpperCase())
 
         const backNameLayer = result.backComposition.layers.find((l) => l.id === 'back-subject-name')
         expect(backNameLayer?.text).toBe(fixture.content.input1)

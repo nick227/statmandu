@@ -4,14 +4,14 @@ export const FIXTURE_JERRY_GARCIA: FixtureSubject = {
   id: 'fixture-jerry-garcia',
   label: 'Jerry Garcia (1-of-1 Relic Benchmark)',
   description: 'Grateful Dead lead guitar, ultra legacy anniversary edition with 1965-2025 milestone.',
-  imageAssetId: 'art-miles',
+  imageAssetId: 'art-jerry',
   content: {
     input1: 'Jerry Garcia',
     input2: 'LEAD GUITAR · LIVE FOREVER',
     input3: 'Co-founder and lead guitarist of the Grateful Dead. Renowned for soulful improvisation, Garcia defined an era of counter-culture Americana across three decades of live touring.',
     input4: 'Rock & Roll Hall of Fame · 1994',
     input5: '60th Anniversary Ultra Legacy',
-    input6: 'ARCHIVE 1-OF-1 · MINT 10',
+    input6: 'ARCHIVE SPECIFICATION · PROTOTYPE 01',
   },
   person: {
     displayName: 'Jerry Garcia',

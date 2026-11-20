@@ -2573,11 +2573,11 @@ export interface components {
             bio?: string;
             aliases?: string[];
         };
-        /** @description Ordered back-to-front. TEXT requires exactly one text or personField. IMAGE requires an owned imageAssetId. RECTANGLE requires fill. Bounds must fit the canvas. Text is plain text, never HTML. */
+        /** @description Ordered back-to-front. TEXT requires exactly one text or personField. IMAGE requires an owned imageAssetId. RECTANGLE requires fill or gradient. SVG/PATH requires pathData. Bounds must fit the canvas. Text is plain text, never HTML. */
         CardCompositionLayer: {
             id: string;
             /** @enum {string} */
-            type: "TEXT" | "IMAGE" | "RECTANGLE";
+            type: "TEXT" | "IMAGE" | "RECTANGLE" | "SVG" | "PATH";
             x: number;
             y: number;
             width: number;
@@ -2588,15 +2588,42 @@ export interface components {
             imageAssetId?: string;
             fill?: string;
             fontSize?: number;
+            fontRole?: string;
+            allCaps?: boolean;
+            bold?: boolean;
+            italic?: boolean;
+            tracking?: number;
+            letterSpacing?: number;
+            /** @enum {string} */
+            textAlign?: "left" | "center" | "right";
+            lineHeight?: number;
+            borderRadius?: number;
+            borderWidth?: number;
+            borderColor?: string;
+            borderLeftWidth?: number;
+            borderRightWidth?: number;
+            borderTopWidth?: number;
+            borderBottomWidth?: number;
+            gradient?: components["schemas"]["CardCompositionGradient"];
+            shadow?: components["schemas"]["CardCompositionShadow"];
+            mask?: components["schemas"]["CardCompositionMask"];
+            opacity?: number;
+            /** @enum {string} */
+            blendMode?: "normal" | "multiply" | "screen" | "overlay" | "color-dodge" | "soft-light";
+            pathData?: string;
+            viewBox?: string;
+            stroke?: string;
+            strokeWidth?: number;
         };
         CardComposition: {
             /** @enum {integer} */
             schemaVersion: 1;
-            canvas: {
-                width: number;
-                height: number;
-            };
+            canvas: components["schemas"]["CardCompositionCanvas"];
             layers: components["schemas"]["CardCompositionLayer"][];
+            backComposition?: components["schemas"]["CardFaceComposition"];
+            metadata?: {
+                [key: string]: unknown;
+            };
         };
         CardDesign: {
             id: string;
@@ -3014,6 +3041,48 @@ export interface components {
         };
         /** @enum {string} */
         CardIssueStatus: "CLAIMED" | "DOWNLOADED" | "REVOKED";
+        CardCompositionCanvas: {
+            width: number;
+            height: number;
+        };
+        CardCompositionGradient: {
+            /** @enum {string} */
+            type?: "linear" | "radial";
+            colors: string[];
+            locations?: number[];
+            start?: {
+                x?: number;
+                y?: number;
+            };
+            end?: {
+                x?: number;
+                y?: number;
+            };
+            angle?: number;
+        };
+        CardCompositionShadow: {
+            color?: string;
+            offsetX?: number;
+            offsetY?: number;
+            blur?: number;
+            opacity?: number;
+        };
+        CardCompositionMask: {
+            /** @enum {string} */
+            type?: "rounded" | "arch" | "path";
+            borderRadius?: number;
+            borderTopLeftRadius?: number;
+            borderTopRightRadius?: number;
+            borderBottomLeftRadius?: number;
+            borderBottomRightRadius?: number;
+            pathData?: string;
+        };
+        CardFaceComposition: {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            canvas: components["schemas"]["CardCompositionCanvas"];
+            layers: components["schemas"]["CardCompositionLayer"][];
+        };
         GenerateCardBatchInput: {
             sourceImageAssetId: string;
             poseIds?: string[];

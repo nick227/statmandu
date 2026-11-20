@@ -20,6 +20,7 @@ import {
   type DesignInput,
 } from '@/modules/typography/textFit'
 import { getCardTypeById } from './cardTypes'
+import { tryCompileWithAuthoredDesign } from '@/modules/card-design/registry/compatibilityAdapter'
 
 export type { Rect, DesignInput }
 
@@ -1851,6 +1852,37 @@ export function compileFlagshipDesign(
   selectedImageId?: string,
   appearance?: StudioAppearanceState,
 ): FlagshipCompilationResult {
+  // Delegate directly to the authoritative authored design registry when available
+  const authoredResult = tryCompileWithAuthoredDesign(
+    designId,
+    inputs as Record<string, string>,
+    person,
+    assets,
+    selectedImageId,
+  )
+  if (authoredResult) {
+    const design = getFlagshipDesignById(designId) || FLAGSHIP_DESIGNS[0]
+    const slot1 = design.inputs?.find((i) => i.id === 'input1')
+    return {
+      composition: authoredResult.composition,
+      backComposition: authoredResult.backComposition,
+      design,
+      fittedFontSizes: {
+        input1: slot1?.preferredFontSize ?? 28,
+        input2: 13,
+        input3: 13,
+        input4: 11,
+        input5: 11,
+        input6: 11,
+      },
+      isOverflow: {},
+      contentStore: {
+        ...authoredResult.design.defaultFixture.content,
+        ...(inputs as Record<string, string>),
+      } as ContentStore,
+    }
+  }
+
   const design = getFlagshipDesignById(designId) || FLAGSHIP_DESIGNS[0]
   const cardType = getCardTypeById(cardTypeId)
   const palette = {

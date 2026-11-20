@@ -23,6 +23,13 @@ export const CURATED_ARTWORKS: ArtworkPreset[] = [
     attribution: 'Literary & Cultural Portrait',
   },
   {
+    id: 'art-jerry',
+    label: 'Jerry Garcia (Grateful Dead Lead Guitarist)',
+    url: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=800&q=80',
+    category: 'Music',
+    attribution: 'Americana Psychedelic Rock Pioneer',
+  },
+  {
     id: 'art-miles',
     label: 'Miles Davis (Jazz Session)',
     url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80',

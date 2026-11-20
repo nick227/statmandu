@@ -3,6 +3,7 @@ import type { components } from '@statman/sdk'
 import { cn } from '@/lib/utils'
 import { Card1AStage } from './Card1A'
 import { CardCompositionRenderer } from './CardCompositionRenderer'
+import { FlippableCard } from './FlippableCard'
 import { CARD_STATUS_LABEL, CARD_STATUS_TONE, cardFaceDataFromCard } from './cardDisplay'
 
 type Card = components['schemas']['Card']
@@ -29,15 +30,46 @@ export function StatmanCard({ card, size = 'rail', showStatus = false, className
   const width = SIZE_WIDTHS[size]
 
   if (hasCompositionSnapshot) {
-    return (
-      <View className={cn('items-center', className)} style={style} {...props}>
+    const comp = card.templateSnapshot!.composition as any
+    const person = card.person ?? card.templateSnapshot!.person
+    const assets = card.templateSnapshot!.assets
+    const issue = card.currentUserIssue
+
+    const frontFace = (
+      <CardCompositionRenderer
+        composition={comp}
+        person={person}
+        assets={assets}
+        issue={issue}
+        width={width}
+      />
+    )
+
+    if (comp.backComposition) {
+      const backFace = (
         <CardCompositionRenderer
-          composition={card.templateSnapshot!.composition}
-          person={card.person ?? card.templateSnapshot!.person}
-          assets={card.templateSnapshot!.assets}
-          issue={card.currentUserIssue}
+          composition={comp.backComposition}
+          person={person}
+          assets={assets}
+          issue={issue}
           width={width}
         />
+      )
+
+      return (
+        <View className={cn('items-center', className)} style={style} {...props}>
+          <FlippableCard
+            front={frontFace}
+            back={backFace}
+            accessibilityName={card.title || 'Collectible card'}
+          />
+        </View>
+      )
+    }
+
+    return (
+      <View className={cn('items-center', className)} style={style} {...props}>
+        {frontFace}
       </View>
     )
   }
