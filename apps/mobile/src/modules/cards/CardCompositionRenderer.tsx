@@ -1,12 +1,34 @@
 import React from 'react'
 import { View, StyleSheet, Text as RNText } from 'react-native'
+import Svg, { Path } from 'react-native-svg'
+import { LinearGradient } from 'expo-linear-gradient'
 import type { components } from '@statman/sdk'
 import { SmartImage } from '@/shared/media/SmartImage'
 import { cn } from '@/lib/utils'
 import { FONT_ROLE_CSS_FAMILIES, type FontRole } from '@/modules/typography/textFit'
 import { getArtworkById, DEFAULT_ARTWORK } from '@/modules/designs/curatedArtwork'
 
-export type CardComposition = components['schemas']['CardComposition'] & {
+export interface GradientSpec {
+  type?: 'linear' | 'radial'
+  colors: string[]
+  locations?: number[]
+  start?: { x: number; y: number }
+  end?: { x: number; y: number }
+  angle?: number
+}
+
+export interface ShadowSpec {
+  color?: string
+  offsetX?: number
+  offsetY?: number
+  blur?: number
+  opacity?: number
+}
+
+export type CardLayerType = 'TEXT' | 'IMAGE' | 'RECTANGLE' | 'SVG' | 'PATH'
+
+export type CardComposition = Omit<components['schemas']['CardComposition'], 'layers'> & {
+  layers: CardCompositionLayer[]
   metadata?: {
     rendererVersion?: string
     taxonomy?: {
@@ -17,7 +39,9 @@ export type CardComposition = components['schemas']['CardComposition'] & {
     [key: string]: any
   }
 }
-export type CardCompositionLayer = components['schemas']['CardCompositionLayer'] & {
+
+export type CardCompositionLayer = Omit<components['schemas']['CardCompositionLayer'], 'type'> & {
+  type: CardLayerType
   fontRole?: FontRole
   allCaps?: boolean
   bold?: boolean
@@ -33,6 +57,15 @@ export type CardCompositionLayer = components['schemas']['CardCompositionLayer']
   borderRightWidth?: number
   borderTopWidth?: number
   borderBottomWidth?: number
+  gradient?: GradientSpec
+  shadow?: ShadowSpec
+  opacity?: number
+  blendMode?: 'normal' | 'multiply' | 'screen' | 'overlay' | 'color-dodge' | 'soft-light'
+  pathData?: string
+  viewBox?: string
+  stroke?: string
+  strokeWidth?: number
+  [key: string]: any
 }
 
 export const RDC_COMPOSITION_RENDERER_VERSION = 'rdc-composition-v1'
@@ -171,29 +204,65 @@ export function CardCompositionRenderer({
     >
       {/* Ordered layers back-to-front */}
       {layers.map((layer, index) => {
-        const layerStyle = {
+        const layerAny = layer as any
+        const shadow = layerAny.shadow
+        const gradient = layerAny.gradient
+
+        const baseLayerStyle: any = {
           position: 'absolute' as const,
           left: (layer.x ?? 0) * scale,
           top: (layer.y ?? 0) * scale,
           width: (layer.width ?? 100) * scale,
           height: (layer.height ?? 100) * scale,
+          opacity: layerAny.opacity !== undefined ? layerAny.opacity : 1,
+        }
+
+        if (layerAny.blendMode) {
+          baseLayerStyle.mixBlendMode = layerAny.blendMode
+        }
+
+        if (shadow) {
+          baseLayerStyle.shadowColor = shadow.color || '#000000'
+          baseLayerStyle.shadowOffset = {
+            width: (shadow.offsetX ?? 0) * scale,
+            height: (shadow.offsetY ?? 2) * scale,
+          }
+          baseLayerStyle.shadowOpacity = shadow.opacity ?? 0.4
+          baseLayerStyle.shadowRadius = (shadow.blur ?? 4) * scale
+          baseLayerStyle.elevation = (shadow.blur ?? 4) * scale
+          baseLayerStyle.boxShadow = `${(shadow.offsetX ?? 0) * scale}px ${(shadow.offsetY ?? 2) * scale}px ${(shadow.blur ?? 4) * scale}px ${shadow.color || 'rgba(0,0,0,0.45)'}`
         }
 
         if (layer.type === 'RECTANGLE') {
+          const borderRadius = layerAny.borderRadius ? layerAny.borderRadius * scale : undefined
+          const borderWidth = layerAny.borderWidth ? layerAny.borderWidth * scale : undefined
+          const borderColor = layerAny.borderColor || undefined
+
           return (
             <View
               key={layer.id || `rect-${index}`}
               testID={`layer-rect-${layer.id || index}`}
               style={[
-                layerStyle,
+                baseLayerStyle,
                 {
-                  backgroundColor: layer.fill || '#18181b',
-                  borderRadius: (layer as any).borderRadius ? (layer as any).borderRadius * scale : undefined,
-                  borderWidth: (layer as any).borderWidth ? (layer as any).borderWidth * scale : undefined,
-                  borderColor: (layer as any).borderColor || undefined,
+                  borderRadius,
+                  borderWidth,
+                  borderColor,
+                  overflow: gradient ? 'hidden' : undefined,
+                  backgroundColor: gradient ? undefined : (layer.fill || '#18181b'),
                 },
               ]}
-            />
+            >
+              {gradient && (
+                <LinearGradient
+                  colors={gradient.colors as [string, string, ...string[]]}
+                  locations={gradient.locations}
+                  start={gradient.start || { x: 0, y: 0 }}
+                  end={gradient.end || { x: 1, y: 1 }}
+                  style={[StyleSheet.absoluteFill, { borderRadius }]}
+                />
+              )}
+            </View>
           )
         }
 
@@ -204,12 +273,12 @@ export function CardCompositionRenderer({
               key={layer.id || `img-${index}`}
               testID={`layer-img-${layer.id || index}`}
               style={[
-                layerStyle,
+                baseLayerStyle,
                 {
                   overflow: 'hidden',
-                  borderRadius: (layer as any).borderRadius ? (layer as any).borderRadius * scale : undefined,
-                  borderWidth: (layer as any).borderWidth ? (layer as any).borderWidth * scale : undefined,
-                  borderColor: (layer as any).borderColor || undefined,
+                  borderRadius: layerAny.borderRadius ? layerAny.borderRadius * scale : undefined,
+                  borderWidth: layerAny.borderWidth ? layerAny.borderWidth * scale : undefined,
+                  borderColor: layerAny.borderColor || undefined,
                 },
               ]}
             >
@@ -228,30 +297,63 @@ export function CardCompositionRenderer({
           )
         }
 
+        if (layer.type === 'SVG' || layerAny.type === 'PATH') {
+          const viewBox = layerAny.viewBox || `0 0 ${layer.width ?? 100} ${layer.height ?? 100}`
+          const strokeWidth = layerAny.strokeWidth ? layerAny.strokeWidth * scale : undefined
+          return (
+            <View
+              key={layer.id || `svg-${index}`}
+              testID={`layer-svg-${layer.id || index}`}
+              style={baseLayerStyle}
+              pointerEvents="none"
+            >
+              <Svg
+                viewBox={viewBox}
+                width="100%"
+                height="100%"
+              >
+                {layerAny.pathData && (
+                  <Path
+                    d={layerAny.pathData}
+                    fill={layer.fill || 'none'}
+                    stroke={layerAny.stroke}
+                    strokeWidth={strokeWidth}
+                  />
+                )}
+              </Svg>
+            </View>
+          )
+        }
+
         if (layer.type === 'TEXT') {
           const textContent = resolveLayerText(layer, person)
           const fontSize = (layer.fontSize ?? 18) * scale
           const color = layer.fill || '#FFFFFF'
-          const fontFamily = (layer as any).fontRole ? FONT_ROLE_CSS_FAMILIES[(layer as any).fontRole as FontRole] : undefined
+          const fontFamily = layerAny.fontRole ? FONT_ROLE_CSS_FAMILIES[layerAny.fontRole as FontRole] : undefined
 
           return (
             <View
               key={layer.id || `text-${index}`}
               testID={`layer-text-${layer.id || index}`}
-              style={[layerStyle, { justifyContent: 'center' }]}
+              style={[baseLayerStyle, { justifyContent: 'center' }]}
             >
               <RNText
                 numberOfLines={layer.height ? Math.max(1, Math.floor((layer.height * scale) / (fontSize * 1.2))) : 2}
                 style={{
                   fontSize,
                   color,
-                  fontWeight: (layer as any).bold ? '700' : '600',
-                  fontStyle: (layer as any).italic ? 'italic' : 'normal',
+                  fontWeight: layerAny.bold ? '700' : '600',
+                  fontStyle: layerAny.italic ? 'italic' : 'normal',
                   lineHeight: fontSize * 1.25,
-                  textTransform: (layer as any).allCaps ? 'uppercase' : undefined,
-                  letterSpacing: (layer as any).tracking ? (layer as any).tracking * scale : (layer as any).allCaps ? 1.2 * scale : undefined,
-                  textAlign: (layer as any).textAlign || (layer as any).align || undefined,
+                  textTransform: layerAny.allCaps ? 'uppercase' : undefined,
+                  letterSpacing: layerAny.tracking ? layerAny.tracking * scale : layerAny.allCaps ? 1.2 * scale : undefined,
+                  textAlign: layerAny.textAlign || layerAny.align || undefined,
                   ...(fontFamily ? { fontFamily } : {}),
+                  ...(shadow ? {
+                    textShadowColor: shadow.color || 'rgba(0,0,0,0.6)',
+                    textShadowOffset: { width: (shadow.offsetX ?? 0) * scale, height: (shadow.offsetY ?? 1) * scale },
+                    textShadowRadius: (shadow.blur ?? 2) * scale,
+                  } : {}),
                 }}
               >
                 {textContent}

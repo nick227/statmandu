@@ -1,6 +1,7 @@
 import React from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
-import { Check, FolderOpen, Plus, Redo2, Rocket, Save, Undo2 } from 'lucide-react-native'
+import { useRouter } from 'expo-router'
+import { Check, FolderOpen, Plus, Redo2, Rocket, Save, Sparkles, Undo2 } from 'lucide-react-native'
 import { Text } from '@/shared/ui/Text'
 import { Input } from '@/shared/ui/Input'
 import { Button } from '@/shared/ui/Button'
@@ -63,6 +64,7 @@ export function StudioTopBar({
   isPublishDrawerOpen,
   onTogglePublishDrawer,
 }: StudioTopBarProps) {
+  const router = useRouter()
   return (
     <View className="mb-md flex-col md:flex-row md:items-center justify-between gap-sm border-b border-border pb-md">
       {/* Primary Left/Top Row: Branding + Design Title & Revision Badge */}
@@ -89,6 +91,16 @@ export function StudioTopBar({
 
       {/* Secondary Right/Bottom Row: Saved Designs & Action Buttons */}
       <View className="flex-row items-center justify-between md:justify-end gap-xs flex-wrap">
+        <Button
+          testID="open-workshop-button"
+          size="sm"
+          variant="ghost"
+          icon={Sparkles}
+          onPress={() => router.push('/cards/workshop')}
+        >
+          Workshop
+        </Button>
+
         {/* Saved Designs Dropdown (Floating) */}
         <View className="relative z-50">
           <Button

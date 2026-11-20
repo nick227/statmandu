@@ -1,18 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getApiClient, ApiError, type components } from '@statman/sdk'
 
+import type {
+  CardComposition,
+  CardCompositionLayer,
+} from '@/modules/cards/CardCompositionRenderer'
+
 export type CardDesign = components['schemas']['CardDesign']
-export type CardComposition = components['schemas']['CardComposition'] & {
-  metadata?: {
-    rendererVersion?: string
-    flagship?: any
-    taxonomy?: any
-    [key: string]: any
-  }
+export type { CardComposition, CardCompositionLayer }
+export type CreateCardDesignInput = Omit<components['schemas']['CreateCardDesignInput'], 'composition'> & {
+  composition: CardComposition
 }
-export type CardCompositionLayer = components['schemas']['CardCompositionLayer']
-export type CreateCardDesignInput = components['schemas']['CreateCardDesignInput']
-export type UpdateCardDesignInput = components['schemas']['UpdateCardDesignInput']
+export type UpdateCardDesignInput = Omit<components['schemas']['UpdateCardDesignInput'], 'composition'> & {
+  composition?: CardComposition
+}
 
 export class RevisionConflictError extends Error {
   constructor(
@@ -54,7 +55,7 @@ export function useCreateCardDesign() {
   return useMutation({
     mutationFn: async (body: CreateCardDesignInput) => {
       const { data, error, response } = await getApiClient().POST('/card-designs', {
-        body,
+        body: body as any,
       })
       if (error) throw new ApiError(response.status, (error as any).error)
       return data!.data
@@ -75,7 +76,7 @@ export function useUpdateCardDesign() {
     }: UpdateCardDesignInput & { designId: string }) => {
       const { data, error, response } = await getApiClient().PATCH('/card-designs/{designId}', {
         params: { path: { designId } },
-        body,
+        body: body as any,
       })
       if (response.status === 409) {
         throw new RevisionConflictError(

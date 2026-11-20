@@ -168,4 +168,51 @@ describe('CardCompositionRenderer', () => {
 
     expect(screen.queryByTestId('authentic-issue-badge')).toBeNull()
   })
+
+  it('renders rich gradient, SVG vector path, and shadow layers cleanly', async () => {
+    const richComposition = {
+      schemaVersion: 1 as const,
+      canvas: { width: 600, height: 900 },
+      layers: [
+        {
+          id: 'gold-gradient-rect',
+          type: 'RECTANGLE' as const,
+          x: 20,
+          y: 20,
+          width: 560,
+          height: 860,
+          gradient: {
+            colors: ['#F59E0B', '#FEF08A', '#D97706'],
+            locations: [0, 0.5, 1],
+          },
+          shadow: {
+            color: 'rgba(0,0,0,0.5)',
+            blur: 10,
+            offsetX: 0,
+            offsetY: 4,
+          },
+        },
+        {
+          id: 'baroque-corner-svg',
+          type: 'SVG' as const,
+          x: 20,
+          y: 20,
+          width: 80,
+          height: 80,
+          pathData: 'M0,0 L80,0 C60,20 20,60 0,80 Z',
+          fill: '#D4AF37',
+        },
+      ],
+    }
+
+    const screen = await render(
+      <CardCompositionRenderer
+        composition={richComposition}
+        width={300}
+      />,
+    )
+
+    expect(screen.getByTestId('layer-rect-gold-gradient-rect')).toBeTruthy()
+    expect(screen.getByTestId('layer-svg-baroque-corner-svg')).toBeTruthy()
+  })
 })
